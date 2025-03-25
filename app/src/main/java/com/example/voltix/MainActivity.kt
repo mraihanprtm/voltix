@@ -1,47 +1,49 @@
 package com.example.voltix
 
+import SimulasiViewModel
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.material3.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.rememberNavController
+import com.example.voltix.ui.theme.AppNavHost
 import com.example.voltix.ui.theme.VoltixTheme
+import com.example.voltix.viewmodel.ImageRecognitionViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContent {
             VoltixTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                val simulasiViewModel: SimulasiViewModel = viewModel()
+                val imageRecognitionViewModel: ImageRecognitionViewModel = viewModel()
+                AppNavHost(
+                    simulasiViewModel = simulasiViewModel,
+                    imageRecognitionViewModel = imageRecognitionViewModel
+                )
             }
         }
     }
 }
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
+//@Composable
+//fun MyApp(
+//    SimulasiViewModel: SimulasiViewModel = viewModel(),
+//    ImageRecognitionViewModel: ImageRecognitionViewModel = viewModel()
+//) {
+////    var showSplash by remember { mutableStateOf(true) }
+////
+////    LaunchedEffect(Unit) {
+////        delay(4000) // Tampilkan SplashScreen selama 4 detik
+////        showSplash = false
+////    }
+//    AppNavHost(SimulasiViewModel = SimulasiViewModel, ImageRecognitionViewModel = ImageRecognitionViewModel)
+////    if (showSplash) {
+////        SplashScreen()
+////    } else {
+////        AppNavHost(dataViewModel = dataViewModel, lamaSekolahViewModel = lamaSekolahViewModel)
+////    }
+//}
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    VoltixTheme {
-        Greeting("Android")
-    }
-}
+
