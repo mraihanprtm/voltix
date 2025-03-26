@@ -3,6 +3,8 @@ import androidx.lifecycle.ViewModel
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.example.voltix.data.Perangkat
+import com.example.voltix.data.samplePerangkat
 
 class SimulasiViewModel : ViewModel() {
     var dayaMaksimum by mutableStateOf(1300) // Daya listrik rumah (Watt)
