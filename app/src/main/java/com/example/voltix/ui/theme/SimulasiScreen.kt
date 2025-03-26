@@ -554,7 +554,19 @@ fun generatePdf(context: Context, viewModel: SimulasiViewModel, rentang: String,
         - Estimasi Biaya Harian: Rp ${viewModel.totalBiayaSebelum.roundToInt()} → Rp ${viewModel.totalBiaya.roundToInt()}
     """.trimIndent())
 
-    // 2. Perhitungan berdasarkan rentang waktu
+    // 2. Selisih konsumsi listrik & biaya
+    val selisihDaya = viewModel.totalDayaSebelum - viewModel.totalDaya
+    val selisihKonsumsi = viewModel.totalKonsumsiSebelum - viewModel.totalKonsumsi
+    val selisihBiaya = viewModel.totalBiayaSebelum - viewModel.totalBiaya
+
+    drawText("""
+        Penghematan Setelah Perubahan:
+        - Selisih Daya: ${selisihDaya} W
+        - Selisih Konsumsi: ${"%.2f".format(selisihKonsumsi)} kWh
+        - Selisih Biaya: Rp ${selisihBiaya.roundToInt()}
+    """.trimIndent())
+
+    // 3. Perhitungan berdasarkan rentang waktu
     val faktor = when (rentang) {
         "Mingguan" -> jumlahPeriode * 7
         "Bulanan" -> jumlahPeriode * 30
@@ -570,18 +582,6 @@ fun generatePdf(context: Context, viewModel: SimulasiViewModel, rentang: String,
         - Total Daya: ${totalDaya} W
         - Total Konsumsi: ${"%.2f".format(totalKonsumsi)} kWh
         - Estimasi Biaya: Rp ${totalBiaya.roundToInt()}
-    """.trimIndent())
-
-    // 3. Selisih konsumsi listrik & biaya
-    val selisihDaya = viewModel.totalDayaSebelum - viewModel.totalDaya
-    val selisihKonsumsi = viewModel.totalKonsumsiSebelum - viewModel.totalKonsumsi
-    val selisihBiaya = viewModel.totalBiayaSebelum - viewModel.totalBiaya
-
-    drawText("""
-        Penghematan Setelah Perubahan:
-        - Selisih Daya: ${selisihDaya} W
-        - Selisih Konsumsi: ${"%.2f".format(selisihKonsumsi)} kWh
-        - Selisih Biaya: Rp ${selisihBiaya.roundToInt()}
     """.trimIndent())
 
     document.finishPage(page)
