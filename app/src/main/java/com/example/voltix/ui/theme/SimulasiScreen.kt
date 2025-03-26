@@ -29,9 +29,12 @@ import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.navigation.NavHostController
+import org.bouncycastle.math.raw.Mod
 import java.io.File
 import java.io.FileOutputStream
 
@@ -41,6 +44,9 @@ fun SimulasiPage(
     viewModel: SimulasiViewModel = viewModel()
 ) {
     val context = LocalContext.current
+    // State untuk menyimpan rentang waktu dan jumlah periode
+    var rentang by remember { mutableStateOf("Harian") }
+    var jumlahPeriode by remember { mutableStateOf("1") }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -52,21 +58,9 @@ fun SimulasiPage(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Simulasi Konsumsi Listrik Card
                 item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFBBDEFB))
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Simulasi Konsumsi Listrik", fontSize = 20.sp)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            TableComparison(viewModel)
-                        }
-                    }
+                    Text("SIMULASI KONSUMSI LISTRIK", fontSize = 18.sp, modifier = Modifier.padding(vertical = 8.dp))
                 }
-
                 // Device List Title
                 item {
                     Text("Daftar Perangkat Elektronik:", fontSize = 18.sp, modifier = Modifier.padding(vertical = 8.dp))
@@ -87,15 +81,38 @@ fun SimulasiPage(
                     }
                 }
 
-                // Hasil Perbandingan
+                // Simulasi Konsumsi Listrik Card
                 item {
-                    HasilPerbandingan(viewModel)
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFBBDEFB))
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("Tabel Perbandingan Sebelum dan Sesuah", fontSize = 20.sp)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            TableComparison(viewModel)
+                        }
+                    }
+                }
+
+                // Hasil Selisih
+                item {
+                    HasilSelisih(viewModel)
+                }
+
+                // TableSimulasiRentang dengan callback untuk memperbarui state
+                item {
+                    TableSimulasiRentang(viewModel, rentang, jumlahPeriode) { newRentang, newJumlahPeriode ->
+                        rentang = newRentang
+                        jumlahPeriode = newJumlahPeriode
+                    }
                 }
 
                 // Download PDF Button
                 item {
                     Button(
-                        onClick = { generatePdf(context, viewModel) },
+                        onClick = { generatePdf(context, viewModel, rentang, jumlahPeriode.toIntOrNull() ?: 1) },
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("Download Laporan PDF")
@@ -118,7 +135,6 @@ fun SimulasiPage(
         }
     )
 }
-
 
 @Composable
 fun PeringatanMelebihiDaya(viewModel: SimulasiViewModel) {
@@ -151,7 +167,7 @@ fun PeringatanMelebihiDaya(viewModel: SimulasiViewModel) {
 }
 
 @Composable
-fun HasilPerbandingan(viewModel: SimulasiViewModel) {
+fun HasilSelisih(viewModel: SimulasiViewModel) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -163,7 +179,7 @@ fun HasilPerbandingan(viewModel: SimulasiViewModel) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                "Rincian Simulasi",
+                "Selisih Dengan Penggunaan Sebelumnya",
                 color = Color.White,
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp
@@ -241,8 +257,6 @@ fun HasilPerbandingan(viewModel: SimulasiViewModel) {
         }
     }
 }
-
-
 
 @Composable
 fun DeviceList(viewModel: SimulasiViewModel) {
@@ -384,6 +398,103 @@ fun TableComparison(viewModel: SimulasiViewModel) {
     }
 }
 
+@Composable
+fun TableSimulasiRentang(viewModel: SimulasiViewModel, rentang: String,
+                         jumlahPeriode: String, onValueChange: (String, String) -> Unit) {
+    var selectedRentang by remember { mutableStateOf("Harian") }
+    var jumlahPeriode by remember { mutableStateOf("1") }
+    var expanded by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text("Simulasi Berdasarkan Rentang Waktu:", fontWeight = FontWeight.Bold)
+        // Dropdown pilihan rentang waktu
+        Text("Pilih Rentang Waktu:", fontWeight = FontWeight.Bold)
+        Box {
+            Button(
+                onClick = { expanded = true },
+                modifier = Modifier.fillMaxWidth() // Modifier harus berada di sini
+            ) {
+                Text(selectedRentang)
+            }
+
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                listOf("Harian", "Mingguan", "Bulanan").forEach { rentang ->
+                    DropdownMenuItem(
+                        text = { Text(rentang) },
+                        onClick = {
+                            selectedRentang = rentang
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+
+        // Input jumlah periode
+        Text("Jumlah Periode ($selectedRentang):", fontWeight = FontWeight.Bold)
+        TextField(
+            value = jumlahPeriode,
+            onValueChange = { jumlahPeriode = it.filter { char -> char.isDigit() } },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        // Hitung faktor berdasarkan rentang waktu
+        val faktor = when (selectedRentang) {
+            "Mingguan" -> jumlahPeriode.toIntOrNull()?.times(7) ?: 1
+            "Bulanan" -> jumlahPeriode.toIntOrNull()?.times(30) ?: 1
+            else -> jumlahPeriode.toIntOrNull() ?: 1
+        }
+
+        val totalDaya = viewModel.totalDaya * faktor
+        val totalKonsumsi = viewModel.totalKonsumsi * faktor
+        val totalBiaya = viewModel.totalBiaya * faktor
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Tampilkan hasil simulasi dalam tabel
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Keterangan", fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Text("Hasil Simulasi", fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            }
+            Divider(color = Color.Black, thickness = 1.dp)
+
+            val rows = listOf(
+                "Total Daya (W)" to totalDaya,
+                "Total Konsumsi (kWh)" to "%.2f".format(totalKonsumsi),
+                "Estimasi Biaya (Rp)" to "Rp ${totalBiaya.roundToInt()}"
+            )
+
+            rows.forEach { (label, value) ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(label, fontSize = 14.sp, modifier = Modifier.weight(1f))
+                    Text(value.toString(), fontSize = 14.sp, modifier = Modifier.weight(1f))
+                }
+                Divider(color = Color.Gray, thickness = 1.dp)
+            }
+        }
+    }
+}
 
 @Composable
 fun TambahPerangkatDialog(viewModel: SimulasiViewModel) {
@@ -410,38 +521,71 @@ fun TambahPerangkatDialog(viewModel: SimulasiViewModel) {
     )
 }
 
-fun generatePdf(context: Context, viewModel: SimulasiViewModel) {
+fun generatePdf(context: Context, viewModel: SimulasiViewModel, rentang: String, jumlahPeriode: Int) {
     val document = PdfDocument()
-    val pageInfo = PdfDocument.PageInfo.Builder(300, 600, 1).create()
+    val pageInfo = PdfDocument.PageInfo.Builder(400, 700, 1).create()
     val page = document.startPage(pageInfo)
     val canvas = page.canvas
-    val paint = Paint().apply {
-        color = Color.Black
+    val paint = Paint().apply { color }
+
+    val textPaint = TextPaint().apply { textSize = 14f }
+
+    var yPosition = 50f
+
+    fun drawText(text: String) {
+        val staticLayout = StaticLayout(
+            text, textPaint, canvas.width - 40,
+            Layout.Alignment.ALIGN_NORMAL, 1.5f, 1f, false
+        )
+        canvas.save()
+        canvas.translate(20f, yPosition)
+        staticLayout.draw(canvas)
+        canvas.restore()
+        yPosition += staticLayout.height + 20
     }
 
-    val text = """ 
-        Laporan Simulasi Listrik
-        ---------------------------
-        Total Daya: ${viewModel.totalDaya} W
-        Konsumsi Harian: ${viewModel.totalKonsumsi} kWh
-        Biaya Harian: Rp ${viewModel.totalBiaya}
-    """.trimIndent()
+    drawText("Laporan Simulasi Listrik\n---------------------------")
 
-    val textPaint = TextPaint().apply {
-        textSize = 14f
+    // 1. Data Sebelum & Sesudah
+    drawText("""
+        Perbandingan Sebelum & Sesudah:
+        - Total Daya: ${viewModel.totalDayaSebelum} W → ${viewModel.totalDaya} W
+        - Konsumsi Harian: ${"%.2f".format(viewModel.totalKonsumsiSebelum)} kWh → ${"%.2f".format(viewModel.totalKonsumsi)} kWh
+        - Estimasi Biaya Harian: Rp ${viewModel.totalBiayaSebelum.roundToInt()} → Rp ${viewModel.totalBiaya.roundToInt()}
+    """.trimIndent())
+
+    // 2. Perhitungan berdasarkan rentang waktu
+    val faktor = when (rentang) {
+        "Mingguan" -> jumlahPeriode * 7
+        "Bulanan" -> jumlahPeriode * 30
+        else -> jumlahPeriode
     }
 
-    val staticLayout = StaticLayout(
-        text, textPaint, canvas.width - 40,
-        Layout.Alignment.ALIGN_NORMAL, 1.5f, 1f, false
-    )
+    val totalDaya = viewModel.totalDaya * faktor
+    val totalKonsumsi = viewModel.totalKonsumsi * faktor
+    val totalBiaya = viewModel.totalBiaya * faktor
 
-    canvas.save()
-    canvas.translate(20f, 50f)
-    staticLayout.draw(canvas)
-    canvas.restore()
+    drawText("""
+        Hasil Simulasi Rentang ($rentang - $jumlahPeriode Periode):
+        - Total Daya: ${totalDaya} W
+        - Total Konsumsi: ${"%.2f".format(totalKonsumsi)} kWh
+        - Estimasi Biaya: Rp ${totalBiaya.roundToInt()}
+    """.trimIndent())
+
+    // 3. Selisih konsumsi listrik & biaya
+    val selisihDaya = viewModel.totalDayaSebelum - viewModel.totalDaya
+    val selisihKonsumsi = viewModel.totalKonsumsiSebelum - viewModel.totalKonsumsi
+    val selisihBiaya = viewModel.totalBiayaSebelum - viewModel.totalBiaya
+
+    drawText("""
+        Penghematan Setelah Perubahan:
+        - Selisih Daya: ${selisihDaya} W
+        - Selisih Konsumsi: ${"%.2f".format(selisihKonsumsi)} kWh
+        - Selisih Biaya: Rp ${selisihBiaya.roundToInt()}
+    """.trimIndent())
 
     document.finishPage(page)
+
     val fileName = "Laporan_Simulasi.pdf"
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
