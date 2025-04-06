@@ -5,16 +5,6 @@
       <config />
     </shared>
     <layouts>
-      <layout url="file://$PROJECT_DIR$/app/src/main/res/layout/activity_main.xml">
-        <config>
-          <theme>@style/Theme.Voltix</theme>
-        </config>
-      </layout>
-      <layout url="file://$PROJECT_DIR$/app/src/main/res/layout/search_result_rv_item.xml">
-        <config>
-          <theme>@style/Theme.Voltix</theme>
-        </config>
-      </layout>
       <layout url="file://$PROJECT_DIR$/app/src/main/res/xml/file_paths.xml">
         <config>
           <theme>@style/Theme.Voltix</theme>
@@ -27,39 +17,29 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1dc002ad-e97c-4171-acf7-455b62b22b00" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/data/model/DataModel.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/theme/SearchResult.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/theme/SearchScreen.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/viewmodel/SearchViewModel.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/VoltixApplication.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/data/repository/SearchRepository.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/di/AppModule.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/8.10.2/checksums/checksums.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/8.10.2/checksums/checksums.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/8.10.2/checksums/md5-checksums.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/8.10.2/checksums/md5-checksums.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/8.10.2/checksums/sha1-checksums.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/8.10.2/checksums/sha1-checksums.bin" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/8.10.2/dependencies-accessors/653825400482ee63928b2750563e94a5ec2d47e4/metadata.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/8.10.2/dependencies-accessors/653825400482ee63928b2750563e94a5ec2d47e4/metadata.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/8.10.2/executionHistory/executionHistory.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/8.10.2/executionHistory/executionHistory.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/8.10.2/executionHistory/executionHistory.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/8.10.2/executionHistory/executionHistory.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/8.10.2/fileHashes/fileHashes.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/8.10.2/fileHashes/fileHashes.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/8.10.2/fileHashes/fileHashes.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/8.10.2/fileHashes/fileHashes.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/8.10.2/fileHashes/resourceHashesCache.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/8.10.2/fileHashes/resourceHashesCache.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/outputFiles.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/outputFiles.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/file-system.probe" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/file-system.probe" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/deploymentTargetSelector.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/deploymentTargetSelector.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/.gradle/config.properties" beforeDir="false" afterPath="$PROJECT_DIR$/app/.gradle/config.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/.idea/gradle.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/app/build.gradle.kts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/src/main/AndroidManifest.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/AndroidManifest.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/MainActivity.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/MainActivity.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/theme/AppNavHost.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/theme/Color.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/theme/ImagePickerScreen.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/theme/SimulasiScreen.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/theme/Theme.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/theme/Type.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/viewmodel/ImageRecognitionViewModel.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/viewmodel/SimulasiViewModel.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/gradle/libs.versions.toml" beforeDir="false" afterPath="$PROJECT_DIR$/gradle/libs.versions.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/theme/SearchResult.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/component/SearchResult.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/theme/SearchScreen.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/pages/googlelens/SearchScreen.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/viewmodel/SearchViewModel.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/viewmodel/SearchViewModel.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/build.gradle.kts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -69,7 +49,7 @@
   <component name="ClangdSettings">
     <option name="formatViaClangd" value="false" />
   </component>
-  <component name="ExecutionTargetManager" SELECTED_TARGET="device_and_snapshot_combo_box_target[DeviceId(pluginId=PhysicalDevice, isTemplate=false, identifier=serial=39305bba)]" />
+  <component name="ExecutionTargetManager" SELECTED_TARGET="device_and_snapshot_combo_box_target[DeviceId(pluginId=LocalEmulator, isTemplate=false, identifier=path=C:\Users\daffa\.android\avd\Pixel_9_Pro_API_35.avd)]" />
   <component name="ExternalProjectsData">
     <projectState path="$PROJECT_DIR$">
       <ProjectState />
@@ -138,6 +118,9 @@
     &quot;accountId&quot;: &quot;bc247f31-981c-473f-a06f-652c251c2cf8&quot;
   }
 }</component>
+  <component name="KotlinCodeInsightWorkspaceSettings">
+    <option name="optimizeImportsOnTheFly" value="true" />
+  </component>
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="CurrentFile" />
   </component>
@@ -149,20 +132,20 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Android App.app.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
-    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
-    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;VLTX-EXP-4&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;D:/Kuliah/Semester 4/Proyek 4/voltix&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Android App.app.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "RunOnceActivity.readMode.enableVisualFormatting": "true",
+    "cf.first.check.clang-format": "false",
+    "cidr.known.project.marker": "true",
+    "git-widget-placeholder": "VLTX-EXP-4",
+    "ignore.virus.scanning.warn.message": "true",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "D:/Kuliah/Semester 4/Proyek 4/GoogleLens/voltix"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="D:\Kuliah\Semester 4\Proyek 4\voltix\app\src\main\res" />
@@ -170,6 +153,13 @@
       <recent name="D:\Kuliah\Semester 4\Proyek 4\voltix\app\src\main\res\layout" />
       <recent name="D:\Kuliah\Semester 4\Proyek 4\voltix\app\src\main\java\com\example\voltix\productimagesearch" />
       <recent name="D:\Kuliah\Semester 4\Proyek 4\voltix\app\src\main\java\com\example\voltix\ui\theme" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\Kuliah\Semester 4\Proyek 4\GoogleLens\voltix\app\src\main\java\com\example\voltix\ui\component" />
+      <recent name="D:\Kuliah\Semester 4\Proyek 4\GoogleLens\voltix\app\src\main\java\com\example\voltix\ui\pages\googlelens" />
+      <recent name="D:\Kuliah\Semester 4\Proyek 4\GoogleLens\voltix\app\src\main\java\com\example\voltix\ui\pages" />
+      <recent name="D:\Kuliah\Semester 4\Proyek 4\GoogleLens\voltix\app\src\main\java\com\example\voltix\ui\" />
+      <recent name="D:\Kuliah\Semester 4\Proyek 4\GoogleLens\voltix\app\src\main\java\com\example\voltix\ui" />
     </key>
     <key name="MoveKotlinTopLevelDeclarationsDialog.RECENTS_KEY">
       <recent name="com.example.voltix.data.model" />
@@ -266,12 +256,12 @@
       <map>
         <entry key="com.example.voltix">
           <value>
-            <CheckInfo lastCheckTimestamp="1742998172104" />
+            <CheckInfo lastCheckTimestamp="1743923727067" />
           </value>
         </entry>
         <entry key="com.example.voltix.test">
           <value>
-            <CheckInfo lastCheckTimestamp="1742998172105" />
+            <CheckInfo lastCheckTimestamp="1743923727066" />
           </value>
         </entry>
       </map>
