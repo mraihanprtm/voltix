@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import com.example.voltix.ui.MainScreen
 import com.example.voltix.ui.pages.auth.LoginScreen
 import com.example.voltix.ui.pages.home.HomeScreen
 import com.example.voltix.ui.theme.VoltixAppTheme
@@ -18,7 +19,7 @@ class MainActivity : ComponentActivity() {
             VoltixAppTheme {
                 Surface(color = MaterialTheme.colorScheme.background) {
 //                    LoginScreen()
-                    HomeScreen()
+                    MainScreen()
                 }
             }
         }

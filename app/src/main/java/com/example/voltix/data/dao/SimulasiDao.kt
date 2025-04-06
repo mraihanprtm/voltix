@@ -15,7 +15,7 @@ interface SimulasiDao {
     suspend fun insertSimulasi(simulasi: SimulasiTagihanEntity): Long
 
     @Transaction
-    @Query("SELECT * FROM simulasi_tagihan WHERE id = :simulasiId")
+    @Query("SELECT * FROM simulasi_tagihan WHERE simulasiId = :simulasiId")
     suspend fun getSimulasiWithPerangkat(simulasiId: Int): SimulasiWithPerangkat
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

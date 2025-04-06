@@ -8,13 +8,13 @@ import androidx.room.PrimaryKey
     tableName = "simulasi_tagihan",
     foreignKeys = [ForeignKey(
         entity = UserEntity::class,
-        parentColumns = ["id"],
+        parentColumns = ["userId"],
         childColumns = ["userId"],
         onDelete = ForeignKey.CASCADE
     )]
 )
 data class SimulasiTagihanEntity(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    @PrimaryKey(autoGenerate = true) val simulasiId: Int = 0,
     val namaSet: String,
     val totalDaya: Int,
     val estimasiTagihan: Double,

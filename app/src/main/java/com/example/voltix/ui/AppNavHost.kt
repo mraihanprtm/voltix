@@ -28,51 +28,17 @@ sealed class Screen(val route: String, val title: String) {
 fun AppNavHost(
     navController: NavHostController
 ) {
-    Scaffold(
-        bottomBar = { BottomNavigationBar(navController) }
-    ) { paddingValues ->
-        // HAPUS Column & verticalScroll() untuk menghindari infinite height constraint
-        NavHost(
-            navController = navController,
-            startDestination = Screen.Simulation.route,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues) // Gunakan padding dari Scaffold
-        ) {
-            composable(Screen.Simulation.route) {
-                SimulasiPage(navController)
-            }
-            composable(Screen.ImagePicker.route) {
-                ImagePickerScreen(navController )
-            }
+    NavHost(
+        navController = navController,
+        startDestination = Screen.Simulation.route
+    ) {
+        composable(Screen.Simulation.route) {
+            SimulasiPage(navController)
+        }
+        composable(Screen.ImagePicker.route) {
+            ImagePickerScreen(navController )
         }
     }
 }
 
 
-@Composable
-fun BottomNavigationBar(navController: NavHostController) {
-    val currentRoute by navController.currentBackStackEntryAsState()
-    NavigationBar {
-        NavigationBarItem(
-            icon = { Icon(Icons.Default.Home, contentDescription = Screen.Simulation.title) },
-            label = { Text(Screen.Simulation.title) },
-            selected = currentRoute?.destination?.route == Screen.Simulation.route,
-            onClick = {
-                if (currentRoute?.destination?.route != Screen.Simulation.route) {
-                    navController.navigate(Screen.Simulation.route)
-                }
-            }
-        )
-        NavigationBarItem(
-            icon = { Icon(Icons.Default.Person, contentDescription = Screen.ImagePicker.title) },
-            label = { Text(Screen.ImagePicker.title) },
-            selected = currentRoute?.destination?.route == Screen.ImagePicker.route,
-            onClick = {
-                if (currentRoute?.destination?.route != Screen.ImagePicker.route) {
-                    navController.navigate(Screen.ImagePicker.route)
-                }
-            }
-        )
-    }
-}
