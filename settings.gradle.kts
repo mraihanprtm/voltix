@@ -11,15 +11,14 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
-
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
         mavenCentral()
-        maven(url = "https://jitpack.io")  // Perbaikan di sini
     }
 }
 
-rootProject.name = "Voltix"
+rootProject.name = "VoltixApp"
 include(":app")
+ 

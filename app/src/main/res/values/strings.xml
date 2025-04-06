@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">Voltix</string>
+    <string name="app_name">VoltixApp</string>
+    <string name="web_client_id">719363858604-f9nbvb57ak0tc9s6oe4p81vurbbhmuqe.apps.googleusercontent.com</string>
 </resources>
