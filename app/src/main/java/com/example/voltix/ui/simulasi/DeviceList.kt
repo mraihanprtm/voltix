@@ -19,13 +19,19 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.example.voltix.data.PerangkatEntity
+import com.example.voltix.viewmodel.PerangkatViewModel
+import androidx.compose.runtime.getValue
 
 @Composable
-fun DeviceList(viewModel: SimulasiViewModel) {
+fun DeviceList(viewModel: PerangkatViewModel) {
+    val perangkatList by viewModel.perangkatList.observeAsState(emptyList()) // observe LiveData
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -33,9 +39,11 @@ fun DeviceList(viewModel: SimulasiViewModel) {
     ) {
         Column(modifier = Modifier.padding(8.dp)) {
             // Header
-            Row(modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+            ) {
                 Text("Nama", modifier = Modifier.weight(1f))
                 Text("Daya (W)", modifier = Modifier.weight(1f))
                 Text("Jam Pakai", modifier = Modifier.weight(1f))
@@ -43,10 +51,10 @@ fun DeviceList(viewModel: SimulasiViewModel) {
             }
             Divider(color = Color.Black, thickness = 1.dp)
 
-            // List Perangkat with fixed height or max height
+            // Daftar Perangkat
             Box(modifier = Modifier.heightIn(max = 300.dp)) {
                 LazyColumn {
-                    items(viewModel.perangkat) { item ->
+                    items(perangkatList) { item -> // ← pakai list yang sudah di-observe
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -60,8 +68,7 @@ fun DeviceList(viewModel: SimulasiViewModel) {
                             Row {
                                 IconButton(
                                     onClick = {
-                                        viewModel.perangkatDiedit = item
-                                        viewModel.showEditDialog = true
+
                                     },
                                     modifier = Modifier.size(24.dp)
                                 ) {
@@ -73,7 +80,9 @@ fun DeviceList(viewModel: SimulasiViewModel) {
                                 }
 
                                 IconButton(
-                                    onClick = { viewModel.hapusPerangkat(item) },
+                                    onClick = {
+                                        viewModel.deletePerangkat(item)
+                                    },
                                     modifier = Modifier.size(24.dp)
                                 ) {
                                     Icon(

@@ -13,18 +13,20 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.voltix.ui.simulasi.InputPerangkatScreen
 import com.example.voltix.ui.simulasi.SimulasiPage
-import com.example.voltix.viewmodel.ImageRecognitionViewModel
+import com.example.voltix.viewmodel.PerangkatViewModel
 
 sealed class Screen(val route: String, val title: String) {
     object Simulation : Screen("simulation", "Simulation")
-    object ImagePicker : Screen("image_picker", "Image Picker")
+    object InputPerangkat : Screen("input_perangkat", "Input Perangkat")
 }
 
 @Composable
 fun AppNavHost(
     simulasiViewModel: SimulasiViewModel,
-    imageRecognitionViewModel: ImageRecognitionViewModel = viewModel()
+    perangkatViewModel: PerangkatViewModel = viewModel()
+
 ) {
     val navController = rememberNavController()
 
@@ -34,16 +36,16 @@ fun AppNavHost(
         // HAPUS Column & verticalScroll() untuk menghindari infinite height constraint
         NavHost(
             navController = navController,
-            startDestination = Screen.Simulation.route,
+            startDestination = Screen.InputPerangkat.route,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues) // Gunakan padding dari Scaffold
         ) {
-            composable(Screen.Simulation.route) {
-                SimulasiPage(navController = navController, viewModel = simulasiViewModel)
+            composable(Screen.InputPerangkat.route) {
+                InputPerangkatScreen(navController = navController, viewModel = perangkatViewModel)
             }
-            composable(Screen.ImagePicker.route) {
-                ImagePickerScreen(navController = navController, viewModel = imageRecognitionViewModel)
+            composable(Screen.Simulation.route) {
+                SimulasiPage(navController = navController, viewModel = simulasiViewModel, perangkatViewModel = perangkatViewModel)
             }
         }
     }
@@ -55,22 +57,22 @@ fun BottomNavigationBar(navController: NavHostController) {
     val currentRoute by navController.currentBackStackEntryAsState()
     NavigationBar {
         NavigationBarItem(
+            icon = { Icon(Icons.Default.Person, contentDescription = Screen.InputPerangkat.title) },
+            label = { Text(Screen.InputPerangkat.title) },
+            selected = currentRoute?.destination?.route == Screen.InputPerangkat.route,
+            onClick = {
+                if (currentRoute?.destination?.route != Screen.InputPerangkat.route) {
+                    navController.navigate(Screen.InputPerangkat.route)
+                }
+            }
+        )
+        NavigationBarItem(
             icon = { Icon(Icons.Default.Home, contentDescription = Screen.Simulation.title) },
             label = { Text(Screen.Simulation.title) },
             selected = currentRoute?.destination?.route == Screen.Simulation.route,
             onClick = {
                 if (currentRoute?.destination?.route != Screen.Simulation.route) {
                     navController.navigate(Screen.Simulation.route)
-                }
-            }
-        )
-        NavigationBarItem(
-            icon = { Icon(Icons.Default.Person, contentDescription = Screen.ImagePicker.title) },
-            label = { Text(Screen.ImagePicker.title) },
-            selected = currentRoute?.destination?.route == Screen.ImagePicker.route,
-            onClick = {
-                if (currentRoute?.destination?.route != Screen.ImagePicker.route) {
-                    navController.navigate(Screen.ImagePicker.route)
                 }
             }
         )
