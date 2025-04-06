@@ -1,77 +1,131 @@
-import android.content.Context
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.viewModelScope
+import com.example.voltix.data.PerangkatEntity
+import com.example.voltix.data.SimulasiPerangkatEntity
+import com.example.voltix.data.SimulasiRepository
+import kotlinx.coroutines.launch
+import androidx.lifecycle.Observer
 
-@HiltViewModel
-class SimulasiViewModel @Inject constructor(): ViewModel() {
-    var dayaMaksimum by mutableStateOf(1300) // Daya listrik rumah (Watt)
-    var tarifListrik by mutableStateOf(1444.7) // Tarif listrik per kWh
+class SimulasiViewModel(
+    private val repository: SimulasiRepository
+) : ViewModel() {
 
 
+    val perangkatSimulasi = mutableStateListOf<SimulasiPerangkatEntity>()
+
+    val semuaSimulasi: LiveData<List<SimulasiPerangkatEntity>> = repository.semuaSimulasi
+
+    // Input
     var namaBaru by mutableStateOf("")
     var dayaBaru by mutableStateOf("")
     var durasiBaru by mutableStateOf("")
-    var perangkatDiedit by mutableStateOf(null)
+
     var showEditDialog by mutableStateOf(false)
     var showTambahDialog by mutableStateOf(false)
+    var perangkatDiedit by mutableStateOf<SimulasiPerangkatEntity?>(null)
 
+    // Nilai Sebelum Simulasi
     var totalDayaSebelum by mutableStateOf(0)
     var totalKonsumsiSebelum by mutableStateOf(0.0)
     var totalBiayaSebelum by mutableStateOf(0.0)
 
-    val totalDaya: Int get() = perangkat.sumOf { it.daya }
-    val totalKonsumsi: Double get() = perangkat.sumOf { (it.daya * it.durasi) / 1000.0 }
-    val totalBiaya: Double get() = totalKonsumsi * tarifListrik
-    val melebihiDaya: Boolean get() = totalDaya > dayaMaksimum
+    // Konfigurasi Simulasi
+    var dayaMaksimum by mutableStateOf(1300)
+    var tarifListrik by mutableStateOf(1444.7)
 
-    val selisihDaya: Int get() = totalDaya - totalDayaSebelum
-    val selisihKonsumsi: Double get() = totalKonsumsi - totalKonsumsiSebelum
-    val selisihBiaya: Double get() = totalBiaya - totalBiayaSebelum
+    // Observer untuk LiveData
+    private val observer = Observer<List<SimulasiPerangkatEntity>> { list ->
+        perangkatSimulasi.clear()
+        perangkatSimulasi.addAll(list)
+    }
 
     init {
-        perangkat.addAll(samplePerangkat) // ✅ PASTIKAN DATA AWAL DIISI
-        simpanDataSebelum() // Simpan data awal agar "Sebelum" tidak 0
+        semuaSimulasi.observeForever(observer)
     }
 
-    fun simpanDataSebelum() {
-        totalDayaSebelum = totalDaya
-        totalKonsumsiSebelum = totalKonsumsi
-        totalBiayaSebelum = totalBiaya
+    override fun onCleared() {
+        super.onCleared()
+        semuaSimulasi.removeObserver(observer)
     }
+
+
+    // Cloning dari daftar perangkat asli
+    var sudahDiClone = false
+
+    fun cloneDariPerangkatAsli(asli: List<PerangkatEntity>) {
+        if (sudahDiClone) return  // ⛔️ Skip kalau sudah pernah cloning
+
+        val cloned = asli.map {
+            SimulasiPerangkatEntity(nama = it.nama, daya = it.daya, durasi = it.durasi)
+        }
+
+        // Hitung data sebelum
+        totalDayaSebelum = asli.sumOf { it.daya }
+        totalKonsumsiSebelum = asli.sumOf { (it.daya * it.durasi).toDouble() } / 1000.0
+        totalBiayaSebelum = totalKonsumsiSebelum * tarifListrik  // Pastikan tarifListrik punya nilai
+
+        viewModelScope.launch {
+            repository.clear()
+            repository.tambahSemua(cloned)
+            sudahDiClone = true
+        }
+    }
+
+
 
     fun tambahPerangkat() {
-        simpanDataSebelum()
-        val daya = dayaBaru.toIntOrNull() ?: 0
-        val durasi = durasiBaru.toFloatOrNull() ?: 0f
-        if (namaBaru.isNotEmpty() && daya > 0 && durasi > 0) {
-            perangkat.add(Perangkat(namaBaru, daya, durasi)) // ✅ GUNAKAN add()
-            namaBaru = ""
-            dayaBaru = ""
-            durasiBaru = ""
-        }
-        showTambahDialog = false
+        val daya = dayaBaru.toIntOrNull() ?: return
+        val durasi = durasiBaru.toFloatOrNull() ?: return
+        val baru = SimulasiPerangkatEntity(nama = namaBaru, daya = daya, durasi = durasi)
+        viewModelScope.launch { repository.tambah(baru) }
+        resetInput()
     }
 
-    fun hapusPerangkat(perangkatDihapus: Perangkat) {
-        simpanDataSebelum()
-        perangkat.remove(perangkatDihapus) // ✅ GUNAKAN remove()
+    fun hapusPerangkat(p: SimulasiPerangkatEntity) {
+        viewModelScope.launch { repository.hapus(p) }
     }
 
     fun editPerangkat(nama: String, daya: Int, durasi: Float) {
-        simpanDataSebelum()
-        perangkatDiedit?.let { perangkatLama ->
-            val index = perangkat.indexOf(perangkatLama)
-            if (index != -1) {
-                perangkat[index] = Perangkat(nama, daya, durasi) // ✅ GANTI LANGSUNG DALAM LIST
-            }
+        perangkatDiedit?.let {
+            val updated = it.copy(nama = nama, daya = daya, durasi = durasi)
+            viewModelScope.launch { repository.update(updated) }
+            perangkatDiedit = null
         }
-        perangkatDiedit = null
         showEditDialog = false
     }
+
+    fun resetInput() {
+        namaBaru = ""
+        dayaBaru = ""
+        durasiBaru = ""
+        showTambahDialog = false
+    }
+
+    // Perhitungan Total
+    val totalDaya: Int
+        get() = perangkatSimulasi.sumOf { it.daya }
+
+    val totalKonsumsi: Double
+        get() = perangkatSimulasi.sumOf { (it.daya * it.durasi) / 1000.0 }
+
+    val totalBiaya: Double
+        get() = totalKonsumsi * tarifListrik
+
+    val melebihiDaya: Boolean
+        get() = totalDaya > dayaMaksimum
+
+    // Perhitungan Selisih
+    val selisihDaya: Int
+        get() = totalDaya - totalDayaSebelum
+
+    val selisihKonsumsi: Double
+        get() = totalKonsumsi - totalKonsumsiSebelum
+
+    val selisihBiaya: Double
+        get() = totalBiaya - totalBiayaSebelum
 }

@@ -17,6 +17,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,14 +27,31 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.example.voltix.data.SimulasiRepository
+import com.example.voltix.data.SimulasiViewModelFactory
+import com.example.voltix.viewmodel.PerangkatViewModel
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.livedata.observeAsState
 
 @Composable
 fun SimulasiPage(
     navController: NavHostController,
-    viewModel: SimulasiViewModel
+    viewModel: SimulasiViewModel,
+    perangkatViewModel: PerangkatViewModel // ✅ Tambahkan ini,
 ) {
     val context = LocalContext.current
+    val repository = SimulasiRepository.getInstance(context) // pastikan kamu punya ini
+    val factory = SimulasiViewModelFactory(repository)
+    val perangkatList by viewModel.semuaSimulasi.observeAsState(emptyList())
+
+
+    LaunchedEffect(Unit) {
+        val perangkatAsli = perangkatViewModel.perangkatList.value.orEmpty()
+        viewModel.cloneDariPerangkatAsli(perangkatAsli)
+    }
+
     // State untuk menyimpan rentang waktu dan jumlah periode
     var rentang by remember { mutableStateOf("Harian") }
     var jumlahPeriode by remember { mutableStateOf("1") }
@@ -58,8 +76,33 @@ fun SimulasiPage(
 
                 // Device List
                 item {
-                    DeviceList(viewModel)
+                    SimulasiDeviceList(viewModel = viewModel)
                 }
+
+                item {
+                    Button(
+                        onClick = {
+                            viewModel.sudahDiClone = false // supaya bisa clone lagi
+                            val perangkatAsli = perangkatViewModel.perangkatList.value.orEmpty()
+                            viewModel.cloneDariPerangkatAsli(perangkatAsli)
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Reset Simulasi")
+                    }
+                }
+                item {
+                    Button(
+                        onClick = {
+//                            viewModel.simpanKonfigurasiSimulasi() // Buat fungsi ini kalau belum ada
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Simpan Simulasi")
+                    }
+                }
+
+
 
                 // Add Device Button
                 item {
