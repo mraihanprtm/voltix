@@ -5,9 +5,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import com.example.voltix.ui.pages.auth.LoginScreen
-import com.example.voltix.ui.pages.home.HomeScreen
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.voltix.ui.components.AppNavigation
 import com.example.voltix.ui.theme.VoltixAppTheme
+import com.example.voltix.viewmodel.auth.LoginViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -17,8 +18,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             VoltixAppTheme {
                 Surface(color = MaterialTheme.colorScheme.background) {
-//                    LoginScreen()
-                    HomeScreen()
+                    val loginViewModel: LoginViewModel = hiltViewModel()
+                    AppNavigation(loginViewModel = loginViewModel)
                 }
             }
         }
