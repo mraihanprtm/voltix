@@ -5,7 +5,7 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "perangkat_listrik")
 data class PerangkatListrikEntity(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    @PrimaryKey(autoGenerate = true) val perangkatId: Int = 0,
     val nama: String,
     val daya: Int,
     val kategori: String,

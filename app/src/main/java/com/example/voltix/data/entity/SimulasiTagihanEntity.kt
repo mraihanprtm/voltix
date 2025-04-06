@@ -15,7 +15,7 @@ import androidx.room.PrimaryKey
 )
 data class SimulasiTagihanEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val namaSet: String?,
+    val namaSet: String,
     val totalDaya: Int,
     val estimasiTagihan: Double,
     val userId: Int

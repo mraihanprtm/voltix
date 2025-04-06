@@ -16,7 +16,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             VoltixAppTheme {
                 Surface(color = MaterialTheme.colorScheme.background) {
-                    LoginScreen()
+//                    LoginScreen()
                 }
             }
         }
