@@ -10,10 +10,16 @@ import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.FileOutputStream
+import javax.inject.Inject
 
-class ImageRecognitionViewModel : ViewModel() {
+@HiltViewModel
+class ImageRecognitionViewModel @Inject constructor(
+    @ApplicationContext private val context: Context
+) : ViewModel() {
     fun openGoogleLens(context: Context, bitmap: Bitmap) {
         val imageUri = createTempImageFile(context, bitmap)
 

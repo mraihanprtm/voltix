@@ -4,24 +4,26 @@ import SimulasiViewModel
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.material3.*
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.compose.rememberNavController
-import com.example.voltix.ui.theme.AppNavHost
+import com.example.voltix.ui.AppNavHost
+import com.example.voltix.ui.MainScreen
 import com.example.voltix.ui.theme.VoltixTheme
 import com.example.voltix.viewmodel.ImageRecognitionViewModel
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             VoltixTheme {
-                val simulasiViewModel: SimulasiViewModel = viewModel()
-                val imageRecognitionViewModel: ImageRecognitionViewModel = viewModel()
-                AppNavHost(
-                    simulasiViewModel = simulasiViewModel,
-                    imageRecognitionViewModel = imageRecognitionViewModel
-                )
+//                val simulasiViewModel: SimulasiViewModel = viewModel()
+//                val imageRecognitionViewModel: ImageRecognitionViewModel = viewModel()
+//                AppNavHost(
+//                    simulasiViewModel = simulasiViewModel,
+//                    imageRecognitionViewModel = imageRecognitionViewModel
+//                )
+                MainScreen()
             }
         }
     }
