@@ -5,7 +5,9 @@ import androidx.room.Room
 import com.example.voltix.data.AppDatabase
 import com.example.voltix.data.dao.SimulasiPerangkatDao
 import com.example.voltix.data.dao.PerangkatDao
+import com.example.voltix.data.dao.UserDao
 import com.example.voltix.data.repository.SimulasiRepository
+import com.example.voltix.data.repository.UserRepository
 import com.example.voltix.repository.PerangkatRepository
 import dagger.Module
 import dagger.Provides
@@ -36,9 +38,17 @@ object DatabaseModule {
     @Provides
     fun provideSimulasiDao(db: AppDatabase): SimulasiPerangkatDao = db.simulasiDao()
 
+    @Provides
+    fun provideUserDao(db:AppDatabase): UserDao = db.userDao()
+
     // ✅ TAMBAHKAN INI:
     @Provides
     fun providePerangkatRepository(perangkatDao: PerangkatDao): PerangkatRepository {
         return PerangkatRepository(perangkatDao)
+    }
+
+    @Provides
+    fun provideUserRepository(userDao: UserDao): UserRepository{
+        return UserRepository(userDao)
     }
 }

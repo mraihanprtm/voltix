@@ -8,13 +8,16 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.example.voltix.data.dao.PerangkatDao
 import com.example.voltix.data.dao.SimulasiPerangkatDao
+import com.example.voltix.data.dao.UserDao
 import com.example.voltix.data.entity.PerangkatListrikEntity
 import com.example.voltix.data.entity.SimulasiPerangkatEntity
+import com.example.voltix.data.entity.UserEntity
+import com.example.voltix.data.entity.UserPerangkatCrossRef
 import com.example.voltix.data.repository.SimulasiRepository
 import com.example.voltix.repository.PerangkatRepository
 
 @Database(
-    entities = [PerangkatListrikEntity::class, SimulasiPerangkatEntity::class],
+    entities = [PerangkatListrikEntity::class, SimulasiPerangkatEntity::class, UserEntity::class, UserPerangkatCrossRef::class],
     version = 1,
     exportSchema = false
 )
@@ -22,6 +25,7 @@ import com.example.voltix.repository.PerangkatRepository
 abstract class AppDatabase : RoomDatabase() {
     abstract fun perangkatDao(): PerangkatDao
     abstract fun simulasiDao(): SimulasiPerangkatDao
+    abstract fun userDao(): UserDao
 
     companion object {
         @Volatile

@@ -20,4 +20,7 @@ interface UserDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertUserPerangkatCrossRef(ref: UserPerangkatCrossRef)
+
+    @Query("SELECT * FROM users LIMIT 1")
+    suspend fun getUser(): UserEntity
 }

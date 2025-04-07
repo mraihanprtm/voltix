@@ -17,16 +17,23 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1dc002ad-e97c-4171-acf7-455b62b22b00" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.gradle/8.10.2/checksums/checksums.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/8.10.2/checksums/checksums.lock" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/data/repository/UserRepository.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/pages/OnboardingScreen.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/viewmodel/UserViewModel.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/src/main/res/drawable/ic_launcher.webp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/8.10.2/executionHistory/executionHistory.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/8.10.2/executionHistory/executionHistory.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/8.10.2/executionHistory/executionHistory.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/8.10.2/executionHistory/executionHistory.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/8.10.2/fileHashes/fileHashes.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/8.10.2/fileHashes/fileHashes.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/8.10.2/fileHashes/fileHashes.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/8.10.2/fileHashes/fileHashes.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/8.10.2/fileHashes/resourceHashesCache.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/8.10.2/fileHashes/resourceHashesCache.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/data/entity/PerangkatListrikEntity.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/data/entity/PerangkatListrikEntity.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/simulasi/InputPerangkatScreen.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/simulasi/InputPerangkatScreen.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/simulasi/TambahPerangkatDialog.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/simulasi/TambahPerangkatDialog.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/data/AppDatabase.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/data/AppDatabase.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/data/dao/UserDao.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/data/dao/UserDao.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/data/entity/UserEntity.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/data/entity/UserEntity.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/di/DatabaseModule.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/di/DatabaseModule.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/AppNavHost.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/AppNavHost.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/viewmodel/SimulasiViewModel.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/viewmodel/SimulasiViewModel.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/local.properties" beforeDir="false" afterPath="$PROJECT_DIR$/local.properties" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -85,9 +92,10 @@
       <list>
         <option value="resourceFile" />
         <option value="layoutResourceFile" />
-        <option value="Kotlin File" />
         <option value="Kotlin Interface" />
         <option value="Kotlin Object" />
+        <option value="Kotlin File" />
+        <option value="Class" />
         <option value="Kotlin Class" />
       </list>
     </option>
@@ -137,19 +145,22 @@
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
     "com.google.services.firebase.aqiPopupShown": "true",
-    "git-widget-placeholder": "VLTX-EXP-7",
+    "git-widget-placeholder": "VLTX-EXP-8",
     "ignore.virus.scanning.warn.message": "true",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "D:/Tresh/Polban/Semester_4/Proyek_4/Voltix/voltix/.gradle/8.10.2/dependencies-accessors/98d0798b6a5a44416b0fddaf3c633902fa073458"
+    "last_opened_file_path": "D:/Tresh/Polban/Semester_4/Proyek_4/Voltix/voltix/app/src/main/res/drawable"
   }
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\Tresh\Polban\Semester_4\Proyek_4\Voltix\voltix\app\src\main\res\drawable" />
       <recent name="D:\Tresh\Polban\Semester_4\Proyek_4\Voltix\voltix\.gradle\8.10.2\dependencies-accessors\98d0798b6a5a44416b0fddaf3c633902fa073458" />
       <recent name="D:\Kuliah\Semester 4\Proyek 4\voltix\app\src\main\res" />
       <recent name="D:\Kuliah\Semester 4\Proyek 4\voltix\app\src\main\res\mipmap-anydpi-v26" />
       <recent name="D:\Kuliah\Semester 4\Proyek 4\voltix\app\src\main\res\layout" />
-      <recent name="D:\Kuliah\Semester 4\Proyek 4\voltix\app\src\main\java\com\example\voltix\productimagesearch" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\Tresh\Polban\Semester_4\Proyek_4\Voltix\voltix\app\src\main\java\com\example\voltix\ui" />
     </key>
     <key name="MoveKotlinTopLevelDeclarationsDialog.RECENTS_KEY">
       <recent name="com.example.voltix.viewmodel" />

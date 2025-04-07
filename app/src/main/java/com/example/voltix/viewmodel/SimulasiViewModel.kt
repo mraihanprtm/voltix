@@ -21,14 +21,15 @@ import javax.inject.Inject
 
 
 import androidx.lifecycle.ViewModel
-
+import com.example.voltix.data.repository.UserRepository
 
 
 @RequiresApi(Build.VERSION_CODES.O)
 
 @HiltViewModel
 class SimulasiViewModel @Inject constructor(
-    private val repository: SimulasiRepository
+    private val repository: SimulasiRepository,
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     val perangkatSimulasi = mutableStateListOf<SimulasiPerangkatEntity>()
@@ -55,7 +56,7 @@ class SimulasiViewModel @Inject constructor(
 
     // Konfigurasi Simulasi
     var dayaMaksimum by mutableStateOf(1300)
-    var tarifListrik by mutableStateOf(1444.7)
+    var tarifListrik by mutableStateOf(0.0)
 
     // Observer untuk LiveData
     private val observer = Observer<List<SimulasiPerangkatEntity>> { list ->
@@ -65,6 +66,10 @@ class SimulasiViewModel @Inject constructor(
 
     init {
         semuaSimulasi.observeForever(observer)
+        viewModelScope.launch {
+            val user = userRepository.getUser() // jenisListrik berupa Int
+            tarifListrik = getTarifListrik(user.jenisListrik)
+        }
     }
 
     override fun onCleared() {
@@ -191,5 +196,14 @@ class SimulasiViewModel @Inject constructor(
 
     val selisihBiaya: Double
         get() = totalBiaya - totalBiayaSebelum
+
+    fun getTarifListrik(jenisListrik: Int): Double {
+        return when {
+            jenisListrik == 900 -> 1352.0
+            jenisListrik == 1300 -> 1444.7
+            jenisListrik <= 2200 -> 1444.7
+            else -> 1699.53
+        }
+    }
 
 }

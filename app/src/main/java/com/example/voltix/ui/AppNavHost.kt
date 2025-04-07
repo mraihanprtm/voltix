@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.voltix.ui.ImagePickerScreen
+import com.example.voltix.ui.pages.OnboardingScreen
 import com.example.voltix.ui.simulasi.InputPerangkatScreen
 import com.example.voltix.ui.simulasi.SimulasiPage
 import com.example.voltix.viewmodel.ImageRecognitionViewModel
@@ -31,7 +32,7 @@ fun AppNavHost(
 ) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Simulation.route
+        startDestination = Screen.Onboarding.route
     ) {
         composable(Screen.Simulation.route) {
             SimulasiPage(navController)
@@ -41,6 +42,13 @@ fun AppNavHost(
         }
         composable(Screen.InputPerangkat.route) {
             InputPerangkatScreen(navController)
+        }
+        composable(Screen.Onboarding.route) {
+            OnboardingScreen(onFinish = {
+                navController.navigate(Screen.Simulation.route) {
+                    popUpTo(Screen.Onboarding.route) { inclusive = true } // reset state navigasi agar user tidak bisa kembali ke onboarding dengan tombol back
+                }
+            })
         }
     }
 }
