@@ -1,6 +1,7 @@
 package com.example.voltix.ui.simulasi
 
-import SimulasiViewModel
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.voltix.viewmodel.googlelens.SimulasiViewModel.SimulasiViewModel
 import kotlin.math.roundToInt
 
 @Composable

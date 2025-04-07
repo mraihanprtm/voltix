@@ -7,7 +7,9 @@ import androidx.activity.compose.setContent
 import com.example.voltix.ui.MainScreen
 //import com.example.voltix.ui.theme
 import com.example.voltix.ui.theme.VoltixTheme
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {

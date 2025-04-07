@@ -3,7 +3,6 @@ package com.example.voltix.data.dao
 
 import androidx.lifecycle.LiveData
 import androidx.room.*
-import com.example.voltix.data.PerangkatEntity
 import com.example.voltix.data.entity.PerangkatListrikEntity
 
 @Dao
@@ -18,10 +17,10 @@ interface PerangkatDao {
     @Delete
     suspend fun deletePerangkat(perangkat: PerangkatListrikEntity)
 
-    @Query("SELECT * FROM Perangkat")
+    @Query("SELECT * FROM PerangkatListrikEntity")
     fun getAllPerangkat(): LiveData<List<PerangkatListrikEntity>>
 
-    @Query("SELECT * FROM Perangkat WHERE id = :id")
+    @Query("SELECT * FROM PerangkatListrikEntity WHERE perangkatId = :id")
     suspend fun getPerangkatById(id: Int): PerangkatListrikEntity?
 
 }

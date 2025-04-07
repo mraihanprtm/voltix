@@ -3,10 +3,13 @@ package com.example.voltix.data.repository
 import android.content.Context
 import androidx.lifecycle.LiveData
 import com.example.voltix.data.AppDatabase
-import com.example.voltix.data.SimulasiPerangkatEntity
+import com.example.voltix.data.entity.SimulasiPerangkatEntity
 import com.example.voltix.data.dao.SimulasiPerangkatDao
+import javax.inject.Inject
 
-class SimulasiRepository(private val dao: SimulasiPerangkatDao) {
+class SimulasiRepository @Inject constructor(
+    private val dao: SimulasiPerangkatDao
+) {
 
     val semuaSimulasi: LiveData<List<SimulasiPerangkatEntity>> = dao.getAll()
 

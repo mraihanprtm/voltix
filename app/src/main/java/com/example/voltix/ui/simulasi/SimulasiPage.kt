@@ -1,7 +1,8 @@
 package com.example.voltix.ui.simulasi
 
 import PeringatanMelebihiDaya
-import SimulasiViewModel
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -29,10 +30,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.voltix.data.repository.SimulasiRepository
-import com.example.voltix.data.SimulasiViewModelFactory
 import com.example.voltix.viewmodel.PerangkatViewModel
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.voltix.viewmodel.googlelens.SimulasiViewModel.SimulasiViewModel
 
 @Composable
 fun SimulasiPage(
@@ -41,15 +42,14 @@ fun SimulasiPage(
     perangkatViewModel: PerangkatViewModel = hiltViewModel()// ✅ Tambahkan ini,
 ) {
     val context = LocalContext.current
-    val repository = SimulasiRepository.getInstance(context) // pastikan kamu punya ini
-    val factory = SimulasiViewModelFactory(repository)
-    val perangkatList by repository.semuaSimulasi.observeAsState(emptyList())
+    val perangkatAsli by perangkatViewModel.perangkatList.observeAsState(emptyList())
 
-
-    LaunchedEffect(Unit) {
-        val perangkatAsli = perangkatList
-        viewModel.cloneDariPerangkatAsli(perangkatAsli)
+    LaunchedEffect(perangkatAsli) {
+        if (!viewModel.sudahDiClone) {
+            viewModel.cloneDariPerangkatAsli(perangkatAsli)
+        }
     }
+
 
     // State untuk menyimpan rentang waktu dan jumlah periode
     var rentang by remember { mutableStateOf("Harian") }

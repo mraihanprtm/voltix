@@ -1,6 +1,5 @@
 package com.example.voltix.ui.simulasi
 
-import SimulasiViewModel
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,7 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.example.voltix.data.PerangkatEntity
 import com.example.voltix.viewmodel.PerangkatViewModel
 import androidx.compose.runtime.getValue
 

@@ -28,7 +28,7 @@ fun MainScreen() {
 
     // pembuatan list yang berpasangan
     val bottomItems = listOf(
-        Screen.Dashboard to Icons.Default.Home,
+        Screen.InputPerangkat to Icons.Default.Home,
         Screen.Simulation to Icons.Default.Menu,
         Screen.ImagePicker to Icons.Default.Person
     )

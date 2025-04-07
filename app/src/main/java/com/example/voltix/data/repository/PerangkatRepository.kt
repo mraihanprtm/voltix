@@ -1,7 +1,6 @@
 package com.example.voltix.repository
 
 import com.example.voltix.data.dao.PerangkatDao
-import com.example.voltix.data.PerangkatEntity
 import com.example.voltix.data.entity.PerangkatListrikEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

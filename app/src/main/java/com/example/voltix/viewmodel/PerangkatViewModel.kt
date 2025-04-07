@@ -1,28 +1,24 @@
 package com.example.voltix.viewmodel
 
-import android.app.Application
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.voltix.data.AppDatabase
-//import com.example.voltix.data.Perangkat
-import com.example.voltix.data.PerangkatEntity
-import com.example.voltix.data.SimulasiPerangkatEntity
+import com.example.voltix.data.entity.KategoriPerangkat
 import com.example.voltix.data.entity.PerangkatListrikEntity
+//import com.example.voltix.data.Perangkat
 import com.example.voltix.repository.PerangkatRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import java.time.LocalTime
 import javax.inject.Inject
 
 @HiltViewModel
 class PerangkatViewModel @Inject constructor(
     private val repository: PerangkatRepository
+
 ) : ViewModel() {
 
     val perangkatList: LiveData<List<PerangkatListrikEntity>> = repository.allPerangkat
@@ -33,9 +29,10 @@ class PerangkatViewModel @Inject constructor(
     fun insertPerangkat(
         nama: String,
         daya: Int,
-        kategori: String,
-        waktuNyala: String,
-        waktuMati: String
+        kategori: KategoriPerangkat,
+        waktuNyala: LocalTime,
+        waktuMati: LocalTime,
+        durasi: Float
     ) {
         viewModelScope.launch {
             val perangkat = PerangkatListrikEntity(
@@ -43,7 +40,8 @@ class PerangkatViewModel @Inject constructor(
                 daya = daya,
                 kategori = kategori,
                 waktuNyala = waktuNyala,
-                waktuMati = waktuMati
+                waktuMati = waktuMati,
+                durasi = durasi,
             )
             repository.insert(perangkat)
         }

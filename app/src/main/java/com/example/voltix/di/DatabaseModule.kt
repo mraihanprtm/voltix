@@ -5,11 +5,14 @@ import androidx.room.Room
 import com.example.voltix.data.AppDatabase
 import com.example.voltix.data.dao.SimulasiPerangkatDao
 import com.example.voltix.data.dao.PerangkatDao
+import com.example.voltix.data.repository.SimulasiRepository
+import com.example.voltix.repository.PerangkatRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Inject
 import javax.inject.Singleton
 
 @Module
@@ -22,14 +25,20 @@ object DatabaseModule {
         return Room.databaseBuilder(
             context,
             AppDatabase::class.java,
-            "opendatajabar_db"
+            "voltix_database"
         ).fallbackToDestructiveMigration() .build()
 
     }
 
     @Provides
-    fun provideSimulasiDao(db: AppDatabase): SimulasiPerangkatDao = db.simulasiDao()
+    fun providePerangkatdao(db: AppDatabase): PerangkatDao = db.perangkatDao()
 
     @Provides
-    fun providePerangkatdao(db: AppDatabase): PerangkatDao = db.perangkatDao()
+    fun provideSimulasiDao(db: AppDatabase): SimulasiPerangkatDao = db.simulasiDao()
+
+    // ✅ TAMBAHKAN INI:
+    @Provides
+    fun providePerangkatRepository(perangkatDao: PerangkatDao): PerangkatRepository {
+        return PerangkatRepository(perangkatDao)
+    }
 }
