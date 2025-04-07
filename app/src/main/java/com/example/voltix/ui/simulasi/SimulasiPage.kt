@@ -27,28 +27,27 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import com.example.voltix.data.SimulasiRepository
+import com.example.voltix.data.repository.SimulasiRepository
 import com.example.voltix.data.SimulasiViewModelFactory
 import com.example.voltix.viewmodel.PerangkatViewModel
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun SimulasiPage(
     navController: NavHostController,
-    viewModel: SimulasiViewModel,
-    perangkatViewModel: PerangkatViewModel // ✅ Tambahkan ini,
+    viewModel: SimulasiViewModel = hiltViewModel(),
+    perangkatViewModel: PerangkatViewModel = hiltViewModel()// ✅ Tambahkan ini,
 ) {
     val context = LocalContext.current
     val repository = SimulasiRepository.getInstance(context) // pastikan kamu punya ini
     val factory = SimulasiViewModelFactory(repository)
-    val perangkatList by viewModel.semuaSimulasi.observeAsState(emptyList())
+    val perangkatList by repository.semuaSimulasi.observeAsState(emptyList())
 
 
     LaunchedEffect(Unit) {
-        val perangkatAsli = perangkatViewModel.perangkatList.value.orEmpty()
+        val perangkatAsli = perangkatList
         viewModel.cloneDariPerangkatAsli(perangkatAsli)
     }
 

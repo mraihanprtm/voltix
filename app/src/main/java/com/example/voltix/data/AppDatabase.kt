@@ -1,28 +1,36 @@
 package com.example.voltix.data
 
+
+import android.content.Context
 import androidx.room.Database
+import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.voltix.data.dao.PerangkatDao
-import com.example.voltix.data.dao.SimulasiDao
-import com.example.voltix.data.dao.UserDao
-import com.example.voltix.data.entity.PerangkatListrikEntity
-import com.example.voltix.data.entity.SimulasiPerangkatCrossRef
-import com.example.voltix.data.entity.SimulasiTagihanEntity
-import com.example.voltix.data.entity.UserEntity
-import com.example.voltix.data.entity.UserPerangkatCrossRef
+import com.example.voltix.data.dao.SimulasiPerangkatDao
 
 @Database(
-    entities = [
-        UserEntity::class,
-        SimulasiTagihanEntity::class,
-        PerangkatListrikEntity::class,
-        SimulasiPerangkatCrossRef::class,
-        UserPerangkatCrossRef::class],
+    entities = [PerangkatEntity::class, SimulasiPerangkatEntity::class],
     version = 1,
-    exportSchema = false)
-
+    exportSchema = false
+)
 abstract class AppDatabase : RoomDatabase() {
-    abstract fun userDao(): UserDao
     abstract fun perangkatDao(): PerangkatDao
-    abstract fun simulasiDao(): SimulasiDao
+    abstract fun simulasiDao(): SimulasiPerangkatDao
+
+    companion object {
+        @Volatile
+        private var INSTANCE: AppDatabase? = null
+
+        fun getDatabase(context: Context): AppDatabase {
+            return INSTANCE ?: synchronized(this) {
+                val instance = Room.databaseBuilder(
+                    context.applicationContext,
+                    AppDatabase::class.java,
+                    "voltix_database"
+                ).build()
+                INSTANCE = instance
+                instance
+            }
+        }
+    }
 }

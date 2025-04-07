@@ -3,6 +3,7 @@ package com.example.voltix.data
 import SimulasiViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.example.voltix.data.repository.SimulasiRepository
 
 class SimulasiViewModelFactory(
     private val repository: SimulasiRepository

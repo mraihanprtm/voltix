@@ -2,7 +2,9 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("kotlin-kapt")
+//    id("kotlin-kapt")
+    id("com.google.devtools.ksp")
+    id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -11,7 +13,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.voltix"
-        minSdk = 21
+        minSdk = 23
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -51,6 +53,11 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.runtime.livedata)
+    implementation(libs.firebase.auth.ktx)
+    implementation(libs.googleid)
+    implementation(libs.volley)
+    implementation(libs.image.labeling.common)
+    implementation(libs.image.labeling.default.common)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -70,16 +77,24 @@ dependencies {
     implementation("com.google.mlkit:object-detection-custom:17.0.0")
     implementation("com.google.mlkit:text-recognition:16.0.0")
     implementation(platform("com.google.firebase:firebase-bom:32.7.1"))
+    implementation ("com.cloudinary:cloudinary-android:3.0.2")
 
     // Retrofit untuk HTTP request ke API pencarian gambar
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.google.android.material:material:1.5.0")
 
-    implementation("androidx.room:room-ktx:2.5.2")
     // ROOM
     implementation("androidx.room:room-runtime:2.6.1")
-    kapt("androidx.room:room-compiler:2.6.1")
+    implementation("androidx.room:room-compiler:2.6.1")
 
     implementation("androidx.room:room-ktx:2.6.1")
+
+    implementation ("com.google.dagger:hilt-android:2.51")
+    ksp("com.google.dagger:hilt-android-compiler:2.51")
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+
+
+    implementation("io.coil-kt.coil3:coil-compose:3.1.0")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.1.0")
 }

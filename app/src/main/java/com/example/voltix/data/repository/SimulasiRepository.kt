@@ -1,7 +1,10 @@
-package com.example.voltix.data
+package com.example.voltix.data.repository
 
 import android.content.Context
 import androidx.lifecycle.LiveData
+import com.example.voltix.data.AppDatabase
+import com.example.voltix.data.SimulasiPerangkatEntity
+import com.example.voltix.data.dao.SimulasiPerangkatDao
 
 class SimulasiRepository(private val dao: SimulasiPerangkatDao) {
 

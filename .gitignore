@@ -27,4 +27,9 @@ replay_pid*
 .kotlin/
 local.properties
 *.lock
-*.bin
+.gradle/8.10.2/checksums/checksums.lock
+.gradle/8.10.2/checksums/sha1-checksums.bin
+.gradle/8.10.2/fileHashes/fileHashes.lock
+.gradle/8.10.2/fileHashes/fileHashes.bin
+.gradle/8.10.2/fileHashes/resourceHashesCache.bin
+.gradle/buildOutputCleanup/buildOutputCleanup.lock

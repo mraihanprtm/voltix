@@ -7,11 +7,14 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.viewModelScope
 import com.example.voltix.data.PerangkatEntity
 import com.example.voltix.data.SimulasiPerangkatEntity
-import com.example.voltix.data.SimulasiRepository
+import com.example.voltix.data.repository.SimulasiRepository
 import kotlinx.coroutines.launch
 import androidx.lifecycle.Observer
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 
-class SimulasiViewModel(
+@HiltViewModel
+class SimulasiViewModel @Inject constructor(
     private val repository: SimulasiRepository
 ) : ViewModel() {
 
@@ -57,7 +60,7 @@ class SimulasiViewModel(
     // Cloning dari daftar perangkat asli
     var sudahDiClone = false
 
-    fun cloneDariPerangkatAsli(asli: List<PerangkatEntity>) {
+    fun cloneDariPerangkatAsli(asli: List<PerangkatListrEntity>) {
         if (sudahDiClone) return  // ⛔️ Skip kalau sudah pernah cloning
 
         val cloned = asli.map {
