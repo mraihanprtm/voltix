@@ -3,19 +3,19 @@ package com.example.voltix
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-//import com.example.voltix.data.Perangkat
-import com.example.voltix.ui.MainScreen
-//import com.example.voltix.ui.theme
-import com.example.voltix.ui.theme.VoltixTheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import com.example.voltix.ui.pages.auth.LoginScreen
+import com.example.voltix.ui.pages.home.HomeScreen
+import com.example.voltix.ui.theme.VoltixAppTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            VoltixTheme {
+//            VoltixTheme {
 //                val context = LocalContext.current
 //                val repository = SimulasiRepository.getInstance(context)
 //                val factory = SimulasiViewModelFactory(repository)
@@ -25,29 +25,13 @@ class MainActivity : ComponentActivity() {
 //                    perangkatViewModel = perangkatViewModel,
 //                    simulasiViewModel = simulasiViewModel
 //                )
-                MainScreen()
+//                MainScreen()
+            VoltixAppTheme {
+                Surface(color = MaterialTheme.colorScheme.background) {
+                    val loginViewModel: LoginViewModel = hiltViewModel()
+                    AppNavigation(loginViewModel = loginViewModel)
+                }
             }
         }
     }
 }
-
-//@Composable
-//fun MyApp(
-//    SimulasiViewModel: SimulasiViewModel = viewModel(),
-//    ImageRecognitionViewModel: ImageRecognitionViewModel = viewModel()
-//) {
-////    var showSplash by remember { mutableStateOf(true) }
-////
-////    LaunchedEffect(Unit) {
-////        delay(4000) // Tampilkan SplashScreen selama 4 detik
-////        showSplash = false
-////    }
-//    AppNavHost(SimulasiViewModel = SimulasiViewModel, ImageRecognitionViewModel = ImageRecognitionViewModel)
-////    if (showSplash) {
-////        SplashScreen()
-////    } else {
-////        AppNavHost(dataViewModel = dataViewModel, lamaSekolahViewModel = lamaSekolahViewModel)
-////    }
-//}
-
-

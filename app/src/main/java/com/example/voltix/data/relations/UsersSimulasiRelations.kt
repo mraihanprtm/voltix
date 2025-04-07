@@ -12,7 +12,7 @@ import com.example.voltix.data.entity.UserPerangkatCrossRef
 data class UserWithPerangkat(
     @Embedded val user: UserEntity,
     @Relation(
-        parentColumn = "userId",
+        parentColumn = "id",
         entityColumn = "perangkatId",
         associateBy = Junction(
             value = UserPerangkatCrossRef::class,
@@ -26,7 +26,7 @@ data class UserWithPerangkat(
 data class SimulasiWithPerangkat(
     @Embedded val simulasi: SimulasiTagihanEntity,
     @Relation(
-        parentColumn = "simulasiId",
+        parentColumn = "id",
         entityColumn = "perangkatId",
         associateBy = Junction(
             value = SimulasiPerangkatCrossRef::class,
