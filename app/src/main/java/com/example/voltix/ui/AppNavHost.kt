@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.voltix.ui.ImagePickerScreen
+import com.example.voltix.ui.simulasi.InputPerangkatScreen
 import com.example.voltix.ui.simulasi.SimulasiPage
 import com.example.voltix.viewmodel.ImageRecognitionViewModel
 
@@ -22,6 +23,7 @@ sealed class Screen(val route: String, val title: String) {
     object ImagePicker : Screen("image_picker", "Image Picker")
     object Dashboard : Screen("dashboard", "Dashboard")
     object Onboarding : Screen("onboarding", "Onboarding")
+    object InputData : Screen("inputdata", "Input Data")
 }
 
 @Composable
@@ -30,13 +32,16 @@ fun AppNavHost(
 ) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Simulation.route
+        startDestination = Screen.InputData.route
     ) {
         composable(Screen.Simulation.route) {
             SimulasiPage(navController)
         }
         composable(Screen.ImagePicker.route) {
             ImagePickerScreen(navController )
+        }
+        composable(Screen.InputData.route){
+            InputPerangkatScreen(navController)
         }
     }
 }

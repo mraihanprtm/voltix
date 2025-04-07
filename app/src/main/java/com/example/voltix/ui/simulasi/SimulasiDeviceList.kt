@@ -14,9 +14,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
-fun SimulasiDeviceList(viewModel: SimulasiViewModel) {
+fun SimulasiDeviceList(viewModel: SimulasiViewModel = hiltViewModel()) {
     val perangkatList = viewModel.perangkatSimulasi // langsung ambil dari mutableStateListOf
 
     Card(
@@ -49,7 +50,7 @@ fun SimulasiDeviceList(viewModel: SimulasiViewModel) {
                     ) {
                         Text(item.nama, modifier = Modifier.weight(1f))
                         Text("${item.daya} W", modifier = Modifier.weight(1f))
-                        Text("${item.durasi} Jam", modifier = Modifier.weight(1f))
+//                        Text("${item.durasi} Jam", modifier = Modifier.weight(1f))
 
                         Row {
                             IconButton(

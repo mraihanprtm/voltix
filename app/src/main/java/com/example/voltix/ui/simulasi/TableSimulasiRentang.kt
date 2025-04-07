@@ -27,10 +27,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import kotlin.math.roundToInt
 
 @Composable
-fun TableSimulasiRentang(viewModel: SimulasiViewModel, rentang: String,
+fun TableSimulasiRentang(viewModel: SimulasiViewModel = hiltViewModel(), rentang: String,
                          jumlahPeriode: String, onValueChange: (String, String) -> Unit) {
     var selectedRentang by remember { mutableStateOf("Harian") }
     var jumlahPeriode by remember { mutableStateOf("1") }

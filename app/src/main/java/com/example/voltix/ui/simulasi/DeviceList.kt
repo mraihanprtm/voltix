@@ -63,7 +63,7 @@ fun DeviceList(viewModel: PerangkatViewModel) {
                         ) {
                             Text(item.nama, modifier = Modifier.weight(1f))
                             Text("${item.daya} W", modifier = Modifier.weight(1f))
-                            Text("${item.durasi} Jam", modifier = Modifier.weight(1f))
+//                            Text("${item.durasi} Jam", modifier = Modifier.weight(1f))
 
                             Row {
                                 IconButton(

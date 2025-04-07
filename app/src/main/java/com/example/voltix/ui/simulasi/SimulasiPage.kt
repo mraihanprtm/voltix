@@ -40,130 +40,130 @@ fun SimulasiPage(
     viewModel: SimulasiViewModel = hiltViewModel(),
     perangkatViewModel: PerangkatViewModel = hiltViewModel()// ✅ Tambahkan ini,
 ) {
-    val context = LocalContext.current
-    val repository = SimulasiRepository.getInstance(context) // pastikan kamu punya ini
-    val factory = SimulasiViewModelFactory(repository)
-    val perangkatList by repository.semuaSimulasi.observeAsState(emptyList())
-
-
-    LaunchedEffect(Unit) {
-        val perangkatAsli = perangkatList
-        viewModel.cloneDariPerangkatAsli(perangkatAsli)
-    }
-
-    // State untuk menyimpan rentang waktu dan jumlah periode
-    var rentang by remember { mutableStateOf("Harian") }
-    var jumlahPeriode by remember { mutableStateOf("1") }
-
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        content = { paddingValues ->
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                item {
-                    Text("SIMULASI KONSUMSI LISTRIK", fontSize = 18.sp, modifier = Modifier.padding(vertical = 8.dp))
-                }
-                // Device List Title
-                item {
-                    Text("Daftar Perangkat Elektronik:", fontSize = 18.sp, modifier = Modifier.padding(vertical = 8.dp))
-                }
-
-                // Device List
-                item {
-                    SimulasiDeviceList(viewModel = viewModel)
-                }
-
-                item {
-                    Button(
-                        onClick = {
-                            viewModel.sudahDiClone = false // supaya bisa clone lagi
-                            val perangkatAsli = perangkatViewModel.perangkatList.value.orEmpty()
-                            viewModel.cloneDariPerangkatAsli(perangkatAsli)
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Reset Simulasi")
-                    }
-                }
-                item {
-                    Button(
-                        onClick = {
-//                            viewModel.simpanKonfigurasiSimulasi() // Buat fungsi ini kalau belum ada
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Simpan Simulasi")
-                    }
-                }
-
-
-
-                // Add Device Button
-                item {
-                    Button(
-                        onClick = { viewModel.showTambahDialog = true },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Tambah Perangkat Baru")
-                    }
-                }
-
-                // Simulasi Konsumsi Listrik Card
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFBBDEFB))
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Tabel Perbandingan Sebelum dan Sesuah", fontSize = 20.sp)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            TableComparison(viewModel)
-                        }
-                    }
-                }
-
-                // Hasil Selisih
-                item {
-                    HasilSelisih(viewModel)
-                }
-
-                // TableSimulasiRentang dengan callback untuk memperbarui state
-                item {
-                    TableSimulasiRentang(viewModel, rentang, jumlahPeriode) { newRentang, newJumlahPeriode ->
-                        rentang = newRentang
-                        jumlahPeriode = newJumlahPeriode
-                    }
-                }
-
-                // Download PDF Button
-                item {
-                    Button(
-                        onClick = { generatePdf(context, viewModel, rentang, jumlahPeriode.toIntOrNull() ?: 1) },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Download Laporan PDF")
-                    }
-                }
-            }
-
-            // Dialogs and Warnings
-            if (viewModel.showEditDialog) {
-                EditPerangkatDialog(viewModel)
-            }
-
-            if (viewModel.showTambahDialog) {
-                TambahPerangkatDialog(viewModel)
-            }
-
-            if (viewModel.melebihiDaya) {
-                PeringatanMelebihiDaya(viewModel)
-            }
-        }
-    )
+//    val context = LocalContext.current
+//    val repository = SimulasiRepository.getInstance(context) // pastikan kamu punya ini
+//    val factory = SimulasiViewModelFactory(repository)
+//    val perangkatList by repository.semuaSimulasi.observeAsState(emptyList())
+//
+//
+//    LaunchedEffect(Unit) {
+//        val perangkatAsli = perangkatList
+//        viewModel.cloneDariPerangkatAsli(perangkatAsli)
+//    }
+//
+//    // State untuk menyimpan rentang waktu dan jumlah periode
+//    var rentang by remember { mutableStateOf("Harian") }
+//    var jumlahPeriode by remember { mutableStateOf("1") }
+//
+//    Scaffold(
+//        modifier = Modifier.fillMaxSize(),
+//        content = { paddingValues ->
+//            LazyColumn(
+//                modifier = Modifier
+//                    .fillMaxSize()
+//                    .padding(paddingValues)
+//                    .padding(16.dp),
+//                verticalArrangement = Arrangement.spacedBy(16.dp)
+//            ) {
+//                item {
+//                    Text("SIMULASI KONSUMSI LISTRIK", fontSize = 18.sp, modifier = Modifier.padding(vertical = 8.dp))
+//                }
+//                // Device List Title
+//                item {
+//                    Text("Daftar Perangkat Elektronik:", fontSize = 18.sp, modifier = Modifier.padding(vertical = 8.dp))
+//                }
+//
+//                // Device List
+//                item {
+//                    SimulasiDeviceList(viewModel = viewModel)
+//                }
+//
+//                item {
+//                    Button(
+//                        onClick = {
+//                            viewModel.sudahDiClone = false // supaya bisa clone lagi
+//                            val perangkatAsli = perangkatViewModel.perangkatList.value.orEmpty()
+//                            viewModel.cloneDariPerangkatAsli(perangkatAsli)
+//                        },
+//                        modifier = Modifier.fillMaxWidth()
+//                    ) {
+//                        Text("Reset Simulasi")
+//                    }
+//                }
+//                item {
+//                    Button(
+//                        onClick = {
+////                            viewModel.simpanKonfigurasiSimulasi() // Buat fungsi ini kalau belum ada
+//                        },
+//                        modifier = Modifier.fillMaxWidth()
+//                    ) {
+//                        Text("Simpan Simulasi")
+//                    }
+//                }
+//
+//
+//
+//                // Add Device Button
+//                item {
+//                    Button(
+//                        onClick = { viewModel.showTambahDialog = true },
+//                        modifier = Modifier.fillMaxWidth()
+//                    ) {
+//                        Text("Tambah Perangkat Baru")
+//                    }
+//                }
+//
+//                // Simulasi Konsumsi Listrik Card
+//                item {
+//                    Card(
+//                        modifier = Modifier.fillMaxWidth(),
+//                        shape = RoundedCornerShape(12.dp),
+//                        colors = CardDefaults.cardColors(containerColor = Color(0xFFBBDEFB))
+//                    ) {
+//                        Column(modifier = Modifier.padding(16.dp)) {
+//                            Text("Tabel Perbandingan Sebelum dan Sesuah", fontSize = 20.sp)
+//                            Spacer(modifier = Modifier.height(8.dp))
+//                            TableComparison(viewModel)
+//                        }
+//                    }
+//                }
+//
+//                // Hasil Selisih
+//                item {
+//                    HasilSelisih(viewModel)
+//                }
+//
+//                // TableSimulasiRentang dengan callback untuk memperbarui state
+//                item {
+//                    TableSimulasiRentang(viewModel, rentang, jumlahPeriode) { newRentang, newJumlahPeriode ->
+//                        rentang = newRentang
+//                        jumlahPeriode = newJumlahPeriode
+//                    }
+//                }
+//
+//                // Download PDF Button
+//                item {
+//                    Button(
+//                        onClick = { generatePdf(context, viewModel, rentang, jumlahPeriode.toIntOrNull() ?: 1) },
+//                        modifier = Modifier.fillMaxWidth()
+//                    ) {
+//                        Text("Download Laporan PDF")
+//                    }
+//                }
+//            }
+//
+//            // Dialogs and Warnings
+//            if (viewModel.showEditDialog) {
+//                EditPerangkatDialog(viewModel)
+//            }
+//
+//            if (viewModel.showTambahDialog) {
+//                TambahPerangkatDialog(viewModel)
+//            }
+//
+//            if (viewModel.melebihiDaya) {
+//                PeringatanMelebihiDaya(viewModel)
+//            }
+//        }
+//    )
 }

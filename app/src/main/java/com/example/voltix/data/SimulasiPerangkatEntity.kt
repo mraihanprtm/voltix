@@ -8,5 +8,7 @@ data class SimulasiPerangkatEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val nama: String,
     val daya: Int,
-    val durasi: Float
+    val kategori: String,
+    val waktuNyala: String,
+    val waktuMati: String
 )

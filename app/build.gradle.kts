@@ -58,6 +58,7 @@ dependencies {
     implementation(libs.volley)
     implementation(libs.image.labeling.common)
     implementation(libs.image.labeling.default.common)
+    implementation(libs.places)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

@@ -17,34 +17,28 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1dc002ad-e97c-4171-acf7-455b62b22b00" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/data/repository/PerangkatRepository.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/di/DatabaseModule.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/theme/Voltix.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/8.10.2/checksums/checksums.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/8.10.2/checksums/checksums.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/8.10.2/checksums/md5-checksums.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/8.10.2/checksums/md5-checksums.bin" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/8.10.2/checksums/sha1-checksums.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/8.10.2/checksums/sha1-checksums.bin" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/component/TimePicker.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/8.10.2/executionHistory/executionHistory.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/8.10.2/executionHistory/executionHistory.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/8.10.2/executionHistory/executionHistory.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/8.10.2/executionHistory/executionHistory.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/8.10.2/fileHashes/fileHashes.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/8.10.2/fileHashes/fileHashes.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/8.10.2/fileHashes/fileHashes.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/8.10.2/fileHashes/fileHashes.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/8.10.2/fileHashes/resourceHashesCache.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/8.10.2/fileHashes/resourceHashesCache.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/outputFiles.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/outputFiles.bin" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/file-system.probe" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/file-system.probe" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/discord.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/discord.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/app/build.gradle.kts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/MainActivity.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/MainActivity.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/data/AppDataBase.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/data/AppDataBase.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/data/PerangkatDao.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/data/SimulasiPerangkatDao.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/data/dao/SimulasiPerangkatDao.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/data/SimulasiRepository.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/data/repository/SimulasiRepository.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/data/SimulasiViewModelFactory.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/data/SimulasiViewModelFactory.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/data/dao/PerangkatDao.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/data/dao/PerangkatDao.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/data/SimulasiPerangkatEntity.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/data/SimulasiPerangkatEntity.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/AppNavHost.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/AppNavHost.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/simulasi/DeviceList.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/simulasi/DeviceList.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/simulasi/EditPerangkatDialog.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/simulasi/EditPerangkatDialog.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/simulasi/GeneratePDF.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/simulasi/GeneratePDF.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/simulasi/HasilSelisih.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/simulasi/HasilSelisih.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/simulasi/InputPerangkatScreen.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/simulasi/InputPerangkatScreen.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/simulasi/PeringatanMelebihiDaya.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/simulasi/PeringatanMelebihiDaya.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/simulasi/SimulasiDeviceList.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/simulasi/SimulasiDeviceList.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/simulasi/SimulasiPage.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/simulasi/SimulasiPage.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/theme/AppNavHost.kt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/viewmodel/PerangkatViewModel.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/viewmodel/PerangkatViewModel.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/simulasi/TableComparison.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/simulasi/TableComparison.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/simulasi/TableSimulasiRentang.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/simulasi/TableSimulasiRentang.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/simulasi/TambahPerangkatDialog.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/ui/simulasi/TambahPerangkatDialog.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/viewmodel/SimulasiViewModel.kt" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/example/voltix/viewmodel/SimulasiViewModel.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gradle/libs.versions.toml" beforeDir="false" afterPath="$PROJECT_DIR$/gradle/libs.versions.toml" afterDir="false" />
     </list>
@@ -105,10 +99,10 @@
       <list>
         <option value="resourceFile" />
         <option value="layoutResourceFile" />
-        <option value="Kotlin File" />
         <option value="Kotlin Interface" />
         <option value="Kotlin Class" />
         <option value="Kotlin Object" />
+        <option value="Kotlin File" />
       </list>
     </option>
   </component>
@@ -133,7 +127,7 @@
   }
 }</component>
   <component name="ProblemsViewState">
-    <option name="selectedTabId" value="ProjectErrors" />
+    <option name="selectedTabId" value="CurrentFile" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 3
