@@ -7,12 +7,9 @@ import java.time.LocalTime
 
 // Definisi enum untuk kategori
 enum class KategoriPerangkat {
-    ELEKTRONIK,
-    LAMPU,
-    PENDINGIN,
-    PEMANAS,
-    DAPUR,
-    LAINNYA
+    KRITIS,
+    OPSIONAL,
+    INTERMITTENT
 }
 
 @Entity(tableName = "PerangkatListrikEntity")

@@ -38,7 +38,7 @@ class SimulasiViewModel @Inject constructor(
     // Input
     var namaBaru by mutableStateOf("")
     var dayaBaru by mutableStateOf("")
-    var kategoriBaru by mutableStateOf(KategoriPerangkat.ELEKTRONIK)
+    var kategoriBaru by mutableStateOf(KategoriPerangkat.OPSIONAL)
     var waktuNyalaBaru by mutableStateOf(LocalTime.of(6, 0))
     var waktuMatiBaru by mutableStateOf(LocalTime.of(18, 0))
     val durasiBaru: Float
@@ -162,7 +162,7 @@ class SimulasiViewModel @Inject constructor(
     fun resetInput() {
         namaBaru = ""
         dayaBaru = ""
-        kategoriBaru = KategoriPerangkat.ELEKTRONIK
+        kategoriBaru = KategoriPerangkat.OPSIONAL
         waktuNyalaBaru = LocalTime.of(6, 0)
         waktuMatiBaru = LocalTime.of(18, 0)
         showTambahDialog = false

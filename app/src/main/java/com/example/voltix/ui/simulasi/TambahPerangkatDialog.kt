@@ -3,12 +3,15 @@ package com.example.voltix.ui.simulasi
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.text.input.KeyboardType
 import com.example.voltix.ui.component.DropdownKategori
+import com.example.voltix.ui.component.TimePickerDialogButton
 import com.example.voltix.viewmodel.googlelens.SimulasiViewModel.SimulasiViewModel
 import java.time.LocalTime
 
@@ -26,27 +29,24 @@ fun TambahPerangkatDialog(viewModel: SimulasiViewModel) {
                 )
                 OutlinedTextField(
                     value = viewModel.dayaBaru,
-                    onValueChange = { viewModel.dayaBaru = it },
-                    label = { Text("Daya (Watt)") }
-                )
-                OutlinedTextField(
-                    value = viewModel.waktuNyalaBaru.toString(), // konversi LocalTime ke String
-                    onValueChange = {
-                        try {
-                            viewModel.waktuNyalaBaru = LocalTime.parse(it)
-                        } catch (_: Exception) {}
+                    onValueChange = { newValue ->
+                        // Only allow digits, a single decimal point, and prevent multiple decimal points
+                        val filteredValue = newValue.replace(Regex("[^0-9.]"), "")
+                            .replace(Regex("\\.(?=.*\\.)"), "")
+
+                        // Validate that it can be parsed as a Double if not empty
+                        if (filteredValue.isEmpty() || filteredValue.toDoubleOrNull() != null) {
+                            viewModel.dayaBaru = filteredValue
+                        }
                     },
-                    label = { Text("Waktu Nyala (HH:mm)") }
+                    label = { Text("Daya (Watt)") },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number
+                    )
                 )
-                OutlinedTextField(
-                    value = viewModel.waktuMatiBaru.toString(),
-                    onValueChange = {
-                        try {
-                            viewModel.waktuMatiBaru = LocalTime.parse(it)
-                        } catch (_: Exception) {}
-                    },
-                    label = { Text("Waktu Mati (HH:mm)") }
-                )
+
+                TimePickerDialogButton("Waktu Nyala", viewModel.waktuNyalaBaru) { viewModel.waktuNyalaBaru = it }
+                TimePickerDialogButton("Waktu Mati", viewModel.waktuMatiBaru) { viewModel.waktuMatiBaru = it }
 
                 Text(text = "Durasi: ${viewModel.durasiBaru} jam")
 

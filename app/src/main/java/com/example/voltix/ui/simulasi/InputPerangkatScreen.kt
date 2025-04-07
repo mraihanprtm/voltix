@@ -3,10 +3,12 @@ package com.example.voltix.ui.simulasi
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -26,7 +28,7 @@ fun InputPerangkatScreen(
 ) {
     var nama by remember { mutableStateOf("") }
     var daya by remember { mutableStateOf("") }
-    var kategori by remember { mutableStateOf(KategoriPerangkat.ELEKTRONIK) }
+    var kategori by remember { mutableStateOf(KategoriPerangkat.OPSIONAL) }
     var waktuNyala by remember { mutableStateOf(LocalTime.of(6, 0)) }
     var waktuMati by remember { mutableStateOf(LocalTime.of(18, 0)) }
 
@@ -52,10 +54,20 @@ fun InputPerangkatScreen(
 
         OutlinedTextField(
             value = daya,
-            onValueChange = { daya = it },
+            onValueChange = { newValue ->
+                // Only allow digits, a single decimal point, and prevent multiple decimal points
+                val filteredValue = newValue.replace(Regex("[^0-9.]"), "")
+                    .replace(Regex("\\.(?=.*\\.)"), "")
+
+                // Validate that it can be parsed as a Double if not empty
+                if (filteredValue.isEmpty() || filteredValue.toDoubleOrNull() != null) {
+                    daya = filteredValue
+                }
+            },
             label = { Text("Daya (Watt)") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number
+            )
         )
 
         // Dropdown kategori
@@ -78,7 +90,7 @@ fun InputPerangkatScreen(
                     viewModel.insertPerangkat(nama, dayaInt, kategori, waktuNyala, waktuMati, durasi)
                     nama = ""
                     daya = ""
-                    kategori = KategoriPerangkat.ELEKTRONIK
+                    kategori = KategoriPerangkat.OPSIONAL
                     waktuNyala = LocalTime.of(6, 0)
                     waktuMati = LocalTime.of(18, 0)
                     onPerangkatDisimpan()
