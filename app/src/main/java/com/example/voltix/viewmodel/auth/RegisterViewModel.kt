@@ -19,9 +19,9 @@ class RegisterViewModel @Inject constructor(
     private val _registerState = MutableStateFlow<AuthResponse?>(null)
     val registerState: StateFlow<AuthResponse?> = _registerState
 
-    fun registerWithEmail(email: String, password: String) {
+    fun registerWithEmail(email: String, password: String, name: String) {
         viewModelScope.launch {
-            authManager.createAccountWithEmail(email, password)
+            authManager.createAccountWithEmail(email, password, name)
                 .collectLatest {
                     _registerState.value = it
                 }

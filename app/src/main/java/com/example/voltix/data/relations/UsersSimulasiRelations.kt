@@ -13,7 +13,7 @@ data class UserWithPerangkat(
     @Embedded val user: UserEntity,
     @Relation(
         parentColumn = "id",
-        entityColumn = "id",
+        entityColumn = "perangkatId",
         associateBy = Junction(
             value = UserPerangkatCrossRef::class,
             parentColumn = "userId",
@@ -27,7 +27,7 @@ data class SimulasiWithPerangkat(
     @Embedded val simulasi: SimulasiTagihanEntity,
     @Relation(
         parentColumn = "id",
-        entityColumn = "id",
+        entityColumn = "perangkatId",
         associateBy = Junction(
             value = SimulasiPerangkatCrossRef::class,
             parentColumn = "simulasiId",

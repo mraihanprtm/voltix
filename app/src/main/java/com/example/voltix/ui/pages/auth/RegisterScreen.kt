@@ -5,6 +5,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Email
 import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +23,7 @@ fun RegisterScreen(
     onRegisterSuccess: () -> Unit,
     navigateToLogin: () -> Unit
 ) {
+    var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
@@ -44,6 +46,18 @@ fun RegisterScreen(
         Text("Please fill the form to register", style = MaterialTheme.typography.titleMedium)
 
         Spacer(modifier = Modifier.height(32.dp))
+
+        // Tambahkan field nama
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            placeholder = { Text("Full Name") },
+            leadingIcon = { Icon(Icons.Rounded.Person, contentDescription = null) },
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedTextField(
             value = email,
@@ -83,11 +97,12 @@ fun RegisterScreen(
         Button(
             onClick = {
                 if (password == confirmPassword) {
-                    registerViewModel.registerWithEmail(email, password)
+                    // Panggil registerWithEmail dengan parameter name
+                    registerViewModel.registerWithEmail(email, password, name)
                 }
             },
             modifier = Modifier.fillMaxWidth(),
-            enabled = email.isNotEmpty() && password.isNotEmpty() && password == confirmPassword
+            enabled = name.isNotEmpty() && email.isNotEmpty() && password.isNotEmpty() && password == confirmPassword
         ) {
             Text("Register", fontWeight = FontWeight.Bold)
         }
