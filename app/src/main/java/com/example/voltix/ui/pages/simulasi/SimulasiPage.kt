@@ -45,7 +45,7 @@ fun SimulasiPage(
     val perangkatAsli by perangkatViewModel.perangkatList.observeAsState(emptyList())
 
     LaunchedEffect(perangkatAsli) {
-        if (!viewModel.sudahDiClone) {
+        if (viewModel.sudahDiClone) {
             viewModel.cloneDariPerangkatAsli(perangkatAsli)
         }
     }

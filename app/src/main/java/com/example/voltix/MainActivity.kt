@@ -21,7 +21,7 @@ class MainActivity : ComponentActivity() {
                 Surface(color = MaterialTheme.colorScheme.background) {
                     val loginViewModel: LoginViewModel = hiltViewModel()
                     AppNavigation(loginViewModel = loginViewModel)
-                    MainScreen()
+//                    MainScreen()
                 }
             }
         }

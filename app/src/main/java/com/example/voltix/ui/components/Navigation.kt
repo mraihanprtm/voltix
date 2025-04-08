@@ -9,6 +9,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.voltix.data.remote.response.AuthResponse
+import com.example.voltix.ui.MainScreen
 import com.example.voltix.ui.pages.auth.LoginScreen
 import com.example.voltix.ui.pages.auth.RegisterScreen
 import com.example.voltix.ui.pages.home.HomeScreen
@@ -21,14 +22,14 @@ fun AppNavigation(
     loginViewModel: LoginViewModel
 ) {
     val currentUser = FirebaseAuth.getInstance().currentUser
-    val startDestination = if (currentUser != null) "home" else "login"
+    val startDestination = if (currentUser != null) "main" else "login"
 
     val loginState by loginViewModel.loginState.collectAsState()
 
     // Observe login state changes
     LaunchedEffect(loginState) {
         if (loginState is AuthResponse.Success) {
-            navController.navigate("home") {
+            navController.navigate("main") {
                 popUpTo("login") { inclusive = true }
             }
         }
@@ -47,7 +48,7 @@ fun AppNavigation(
         composable("register") {
             RegisterScreen(
                 onRegisterSuccess = {
-                    navController.navigate("home") {
+                    navController.navigate("main") {
                         popUpTo("login") { inclusive = true }
                     }
                 },
@@ -57,12 +58,16 @@ fun AppNavigation(
             )
         }
 
+        composable("main") {
+            MainScreen()
+        }
+
         composable("home") {
             HomeScreen(
                 onSignOut = {
                     FirebaseAuth.getInstance().signOut()
                     navController.navigate("login") {
-                        popUpTo("home") { inclusive = true }
+                        popUpTo("main") { inclusive = true }
                     }
                 }
             )

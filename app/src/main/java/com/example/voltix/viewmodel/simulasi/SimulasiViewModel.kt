@@ -89,16 +89,6 @@ class SimulasiViewModel @Inject constructor(
         return if (durasiMenit > 0) durasiMenit / 60f else 0f
     }
 
-
-    class Converters {
-        @TypeConverter
-        fun fromLocalTime(value: LocalTime?): String? = value?.toString()
-
-        @RequiresApi(Build.VERSION_CODES.O)
-        @TypeConverter
-        fun toLocalTime(value: String?): LocalTime? = value?.let { LocalTime.parse(it) }
-    }
-
     // Cloning dari daftar perangkat asli
     var sudahDiClone = false
 
