@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 
 import com.example.voltix.R
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -33,12 +34,6 @@ data class OnboardingPage(
     val imageRes: Int
 )
 
-val pages = listOf(
-    OnboardingPage("WELCOME TO VOLTIX APP", "halo halo niece and nephew", R.drawable.ic_launcher)
-)
-
-val jenisListrikList = listOf(450, 900, 1300, 2200, 3500)
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,11 +50,19 @@ fun OnboardingScreen(
     var selectedJenisListrik by remember { mutableStateOf(jenisListrikList.first()) }
     var expanded by remember { mutableStateOf(false) }
 
+    val perangkatList by viewModel.perangkatList.observeAsState()
     val pagerState = rememberPagerState(pageCount = { pages.size })
     val scope = rememberCoroutineScope()
-    val data by viewModel.perangkatList.observeAsState()
 
-    if (data?.isEmpty() == true) {
+    // ✅ Panggil onFinish hanya sekali jika data sudah ada
+    LaunchedEffect(perangkatList) {
+        if (!perangkatList.isNullOrEmpty()) {
+            onFinish()
+        }
+    }
+
+    // ✅ Tampilkan onboarding hanya jika perangkatList kosong
+    if (perangkatList.isNullOrEmpty()) {
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -96,7 +99,7 @@ fun OnboardingScreen(
                             onExpandedChange = { expanded = !expanded }
                         ) {
                             OutlinedTextField(
-                                value = "${selectedJenisListrik} VA", // tampilkan dengan satuan
+                                value = "${selectedJenisListrik} VA",
                                 onValueChange = {},
                                 readOnly = true,
                                 label = { Text("Jenis Listrik") },
@@ -150,7 +153,7 @@ fun OnboardingScreen(
                             email = "guest@example.com",
                             jenisListrik = selectedJenisListrik,
                             foto_profil = "",
-                            uid = userId // atau path kosong/null sesuai implementasi kamu
+                            uid = userId
                         )
                         userViewModel.insertUser(user)
                         onFinish()
@@ -162,7 +165,5 @@ fun OnboardingScreen(
                 }
             }
         }
-    } else {
-        onFinish()
     }
 }
