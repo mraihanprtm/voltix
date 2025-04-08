@@ -36,7 +36,7 @@ fun AppNavHost(
         }
         composable(Screen.Onboarding.route) {
             OnboardingScreen(onFinish = {
-                navController.navigate(Screen.Simulation.route) {
+                navController.navigate(Screen.InputPerangkat.route) {
                     popUpTo(Screen.Onboarding.route) { inclusive = true } // reset state navigasi agar user tidak bisa kembali ke onboarding dengan tombol back
                 }
             })

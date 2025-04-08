@@ -45,11 +45,10 @@ fun SimulasiPage(
     val perangkatAsli by perangkatViewModel.perangkatList.observeAsState(emptyList())
 
     LaunchedEffect(perangkatAsli) {
-        if (viewModel.sudahDiClone) {
+        if (!viewModel.sudahDiClone) {
             viewModel.cloneDariPerangkatAsli(perangkatAsli)
         }
     }
-
 
     // State untuk menyimpan rentang waktu dan jumlah periode
     var rentang by remember { mutableStateOf("Harian") }
