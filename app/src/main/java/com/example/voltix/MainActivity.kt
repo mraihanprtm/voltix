@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.voltix.ui.MainScreen
 import com.example.voltix.ui.components.AppNavigation
 import com.example.voltix.ui.theme.VoltixAppTheme
 import com.example.voltix.viewmodel.auth.LoginViewModel
@@ -20,6 +21,7 @@ class MainActivity : ComponentActivity() {
                 Surface(color = MaterialTheme.colorScheme.background) {
                     val loginViewModel: LoginViewModel = hiltViewModel()
                     AppNavigation(loginViewModel = loginViewModel)
+                    MainScreen()
                 }
             }
         }

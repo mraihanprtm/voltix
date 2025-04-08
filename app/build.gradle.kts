@@ -49,6 +49,7 @@ dependencies {
     implementation("com.google.android.gms:play-services-auth:21.3.0")
     implementation(libs.firebase.auth)
     implementation(libs.androidx.room.common)
+    implementation(libs.androidx.runtime.livedata)
 
     val credentialManagerVersion = "1.5.0-alpha05"
     implementation("androidx.credentials:credentials:$credentialManagerVersion")
@@ -85,7 +86,7 @@ dependencies {
 
     implementation("io.coil-kt.coil3:coil-compose:3.1.0")
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.1.0")
-
+    implementation ("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
     // Room
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")

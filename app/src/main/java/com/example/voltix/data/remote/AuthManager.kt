@@ -39,7 +39,7 @@ class AuthManager @Inject constructor(
         return userRepository.createUser(
             name = displayName,
             email = email,
-            fotoProfil = photoUrl
+            fotoProfil = photoUrl,
         )
     }
 

@@ -32,12 +32,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
 import com.example.voltix.data.entity.ElectronicInformationModel
 import com.example.voltix.ui.component.SearchResultItem
 import com.example.voltix.viewmodel.googlelens.SearchViewModel
 
 @Composable
-fun SearchScreen() {
+fun SearchScreen(
+    navController: NavHostController,
+) {
     val searchViewModel: SearchViewModel = hiltViewModel() // ✅ Ambil ViewModel yang benar
     val context = LocalContext.current
     var imageBitmap by remember { mutableStateOf<Bitmap?>(null) }

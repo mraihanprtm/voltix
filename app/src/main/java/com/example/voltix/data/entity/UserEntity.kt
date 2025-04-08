@@ -9,6 +9,6 @@ data class UserEntity(
     val uid: String,
     val name: String,
     val email: String,
-    val jenisListrik: String,
+    val jenisListrik: Int,
     val foto_profil: String
 )
