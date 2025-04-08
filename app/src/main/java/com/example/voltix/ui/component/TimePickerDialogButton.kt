@@ -4,9 +4,11 @@ import android.app.TimePickerDialog
 import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import java.time.LocalTime
 
@@ -19,9 +21,12 @@ fun TimePickerDialogButton(
 ) {
     val context = LocalContext.current
 
-    Button(onClick = {
-        showTimePicker(context, time, onTimeSelected)
-    }) {
+    Button(
+        onClick = {
+            showTimePicker(context, time, onTimeSelected)
+        },
+        modifier = Modifier.fillMaxWidth()
+    ) {
         Text("$label: ${time.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))}")
     }
 }

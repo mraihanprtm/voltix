@@ -108,13 +108,13 @@ fun SimulasiPage(
 
                             SummaryItem(
                                 title = "Total Konsumsi",
-                                value = "${viewModel.totalKonsumsi} Kwh",
+                                value = "${"%.2f".format(viewModel.totalKonsumsi)} Kwh",
                                 icon = "⚡"
                             )
 
                             SummaryItem(
                                 title = "Est. Biaya",
-                                value = "Rp ${viewModel.totalBiaya}",
+                                value = "Rp ${"%,.0f".format(viewModel.totalBiaya)}",
                                 icon = "💰"
                             )
                         }

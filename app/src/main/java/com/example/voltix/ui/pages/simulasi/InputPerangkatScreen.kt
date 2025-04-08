@@ -47,7 +47,7 @@ fun InputPerangkatScreen(
     var kategori by remember { mutableStateOf(KategoriPerangkat.OPSIONAL) }
     var waktuNyala by remember { mutableStateOf(LocalTime.of(6, 0)) }
     var waktuMati by remember { mutableStateOf(LocalTime.of(18, 0)) }
-    var showDeviceList by remember { mutableStateOf(false) }
+    var showDeviceList by remember { mutableStateOf(true) }
     var isFormValid by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
 
@@ -224,9 +224,9 @@ fun InputPerangkatScreen(
                             color = MaterialTheme.colorScheme.onSurface
                         )
 
-                        Row(
+                        Column(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
                             // Time picker buttons
                             TimePickerDialogButton(
