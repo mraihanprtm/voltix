@@ -22,8 +22,7 @@ import com.example.voltix.viewmodel.auth.LoginViewModel
 
 @Composable
 fun LoginScreen(
-    loginViewModel: LoginViewModel = hiltViewModel(),
-    navigateToRegister: () -> Unit = {}
+    loginViewModel: LoginViewModel = hiltViewModel()
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -72,9 +71,7 @@ fun LoginScreen(
         }
 
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
             contentAlignment = Alignment.Center
         ) {
             Text("or continue with")
@@ -87,15 +84,6 @@ fun LoginScreen(
             Image(painter = painterResource(id = R.drawable.google), contentDescription = null, modifier = Modifier.size(36.dp))
             Spacer(modifier = Modifier.width(6.dp))
             Text("Sign-in with Google", fontWeight = FontWeight.Bold)
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        TextButton(
-            onClick = navigateToRegister,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        ) {
-            Text("Don't have an account? Register")
         }
 
         if (loginState is AuthResponse.Error) {

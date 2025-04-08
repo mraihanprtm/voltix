@@ -15,14 +15,8 @@ interface UserDao {
     suspend fun insertUser(user: UserEntity): Long
 
     @Transaction
-    @Query("SELECT * FROM users WHERE id = :userId")
+    @Query("SELECT * FROM users WHERE userId = :userId")
     suspend fun getUserWithPerangkat(userId: Int): UserWithPerangkat
-
-    @Query("SELECT * FROM users WHERE email = :email LIMIT 1")
-    suspend fun getUserByEmail(email: String): UserEntity?
-
-    @Query("SELECT * FROM users WHERE uid = :uid LIMIT 1")
-    suspend fun getUserByUid(uid: String): UserEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertUserPerangkatCrossRef(ref: UserPerangkatCrossRef)
