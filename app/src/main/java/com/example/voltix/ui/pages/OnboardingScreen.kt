@@ -162,5 +162,7 @@ fun OnboardingScreen(
                 }
             }
         }
+    } else {
+        onFinish()
     }
 }
