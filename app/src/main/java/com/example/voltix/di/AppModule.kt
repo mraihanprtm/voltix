@@ -7,6 +7,7 @@ import com.example.voltix.data.dao.UserDao
 import com.example.voltix.data.database.AppDatabase
 import com.example.voltix.data.remote.AuthManager
 import com.example.voltix.data.repository.SearchRepository
+import com.example.voltix.data.repository.SimulasiRepository
 import com.example.voltix.data.repository.UserRepository
 import com.example.voltix.repository.PerangkatRepository
 import com.google.firebase.auth.FirebaseAuth
@@ -70,5 +71,15 @@ object AppModule {
         userRepository: UserRepository
     ): AuthManager {
         return AuthManager(context, userRepository)
+    }
+
+
+    @Provides
+    @Singleton
+    fun provideSimulasiRepository(
+        dao: SimulasiPerangkatDao,
+        @ApplicationContext context: Context
+    ): SimulasiRepository {
+        return SimulasiRepository(dao, context)
     }
 }

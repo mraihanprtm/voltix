@@ -41,7 +41,6 @@ fun SimulasiPage(
     var showDeviceList by remember { mutableStateOf(true) }
     var showSimulationResults by remember { mutableStateOf(true) }
     var showDetailedSimulation by remember { mutableStateOf(true) }
-
     // State untuk menyimpan rentang waktu dan jumlah periode
     var rentang by remember { mutableStateOf("Harian") }
     var jumlahPeriode by remember { mutableStateOf("1") }

@@ -58,6 +58,7 @@ class SimulasiViewModel @Inject constructor(
     // Konfigurasi Simulasi
     var dayaMaksimum by mutableStateOf(1300)
     var tarifListrik by mutableStateOf(0.0)
+    var sudahDiClone by mutableStateOf(false)
 
     // Observer untuk LiveData
     private val observer = Observer<List<SimulasiPerangkatEntity>> { list ->
@@ -68,6 +69,16 @@ class SimulasiViewModel @Inject constructor(
     init {
         semuaSimulasi.observeForever(observer)
         viewModelScope.launch {
+            // Check if cloning has already been done
+            val stats = repository.getStatistics()
+            stats?.let {
+                // Data exists, update our UI state
+                totalDayaSebelum = it.totalDaya
+                totalKonsumsiSebelum = it.totalKonsumsi
+                totalBiayaSebelum = it.totalBiaya
+                sudahDiClone = true
+            }
+
             val uid = FirebaseAuth.getInstance().currentUser?.uid
             uid?.let {
                 val user = userRepository.getUserByUid(it)
@@ -78,7 +89,6 @@ class SimulasiViewModel @Inject constructor(
         }
     }
 
-
     override fun onCleared() {
         super.onCleared()
         semuaSimulasi.removeObserver(observer)
@@ -88,9 +98,6 @@ class SimulasiViewModel @Inject constructor(
         val durasiMenit = java.time.Duration.between(waktuNyalaBaru, waktuMatiBaru).toMinutes()
         return if (durasiMenit > 0) durasiMenit / 60f else 0f
     }
-
-    // Cloning dari daftar perangkat asli
-    var sudahDiClone = false
 
     fun cloneDariPerangkatAsli(asli: List<PerangkatListrikEntity>) {
         if (sudahDiClone) return
@@ -113,7 +120,17 @@ class SimulasiViewModel @Inject constructor(
         viewModelScope.launch {
             repository.clear()
             repository.tambahSemua(cloned)
+            // Save statistics to DataStore
+            repository.saveStatistics(totalDayaSebelum, totalKonsumsiSebelum, totalBiayaSebelum)
             sudahDiClone = true
+        }
+    }
+
+    // Additional function if you need to reset the clone state
+    fun resetCloneState() {
+        viewModelScope.launch {
+            repository.resetCloneStatus()
+            sudahDiClone = false
         }
     }
 
