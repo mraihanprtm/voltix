@@ -348,7 +348,7 @@ fun SimulasiPage(
                             containerColor = MaterialTheme.colorScheme.primary
                         )
                     ) {
-                        Text("📋 Download PDF")
+                        Text("📋 Unduh PDF")
                     }
                 }
             }

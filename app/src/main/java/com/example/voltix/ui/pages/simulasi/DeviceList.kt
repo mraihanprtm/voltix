@@ -44,7 +44,7 @@ fun DeviceList(viewModel: PerangkatViewModel) {
             ) {
                 Text("Nama", modifier = Modifier.weight(1f))
                 Text("Daya (W)", modifier = Modifier.weight(1f))
-                Text("Jam Pakai", modifier = Modifier.weight(1f))
+                Text("Durasi", modifier = Modifier.weight(1f))
                 Text("", modifier = Modifier.weight(1f))
             }
             Divider(color = Color.Black, thickness = 1.dp)
@@ -66,7 +66,8 @@ fun DeviceList(viewModel: PerangkatViewModel) {
                             Row {
                                 IconButton(
                                     onClick = {
-
+                                        viewModel.perangkatDiedit = item
+                                        viewModel.showEditDialog = true
                                     },
                                     modifier = Modifier.size(24.dp)
                                 ) {
@@ -92,9 +93,14 @@ fun DeviceList(viewModel: PerangkatViewModel) {
                             }
                         }
                         Divider()
+
                     }
                 }
             }
+        }
+        // Dialogs and Warnings
+        if (viewModel.showEditDialog) {
+//            EditPerangkatDialog(viewModel)
         }
     }
 }

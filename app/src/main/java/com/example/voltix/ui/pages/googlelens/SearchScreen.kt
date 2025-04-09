@@ -74,7 +74,7 @@ fun SearchScreen(
                             } else {
                                 Toast.makeText(
                                     context,
-                                    "Failed to upload image. Please try again.",
+                                    "Pengunggahan gambar gagal. Silahkan coba lagi.",
                                     Toast.LENGTH_SHORT
                                 ).show()
                                 isLoading = false
@@ -90,7 +90,7 @@ fun SearchScreen(
             SmallTopAppBar(
                 title = {
                     Text(
-                        text = "Electronics Scanner",
+                        text = "Pemindai Perangkat Elektronik",
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -134,7 +134,7 @@ fun SearchScreen(
                             imageBitmap?.let { bitmap ->
                                 Image(
                                     bitmap = bitmap.asImageBitmap(),
-                                    contentDescription = "Captured Image",
+                                    contentDescription = "Gambar yang ditangkap",
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier.fillMaxSize()
                                 )
@@ -160,14 +160,15 @@ fun SearchScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         Text(
-                            text = "Don't know what this device is?",
+                            text = "Tidak tahu perangkat apa ini?",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
                         Text(
-                            text = "Take a photo and let us identify your electronics and their power usage",
+//                            text = "Take a photo and let us identify your electronics and their power usage",
+                            text = "Tangkap sebuah foto dan biarkan kami yang mengidentifikasi perangkat elektronik anda beserta dengan konsumsi dayanya",
                             fontSize = 14.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                             textAlign = TextAlign.Center,
@@ -194,7 +195,7 @@ fun SearchScreen(
                                 )
                             ) {
                                 Text(
-                                    text = "📷 Take Photo",
+                                    text = "📷 Ambil Foto",
                                     fontSize = 16.sp,
                                     color = MaterialTheme.colorScheme.onPrimary
                                 )
@@ -223,7 +224,7 @@ fun SearchScreen(
                                     )
                                 ) {
                                     Text(
-                                        text = "🔍 Identify",
+                                        text = "🔍 Identifikasi",
                                         fontSize = 16.sp,
                                         color = MaterialTheme.colorScheme.onSecondary
                                     )
@@ -254,7 +255,8 @@ fun SearchScreen(
                                         modifier = Modifier.size(48.dp)
                                     )
                                     Text(
-                                        text = "Analyzing your device...",
+//                                        text = "Analyzing your device...",
+                                        text = "Menganalisa perangkat anda...",
                                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                                     )
                                 }
@@ -320,14 +322,15 @@ fun SearchScreen(
                                     }
 
                                     Text(
-                                        text = "No results yet",
+                                        text = "Belum ada hasil",
                                         fontSize = 18.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = MaterialTheme.colorScheme.onBackground
                                     )
 
                                     Text(
-                                        text = "Take a photo of your electronic device to get started!",
+//                                        text = "Take a photo of your electronic device to get started!",
+                                        text = "Tangkap foto perangkat elektronik anda untuk memulai!",
                                         textAlign = TextAlign.Center,
                                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                                         modifier = Modifier.padding(horizontal = 32.dp)
@@ -341,7 +344,8 @@ fun SearchScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = "No matches found. Try another photo.",
+//                                    text = "No matches found. Try another photo.",
+                                    text = "Perangkat tidak ditemukan. Silahkan coba foto lain",
                                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                                 )
                             }

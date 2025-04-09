@@ -43,7 +43,7 @@ fun OnboardingScreen(
     userViewModel: UserViewModel = hiltViewModel()
 ) {
     val pages = listOf(
-        OnboardingPage("WELCOME TO VOLTIX APP", "halo halo niece and nephew", R.drawable.ic_launcher)
+        OnboardingPage("WELCOME TO VOLTIX APP", "Silahkan pilih jenis listrik yang anda gunakan", R.drawable.ic_launcher)
     )
     val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
     val jenisListrikList = listOf(900, 1300, 2200, 3500)

@@ -36,8 +36,9 @@ fun LoginScreen(
             .padding(20.dp),
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Sign-in", style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Bold)
-        Text("Please fill the form to continue", style = MaterialTheme.typography.titleMedium)
+        Text("Masuk", style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Bold)
+//        Text("Please fill the form to continue", style = MaterialTheme.typography.titleMedium)
+        Text("Silahkan isi formulir di bawah untuk masuk", style = MaterialTheme.typography.titleMedium)
 
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -55,7 +56,7 @@ fun LoginScreen(
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            placeholder = { Text("Password") },
+            placeholder = { Text("Kata sandi") },
             leadingIcon = { Icon(Icons.Rounded.Lock, contentDescription = null) },
             visualTransformation = PasswordVisualTransformation(),
             shape = RoundedCornerShape(16.dp),
@@ -68,7 +69,7 @@ fun LoginScreen(
             onClick = { loginViewModel.loginWithEmail(email, password) },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Sign-in", fontWeight = FontWeight.Bold)
+            Text("Masuk", fontWeight = FontWeight.Bold)
         }
 
         Box(
@@ -77,7 +78,7 @@ fun LoginScreen(
                 .padding(vertical = 12.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text("or continue with")
+            Text("atau masuk dengan")
         }
 
         OutlinedButton(
@@ -86,7 +87,8 @@ fun LoginScreen(
         ) {
             Image(painter = painterResource(id = R.drawable.google), contentDescription = null, modifier = Modifier.size(36.dp))
             Spacer(modifier = Modifier.width(6.dp))
-            Text("Sign-in with Google", fontWeight = FontWeight.Bold)
+//            Text("Sign-in with Google", fontWeight = FontWeight.Bold)
+            Text("Masuk dengan Google", fontWeight = FontWeight.Bold)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -95,7 +97,8 @@ fun LoginScreen(
             onClick = navigateToRegister,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {
-            Text("Don't have an account? Register")
+            Text("Belum punya akun? Daftar")
+//            Text("Don't have an account? Register")
         }
 
         if (loginState is AuthResponse.Error) {

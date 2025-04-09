@@ -42,8 +42,10 @@ fun RegisterScreen(
             .padding(20.dp),
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Create Account", style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Bold)
-        Text("Please fill the form to register", style = MaterialTheme.typography.titleMedium)
+//        Text("Create Account", style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Bold)
+        Text("Buat Akun", style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Bold)
+//        Text("Please fill the form to register", style = MaterialTheme.typography.titleMedium)
+        Text("Silahkan isi formulir untuk daftar", style = MaterialTheme.typography.titleMedium)
 
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -51,7 +53,8 @@ fun RegisterScreen(
         OutlinedTextField(
             value = name,
             onValueChange = { name = it },
-            placeholder = { Text("Full Name") },
+//            placeholder = { Text("Full Name") },
+            placeholder = { Text("Nama Lengkap") },
             leadingIcon = { Icon(Icons.Rounded.Person, contentDescription = null) },
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier.fillMaxWidth()
@@ -73,7 +76,8 @@ fun RegisterScreen(
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            placeholder = { Text("Password") },
+            placeholder = { Text("Kata Sandi") },
+//            placeholder = { Text("Password") },
             leadingIcon = { Icon(Icons.Rounded.Lock, contentDescription = null) },
             visualTransformation = PasswordVisualTransformation(),
             shape = RoundedCornerShape(16.dp),
@@ -85,7 +89,8 @@ fun RegisterScreen(
         OutlinedTextField(
             value = confirmPassword,
             onValueChange = { confirmPassword = it },
-            placeholder = { Text("Confirm Password") },
+//            placeholder = { Text("Confirm Password") },
+            placeholder = { Text("Konfirmasi Kata Sandi") },
             leadingIcon = { Icon(Icons.Rounded.Lock, contentDescription = null) },
             visualTransformation = PasswordVisualTransformation(),
             shape = RoundedCornerShape(16.dp),
@@ -104,7 +109,8 @@ fun RegisterScreen(
             modifier = Modifier.fillMaxWidth(),
             enabled = name.isNotEmpty() && email.isNotEmpty() && password.isNotEmpty() && password == confirmPassword
         ) {
-            Text("Register", fontWeight = FontWeight.Bold)
+//            Text("Register", fontWeight = FontWeight.Bold)
+            Text("Daftar", fontWeight = FontWeight.Bold)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -113,7 +119,8 @@ fun RegisterScreen(
             onClick = navigateToLogin,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {
-            Text("Already have an account? Sign in")
+            Text("Sudah memiliki sebuah akun? Masuk")
+//            Text("Already have an account? Sign in")
         }
 
         if (registerState is AuthResponse.Error) {
@@ -121,7 +128,8 @@ fun RegisterScreen(
         }
 
         if (password != confirmPassword && confirmPassword.isNotEmpty()) {
-            Text("Passwords do not match", color = MaterialTheme.colorScheme.error)
+            Text("Kata sandi tidak cocok", color = MaterialTheme.colorScheme.error)
+//            Text("Passwords do not match", color = MaterialTheme.colorScheme.error)
         }
     }
 }

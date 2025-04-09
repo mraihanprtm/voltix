@@ -138,7 +138,7 @@ fun InputPerangkatScreen(
                 ) {
                     // Header
                     Text(
-                        text = "✨ Tambah Perangkat Baru",
+                        text = "Tambah Perangkat Baru",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
