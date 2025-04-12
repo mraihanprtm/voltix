@@ -154,13 +154,12 @@ class SimulasiViewModel @Inject constructor(
         viewModelScope.launch { repository.hapus(p) }
     }
 
-
-
     fun editPerangkat(
         nama: String,
         daya: Int,
-        waktuNyala: LocalTime,
-        waktuMati: LocalTime,
+        kategoriBaru: KategoriPerangkat,
+        waktuNyalaBaru: LocalTime,
+        waktuMatiBaru: LocalTime,
         durasi: Float
     ) {
         perangkatDiedit?.let {
@@ -170,7 +169,7 @@ class SimulasiViewModel @Inject constructor(
                 kategori = kategoriBaru,
                 waktuNyala = waktuNyalaBaru,
                 waktuMati = waktuMatiBaru,
-                durasi = hitungDurasi()
+                durasi = durasi
             )
             viewModelScope.launch { repository.update(updated) }
             perangkatDiedit = null

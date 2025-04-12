@@ -66,7 +66,8 @@ fun DeviceList(viewModel: PerangkatViewModel) {
                             Row {
                                 IconButton(
                                     onClick = {
-
+                                        viewModel.perangkatDiedit = item
+                                        viewModel.showEditDialog = true // Menampilkan dialog edit
                                     },
                                     modifier = Modifier.size(24.dp)
                                 ) {
@@ -95,6 +96,9 @@ fun DeviceList(viewModel: PerangkatViewModel) {
                     }
                 }
             }
+        }
+        if (viewModel.showEditDialog) {
+            EditPerangkatAsli(viewModel)
         }
     }
 }

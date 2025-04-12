@@ -24,7 +24,16 @@ class PerangkatViewModel @Inject constructor(
     val perangkatList: LiveData<List<PerangkatListrikEntity>> = repository.allPerangkat
     var perangkatDiedit by mutableStateOf<PerangkatListrikEntity?>(null)
     var showEditDialog by mutableStateOf(false)
-    var showTambahDialog by mutableStateOf(false)
+    var waktuNyalaBaru by mutableStateOf(LocalTime.of(6, 0))
+    var waktuMatiBaru by mutableStateOf(LocalTime.of(18, 0))
+
+    val durasiBaru: Float
+        get() = hitungDurasi()
+
+    fun hitungDurasi(): Float {
+        val durasiMenit = java.time.Duration.between(waktuNyalaBaru, waktuMatiBaru).toMinutes()
+        return if (durasiMenit > 0) durasiMenit / 60f else 0f
+    }
 
     fun insertPerangkat(
         nama: String,
@@ -32,7 +41,7 @@ class PerangkatViewModel @Inject constructor(
         kategori: KategoriPerangkat,
         waktuNyala: LocalTime,
         waktuMati: LocalTime,
-        durasi: Float
+        durasibaru: Float
     ) {
         viewModelScope.launch {
             val perangkat = PerangkatListrikEntity(
@@ -41,7 +50,7 @@ class PerangkatViewModel @Inject constructor(
                 kategori = kategori,
                 waktuNyala = waktuNyala,
                 waktuMati = waktuMati,
-                durasi = durasi,
+                durasi = durasibaru,
             )
             repository.insert(perangkat)
         }
@@ -62,4 +71,32 @@ class PerangkatViewModel @Inject constructor(
     suspend fun getPerangkatById(id: Int): PerangkatListrikEntity? {
         return repository.getById(id)
     }
+
+    fun editPerangkat(
+        nama: String,
+        daya: Int,
+        kategori: KategoriPerangkat,
+        waktuNyala: LocalTime,
+        waktuMati: LocalTime,
+        durasi: Float
+    ) {
+        perangkatDiedit?.let {
+            // Pastikan nama, daya, kategori, waktuNyala, waktuMati, dan durasi menggunakan parameter yang benar
+            val updated = it.copy(
+                nama = nama,
+                daya = daya,
+                kategori = kategori,
+                waktuNyala = waktuNyala,
+                waktuMati = waktuMati,
+                durasi = durasi // Gunakan durasi yang dihitung sebelumnya
+            )
+            viewModelScope.launch {
+                // Pastikan repository melakukan pembaruan perangkat dengan benar
+                repository.update(updated)
+            }
+            perangkatDiedit = null
+        }
+        showEditDialog = false
+    }
+
 }
