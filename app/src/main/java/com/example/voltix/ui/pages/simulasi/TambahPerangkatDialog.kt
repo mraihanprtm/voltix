@@ -9,10 +9,15 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.input.KeyboardType
 import com.example.voltix.ui.component.DropdownKategori
 import com.example.voltix.ui.component.TimePickerDialogButton
 import com.example.voltix.viewmodel.googlelens.SimulasiViewModel.SimulasiViewModel
+import com.example.voltix.viewmodel.googlelens.SimulasiViewModel.hitungDurasi
 import java.time.LocalTime
 
 @Composable
@@ -48,7 +53,11 @@ fun TambahPerangkatDialog(viewModel: SimulasiViewModel) {
                 TimePickerDialogButton("Waktu Nyala", viewModel.waktuNyalaBaru) { viewModel.waktuNyalaBaru = it }
                 TimePickerDialogButton("Waktu Mati", viewModel.waktuMatiBaru) { viewModel.waktuMatiBaru = it }
 
-                Text(text = "Durasi: ${viewModel.durasiBaru} jam")
+                // Durasi otomatis berdasarkan waktu nyala dan mati
+                val durasi = remember(viewModel.waktuNyalaBaru, viewModel.waktuMatiBaru) {
+                    hitungDurasi(viewModel.waktuNyalaBaru, viewModel.waktuMatiBaru)
+                }
+                Text(text = "Durasi: ${durasi} jam")
 
                 // Dropdown Kategori
                 DropdownKategori (

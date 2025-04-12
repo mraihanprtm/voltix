@@ -125,16 +125,6 @@ class SimulasiViewModel @Inject constructor(
         }
     }
 
-    // Additional function if you need to reset the clone state
-    fun resetCloneState() {
-        viewModelScope.launch {
-            repository.resetCloneStatus()
-            sudahDiClone = false
-        }
-    }
-
-
-
     fun tambahPerangkat() {
         val daya = dayaBaru.toIntOrNull() ?: return
         val baru = SimulasiPerangkatEntity(

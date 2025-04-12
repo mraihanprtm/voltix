@@ -24,21 +24,6 @@ class PerangkatViewModel @Inject constructor(
     val perangkatList: LiveData<List<PerangkatListrikEntity>> = repository.allPerangkat
     var perangkatDiedit by mutableStateOf<PerangkatListrikEntity?>(null)
     var showEditDialog by mutableStateOf(false)
-    var waktuNyalaBaru by mutableStateOf(LocalTime.of(6, 0))
-    var waktuMatiBaru by mutableStateOf(LocalTime.of(18, 0))
-
-
-    fun hitungDurasi(): Float {
-        var durasiMenit = java.time.Duration.between(waktuNyalaBaru, waktuMatiBaru).toMinutes()
-
-        // Jika durasi negatif (berarti melewati tengah malam)
-        if (durasiMenit < 0) {
-            // Tambahkan 24 jam (1440 menit)
-            durasiMenit += 1440
-        }
-
-        return durasiMenit / 60f
-    }
 
     fun insertPerangkat(
         nama: String,
@@ -61,22 +46,11 @@ class PerangkatViewModel @Inject constructor(
         }
     }
 
-    fun updatePerangkat(perangkat: PerangkatListrikEntity) {
-        viewModelScope.launch {
-            repository.update(perangkat)
-        }
-    }
-
     fun deletePerangkat(perangkat: PerangkatListrikEntity) {
         viewModelScope.launch {
             repository.delete(perangkat)
         }
     }
-
-    suspend fun getPerangkatById(id: Int): PerangkatListrikEntity? {
-        return repository.getById(id)
-    }
-
     fun editPerangkat(
         nama: String,
         daya: Int,
