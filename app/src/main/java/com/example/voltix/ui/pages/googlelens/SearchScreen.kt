@@ -70,7 +70,8 @@ fun SearchScreen(navController: NavHostController) {
                             } else {
                                 Toast.makeText(
                                     context,
-                                    "Failed to upload image. Please try again.",
+//                                    "Failed to upload image. Please try again.",
+                                    "Gambar gagal diunggah. Silahkan coba lagi",
                                     Toast.LENGTH_SHORT
                                 ).show()
                                 isLoading = false
@@ -84,7 +85,8 @@ fun SearchScreen(navController: NavHostController) {
     Scaffold(
         topBar = {
             SmallTopAppBar(
-                title = { Text("Electronics Scanner", fontWeight = FontWeight.Bold) },
+//                title = { Text("Electronics Scanner", fontWeight = FontWeight.Bold) },
+                title = { Text("Pemindai Elektronik", fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.smallTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
@@ -118,7 +120,8 @@ fun SearchScreen(navController: NavHostController) {
                     imageBitmap?.let { bitmap ->
                         Image(
                             bitmap = bitmap.asImageBitmap(),
-                            contentDescription = "Captured Image",
+//                            contentDescription = "Captured Image",
+                            contentDescription = "Tangkapan Gambar",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize()
                         )
@@ -139,13 +142,15 @@ fun SearchScreen(navController: NavHostController) {
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        "Don't know what this device is?",
+//                        "Don't know what this device is?",
+                        "Ingin tahu perangkat apa ini?",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        "Take a photo and let us identify your electronics and their power usage.",
+//                        "Take a photo and let us identify your electronics and their power usage.",
+                        "Ambil sebuah foto dan kami akan mengindentifikasinya.",
                         fontSize = 14.sp,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
@@ -164,7 +169,8 @@ fun SearchScreen(navController: NavHostController) {
                                 .height(48.dp),
                             shape = RoundedCornerShape(24.dp)
                         ) {
-                            Text("📷 Take Photo", fontSize = 16.sp)
+//                            Text("📷 Take Photo", fontSize = 16.sp)
+                            Text("📷 Ambil foto", fontSize = 16.sp)
                         }
                         if (imageBitmap != null) {
                             Button(
@@ -188,7 +194,8 @@ fun SearchScreen(navController: NavHostController) {
                                     containerColor = MaterialTheme.colorScheme.secondary
                                 )
                             ) {
-                                Text("🔍 Identify", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSecondary)
+//                                Text("🔍 Identify", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSecondary)
+                                Text("🔍 Identifikasi", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSecondary)
                             }
                         }
                     }
@@ -199,7 +206,8 @@ fun SearchScreen(navController: NavHostController) {
             when {
                 searchResults.isNotEmpty() -> {
                     Text(
-                        "Results (${searchResults.size})",
+                        "Hasil (${searchResults.size})",
+//                        "Results (${searchResults.size})",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onBackground
@@ -232,7 +240,8 @@ fun SearchScreen(navController: NavHostController) {
                             modifier = Modifier.size(48.dp)
                         )
                         Text(
-                            "Analyzing your device...",
+//                            "Analyzing your device...",
+                            "Menganalisa perangkat anda...",
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                         )
                     }
@@ -258,13 +267,15 @@ fun SearchScreen(navController: NavHostController) {
                             }
                         }
                         Text(
-                            "No results yet",
+//                            "No results yet",
+                            "Belum ada hasil",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onBackground
                         )
                         Text(
-                            "Take a photo of your electronic device to get started!",
+//                            "Take a photo of your electronic device to get started!",
+                            "Ambil foto perangkat elektronik anda!",
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                             modifier = Modifier.padding(horizontal = 32.dp)
@@ -278,7 +289,8 @@ fun SearchScreen(navController: NavHostController) {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            "No matches found. Try another photo.",
+//                            "No matches found. Try another photo.",
+                            "Tidak ditemukan. Coba foto lain",
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                         )
                     }
