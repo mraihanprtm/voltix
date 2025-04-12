@@ -22,6 +22,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import com.example.voltix.ui.component.DropdownKategori
 import com.example.voltix.viewmodel.PerangkatViewModel
 import com.example.voltix.viewmodel.googlelens.SimulasiViewModel.SimulasiViewModel
+import com.example.voltix.viewmodel.googlelens.SimulasiViewModel.hitungDurasi
+import java.time.LocalTime
+
 
 @Composable
 fun EditPerangkatDialog(viewModel: SimulasiViewModel) {
@@ -35,8 +38,7 @@ fun EditPerangkatDialog(viewModel: SimulasiViewModel) {
 
     // Durasi otomatis berdasarkan waktu nyala dan mati
     val durasi = remember(waktuNyala, waktuMati) {
-        val durasiJam = Duration.between(waktuNyala, waktuMati).toMinutes().toFloat() / 60f
-        if (durasiJam < 0) 0f else durasiJam
+        hitungDurasi(waktuNyala, waktuMati)
     }
 
     AlertDialog(
@@ -99,8 +101,7 @@ fun EditPerangkatAsli(viewModel: PerangkatViewModel) {
 
     // Durasi otomatis berdasarkan waktu nyala dan mati
     val durasi = remember(waktuNyala, waktuMati) {
-        val durasiJam = Duration.between(waktuNyala, waktuMati).toMinutes().toFloat() / 60f
-        if (durasiJam < 0) 0f else durasiJam
+        hitungDurasi(waktuNyala, waktuMati)
     }
 
     AlertDialog(

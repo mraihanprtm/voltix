@@ -5,6 +5,7 @@ import androidx.annotation.RequiresApi
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.viewModelScope
@@ -23,6 +24,7 @@ import javax.inject.Inject
 import androidx.lifecycle.ViewModel
 import com.example.voltix.data.repository.UserRepository
 import com.google.firebase.auth.FirebaseAuth
+import java.time.Duration
 
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -41,10 +43,12 @@ class SimulasiViewModel @Inject constructor(
     var namaBaru by mutableStateOf("")
     var dayaBaru by mutableStateOf("")
     var kategoriBaru by mutableStateOf(KategoriPerangkat.OPSIONAL)
+    var waktuNyala by mutableStateOf(LocalTime.of(6, 0))
+    var waktuMati by mutableStateOf(LocalTime.of(18, 0))
     var waktuNyalaBaru by mutableStateOf(LocalTime.of(6, 0))
     var waktuMatiBaru by mutableStateOf(LocalTime.of(18, 0))
     val durasiBaru: Float
-        get() = hitungDurasi()
+        get() = hitungDurasi(waktuNyala, waktuMati)
 
     var showEditDialog by mutableStateOf(false)
     var showTambahDialog by mutableStateOf(false)
@@ -94,11 +98,6 @@ class SimulasiViewModel @Inject constructor(
         semuaSimulasi.removeObserver(observer)
     }
 
-    fun hitungDurasi(): Float {
-        val durasiMenit = java.time.Duration.between(waktuNyalaBaru, waktuMatiBaru).toMinutes()
-        return if (durasiMenit > 0) durasiMenit / 60f else 0f
-    }
-
     fun cloneDariPerangkatAsli(asli: List<PerangkatListrikEntity>) {
         if (sudahDiClone) return
 
@@ -134,16 +133,17 @@ class SimulasiViewModel @Inject constructor(
         }
     }
 
+
+
     fun tambahPerangkat() {
         val daya = dayaBaru.toIntOrNull() ?: return
-        val durasi = hitungDurasi()
         val baru = SimulasiPerangkatEntity(
             nama = namaBaru,
             daya = daya,
             kategori = kategoriBaru,
             waktuNyala = waktuNyalaBaru,
             waktuMati = waktuMatiBaru,
-            durasi = durasi,
+            durasi = durasiBaru,
         )
         viewModelScope.launch { repository.tambah(baru) }
         resetInput()
@@ -218,5 +218,9 @@ class SimulasiViewModel @Inject constructor(
             else -> 1699.53
         }
     }
-
+}
+fun hitungDurasi(waktuNyala: LocalTime, waktuMati: LocalTime): Float {
+    var durasiMenit = Duration.between(waktuNyala, waktuMati).toMinutes()
+    if (durasiMenit < 0) durasiMenit += 1440
+    return durasiMenit / 60f
 }

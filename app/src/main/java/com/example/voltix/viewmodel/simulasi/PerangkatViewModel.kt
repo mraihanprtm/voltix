@@ -27,12 +27,17 @@ class PerangkatViewModel @Inject constructor(
     var waktuNyalaBaru by mutableStateOf(LocalTime.of(6, 0))
     var waktuMatiBaru by mutableStateOf(LocalTime.of(18, 0))
 
-    val durasiBaru: Float
-        get() = hitungDurasi()
 
     fun hitungDurasi(): Float {
-        val durasiMenit = java.time.Duration.between(waktuNyalaBaru, waktuMatiBaru).toMinutes()
-        return if (durasiMenit > 0) durasiMenit / 60f else 0f
+        var durasiMenit = java.time.Duration.between(waktuNyalaBaru, waktuMatiBaru).toMinutes()
+
+        // Jika durasi negatif (berarti melewati tengah malam)
+        if (durasiMenit < 0) {
+            // Tambahkan 24 jam (1440 menit)
+            durasiMenit += 1440
+        }
+
+        return durasiMenit / 60f
     }
 
     fun insertPerangkat(
