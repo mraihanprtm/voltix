@@ -1,7 +1,6 @@
 package com.example.voltix.ui.pages
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -10,7 +9,6 @@ import androidx.compose.material3.*
 import com.example.voltix.R
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -43,7 +41,7 @@ fun OnboardingScreen(
     userViewModel: UserViewModel = hiltViewModel()
 ) {
     val pages = listOf(
-        OnboardingPage("WELCOME TO VOLTIX APP", "halo halo niece and nephew", R.drawable.ic_launcher)
+        OnboardingPage("WELCOME TO VOLTIX APP", "Silahkan masukkan jenis tarif listrik anda", R.drawable.img)
     )
     val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
     val jenisListrikList = listOf(900, 1300, 2200, 3500)
