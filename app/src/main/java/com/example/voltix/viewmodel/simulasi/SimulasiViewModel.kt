@@ -47,8 +47,8 @@ class SimulasiViewModel @Inject constructor(
     var waktuMati by mutableStateOf(LocalTime.of(18, 0))
     var waktuNyalaBaru by mutableStateOf(LocalTime.of(6, 0))
     var waktuMatiBaru by mutableStateOf(LocalTime.of(18, 0))
-    val durasiBaru: Float
-        get() = hitungDurasi(waktuNyala, waktuMati)
+    var durasiBaru: Float = 0.0f
+        get() = hitungDurasi(waktuNyalaBaru, waktuMatiBaru)
 
     var showEditDialog by mutableStateOf(false)
     var showTambahDialog by mutableStateOf(false)
