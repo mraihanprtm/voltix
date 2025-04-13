@@ -78,8 +78,8 @@ class SimulasiViewModel @Inject constructor(
             stats?.let {
                 // Data exists, update our UI state
                 totalDayaSebelum = it.totalDaya
-                totalKonsumsiSebelum = it.totalKonsumsi
                 totalBiayaSebelum = it.totalBiaya
+                totalKonsumsiSebelum = it.totalKonsumsi
                 sudahDiClone = true
             }
 
@@ -101,29 +101,33 @@ class SimulasiViewModel @Inject constructor(
     fun cloneDariPerangkatAsli(asli: List<PerangkatListrikEntity>) {
         if (sudahDiClone) return
 
-        val cloned = asli.map {
-            SimulasiPerangkatEntity(
-                nama = it.nama,
-                daya = it.daya,
-                kategori = it.kategori,
-                durasi = it.durasi.toFloat(),
-                waktuNyala = it.waktuNyala,
-                waktuMati = it.waktuMati
-            )
-        }
-
-        totalDayaSebelum = asli.sumOf { it.daya }
-        totalKonsumsiSebelum = asli.sumOf { (it.daya * it.durasi).toDouble() } / 1000.0
-        totalBiayaSebelum = totalKonsumsiSebelum * tarifListrik
-
         viewModelScope.launch {
-            repository.clear()
-            repository.tambahSemua(cloned)
-            // Save statistics to DataStore
-            repository.saveStatistics(totalDayaSebelum, totalKonsumsiSebelum, totalBiayaSebelum)
-            sudahDiClone = true
+            val user = uid?.let { userRepository.getUserByUid(it) } // suspend function
+            user?.let { u ->
+                val cloned = asli.map {
+                    SimulasiPerangkatEntity(
+                        nama = it.nama,
+                        daya = it.daya,
+                        kategori = it.kategori,
+                        durasi = it.durasi.toFloat(),
+                        waktuNyala = it.waktuNyala,
+                        waktuMati = it.waktuMati
+                    )
+                }
+
+                totalDayaSebelum = asli.sumOf { it.daya }
+                totalKonsumsiSebelum = asli.sumOf { (it.daya * it.durasi).toDouble() } / 1000.0
+                tarifListrik = getTarifListrik(u.jenisListrik)
+                totalBiayaSebelum = totalKonsumsiSebelum * tarifListrik
+
+                repository.clear()
+                repository.tambahSemua(cloned)
+                repository.saveStatistics(totalDayaSebelum, totalKonsumsiSebelum, totalBiayaSebelum)
+                sudahDiClone = true
+            }
         }
     }
+
 
     fun tambahPerangkat() {
         val daya = dayaBaru.toIntOrNull() ?: return
