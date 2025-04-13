@@ -27,7 +27,6 @@ import com.google.firebase.auth.FirebaseAuth
 import java.time.Duration
 
 
-@RequiresApi(Build.VERSION_CODES.O)
 
 @HiltViewModel
 class SimulasiViewModel @Inject constructor(
@@ -43,8 +42,6 @@ class SimulasiViewModel @Inject constructor(
     var namaBaru by mutableStateOf("")
     var dayaBaru by mutableStateOf("")
     var kategoriBaru by mutableStateOf(KategoriPerangkat.OPSIONAL)
-    var waktuNyala by mutableStateOf(LocalTime.of(6, 0))
-    var waktuMati by mutableStateOf(LocalTime.of(18, 0))
     var waktuNyalaBaru by mutableStateOf(LocalTime.of(6, 0))
     var waktuMatiBaru by mutableStateOf(LocalTime.of(18, 0))
     var durasiBaru: Float = 0.0f
@@ -71,12 +68,9 @@ class SimulasiViewModel @Inject constructor(
     }
 
     init {
-        semuaSimulasi.observeForever(observer)
         viewModelScope.launch {
-            // Check if cloning has already been done
             val stats = repository.getStatistics()
             stats?.let {
-                // Data exists, update our UI state
                 totalDayaSebelum = it.totalDaya
                 totalKonsumsiSebelum = it.totalKonsumsi
                 totalBiayaSebelum = it.totalBiaya
@@ -90,6 +84,9 @@ class SimulasiViewModel @Inject constructor(
                     tarifListrik = getTarifListrik(u.jenisListrik)
                 }
             }
+
+            // Tempatkan observeForever di akhir agar data sudah siap
+            semuaSimulasi.observeForever(observer)
         }
     }
 

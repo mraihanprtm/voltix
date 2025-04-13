@@ -15,11 +15,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.voltix.viewmodel.PerangkatViewModel
 import com.example.voltix.viewmodel.googlelens.SimulasiViewModel.SimulasiViewModel
 import kotlin.math.roundToInt
 
 @Composable
-fun TableComparison(viewModel: SimulasiViewModel) {
+fun TableComparison(viewModel: SimulasiViewModel, perangkatViewModel: PerangkatViewModel = hiltViewModel()) {
+    val perangkatAsli = perangkatViewModel.perangkatList.value.orEmpty()
+    viewModel.cloneDariPerangkatAsli(perangkatAsli)
     Column(
         modifier = Modifier
             .fillMaxWidth()
