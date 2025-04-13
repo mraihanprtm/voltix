@@ -2,6 +2,7 @@ package com.example.voltix.ui.simulasi
 
 import PeringatanMelebihiDaya
 import android.os.Build
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -28,6 +29,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.voltix.viewmodel.PerangkatViewModel
 import com.example.voltix.viewmodel.googlelens.SimulasiViewModel.SimulasiViewModel
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,7 +48,13 @@ fun SimulasiPage(
     var jumlahPeriode by remember { mutableStateOf("1") }
 
     LaunchedEffect(perangkatAsli) {
-        if (!viewModel.sudahDiClone) {
+        if (perangkatAsli.isNullOrEmpty()) {
+            Toast.makeText(context, "Data perangkat kosong. Silakan input data terlebih dahulu.", Toast.LENGTH_LONG).show()
+            navController.navigate("input_perangkat") {
+                popUpTo("simulasi_page") { inclusive = true }
+            }
+        }
+        if (!viewModel.sudahDiClone && !perangkatAsli.isNullOrEmpty()) {
             viewModel.cloneDariPerangkatAsli(perangkatAsli)
         }
     }
