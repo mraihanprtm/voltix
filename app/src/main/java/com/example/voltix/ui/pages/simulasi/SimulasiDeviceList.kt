@@ -23,7 +23,6 @@ fun SimulasiDeviceList(viewModel: SimulasiViewModel) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFFCE4EC))
     ) {
         Column(modifier = Modifier.padding(8.dp)) {
             // Header

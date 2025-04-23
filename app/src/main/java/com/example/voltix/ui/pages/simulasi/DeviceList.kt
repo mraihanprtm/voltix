@@ -33,7 +33,6 @@ fun DeviceList(viewModel: PerangkatViewModel) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD))
     ) {
         Column(modifier = Modifier.padding(8.dp)) {
             // Header
