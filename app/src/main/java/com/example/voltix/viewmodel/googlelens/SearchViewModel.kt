@@ -2,6 +2,10 @@ package com.example.voltix.viewmodel.googlelens
 
 import android.content.Context
 import android.graphics.Bitmap
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.voltix.data.entity.ElectronicInformationModel
@@ -13,11 +17,38 @@ import javax.inject.Inject
 
 
 @HiltViewModel
-class SearchViewModel @Inject constructor (
-    private val repository: SearchRepository
+class SearchViewModel @Inject constructor(
+    private val repository: SearchRepository,
+    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    // Save bitmap to file
+    // Gunakan MutableState untuk state
+    private val _searchResults = mutableStateOf<List<ElectronicInformationModel>>(
+        savedStateHandle.get<List<ElectronicInformationModel>>("searchResults") ?: emptyList()
+    )
+    val searchResults: List<ElectronicInformationModel> get() = _searchResults.value
+
+    var imageBitmap by mutableStateOf<Bitmap?>(null)
+        private set
+
+    var isLoading by mutableStateOf(false)
+        private set
+
+    // Satu fungsi update untuk searchResults
+    fun updateSearchResults(results: List<ElectronicInformationModel>) {
+        _searchResults.value = results
+        savedStateHandle["searchResults"] = results
+    }
+
+    fun updateImageBitmap(bitmap: Bitmap?) {
+        imageBitmap = bitmap
+    }
+
+    fun updateIsLoading(loading: Boolean) {
+        isLoading = loading
+    }
+
+    // Fungsi-fungsi lainnya
     fun saveBitmapToFile(context: Context, bitmap: Bitmap, callback: (File) -> Unit) {
         viewModelScope.launch {
             val file = repository.saveBitmapToFile(context, bitmap)
@@ -25,7 +56,6 @@ class SearchViewModel @Inject constructor (
         }
     }
 
-    // Upload the image to Cloudinary
     fun uploadImage(imageFile: File, callback: (String?) -> Unit) {
         viewModelScope.launch {
             val url = repository.uploadImageToCloudinary(imageFile)
@@ -33,12 +63,10 @@ class SearchViewModel @Inject constructor (
         }
     }
 
-    // Process the image with ML Kit and get labels
     fun processImage(context: Context, bitmap: Bitmap, callback: (String) -> Unit) {
         repository.processImage(context, bitmap, callback)
     }
 
-    // Fetch search results from API based on the query
     fun fetchResults(context: Context, url: String, callback: (List<ElectronicInformationModel>) -> Unit) {
         repository.fetchSearchResults(context, url, callback)
     }

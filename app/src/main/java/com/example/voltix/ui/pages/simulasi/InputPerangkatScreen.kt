@@ -1,5 +1,6 @@
 package com.example.voltix.ui.simulasi
 
+import android.net.Uri
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
@@ -43,8 +44,15 @@ fun InputPerangkatScreen(
     viewModel: PerangkatViewModel = hiltViewModel(),
     onPerangkatDisimpan: () -> Unit = {}
 ) {
-    var nama by remember { mutableStateOf("") }
-    var daya by remember { mutableStateOf("") }
+    val context = LocalContext.current
+
+    // Ambil parameter dari navigasi
+    val deviceName = navController.currentBackStackEntry?.arguments?.getString("deviceName")?.let {
+        Uri.decode(it)
+    } ?: ""
+    val wattage = navController.currentBackStackEntry?.arguments?.getString("wattage") ?: ""
+    var nama by remember { mutableStateOf(deviceName) }
+    var daya by remember { mutableStateOf(wattage) }
     var kategori by remember { mutableStateOf(KategoriPerangkat.OPSIONAL) }
     var waktuNyala by remember { mutableStateOf(LocalTime.of(6, 0)) }
     var waktuMati by remember { mutableStateOf(LocalTime.of(18, 0)) }

@@ -5,6 +5,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.provider.MediaStore
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -34,20 +35,22 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import com.example.voltix.data.entity.ElectronicInformationModel
+import com.example.voltix.ui.Screen
 import com.example.voltix.ui.component.SearchResultItem
 import com.example.voltix.viewmodel.googlelens.SearchViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SearchScreen(navController: NavHostController) {
-    val viewModel: SearchViewModel = hiltViewModel()
+fun SearchScreen(navController: NavController, viewModel: SearchViewModel) {
     val context = LocalContext.current
 
-    var imageBitmap by remember { mutableStateOf<Bitmap?>(null) }
-    var searchResults by remember { mutableStateOf<List<ElectronicInformationModel>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(false) }
+    val imageBitmap = viewModel.imageBitmap
+    val searchResults = viewModel.searchResults
+    val isLoading = viewModel.isLoading
+
     var showEmptyState by remember { mutableStateOf(true) }
 
     val takeImageLauncher =
@@ -55,26 +58,27 @@ fun SearchScreen(navController: NavHostController) {
             if (result.resultCode == Activity.RESULT_OK) {
                 val data = result.data
                 val extras = data?.extras
-                imageBitmap = extras?.get("data") as Bitmap?
+                val bitmap = extras?.get("data") as Bitmap?
 
-                imageBitmap?.let { bitmap ->
-                    isLoading = true
+                bitmap?.let {
+                    viewModel.updateIsLoading(true)
                     showEmptyState = false
-                    viewModel.saveBitmapToFile(context, bitmap) { file ->
+                    viewModel.updateImageBitmap(it)
+
+                    viewModel.saveBitmapToFile(context, it) { file ->
                         viewModel.uploadImage(file) { imageUrl ->
                             if (imageUrl != null) {
                                 viewModel.fetchResults(context, imageUrl) { results ->
-                                    searchResults = results
-                                    isLoading = false
+                                    viewModel.updateSearchResults(results)
+                                    viewModel.updateIsLoading(false)
                                 }
                             } else {
                                 Toast.makeText(
                                     context,
-//                                    "Failed to upload image. Please try again.",
                                     "Gambar gagal diunggah. Silahkan coba lagi",
                                     Toast.LENGTH_SHORT
                                 ).show()
-                                isLoading = false
+                                viewModel.updateIsLoading(false)
                             }
                         }
                     }
@@ -176,12 +180,12 @@ fun SearchScreen(navController: NavHostController) {
                             Button(
                                 onClick = {
                                     imageBitmap?.let { bitmap ->
-                                        isLoading = true
+                                        viewModel.updateIsLoading(true)
                                         showEmptyState = false
                                         viewModel.processImage(context, bitmap) { query ->
                                             viewModel.fetchResults(context, query) { results ->
-                                                searchResults = results
-                                                isLoading = false
+                                                viewModel.updateSearchResults(results)
+                                                viewModel.updateIsLoading(false)
                                             }
                                         }
                                     }
@@ -205,9 +209,9 @@ fun SearchScreen(navController: NavHostController) {
             // Results
             when {
                 searchResults.isNotEmpty() -> {
+                    Log.d("SearchScreen", "Showing ${searchResults.size} results")
                     Text(
                         "Hasil (${searchResults.size})",
-//                        "Results (${searchResults.size})",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onBackground
@@ -218,10 +222,19 @@ fun SearchScreen(navController: NavHostController) {
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         searchResults.forEach { result ->
-                            SearchResultItem(result) { url ->
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                context.startActivity(intent)
-                            }
+                            Log.d("SearchScreen", "Displaying result: ${result.title}")
+                            SearchResultItem(
+                                data = result,
+                                onItemClick = { deviceType, wattage ->
+                                    Log.d("SearchScreen", "Item clicked - Type: $deviceType, Wattage: $wattage")
+                                    navController.navigate(
+                                        Screen.InputPerangkat.createRoute(
+                                            deviceName = deviceType,
+                                            wattage = wattage
+                                        )
+                                    )
+                                }
+                            )
                         }
                         Spacer(modifier = Modifier.height(72.dp))
                     }

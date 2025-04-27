@@ -64,6 +64,7 @@ class SearchRepository @Inject constructor() {
                     val visualMatches = response.getJSONArray("visual_matches")
                     val results = mutableListOf<ElectronicInformationModel>()
 
+
                     for (i in 0 until visualMatches.length()) {
                         val item = visualMatches.getJSONObject(i)
                         val title = item.optString("title", "No Title")
@@ -71,7 +72,8 @@ class SearchRepository @Inject constructor() {
 
                         val wattRegex = Regex("""\b(\d+)\s?(-|\s)?\s?(W|w|Watt|watt)\b""")
                         val wattMatch = wattRegex.find(title) ?: wattRegex.find(snippet)
-                        val wattInfo = wattMatch?.value ?: "Unknown Wattage"
+                        val wattInfo = wattMatch?.value?.replace(Regex("[^0-9]"), "")
+                        val deviceType = extractItemType(title)
 
                         if (wattMatch != null) {
                             results.add(
@@ -79,7 +81,9 @@ class SearchRepository @Inject constructor() {
                                     title = title,
                                     link = item.optString("link", ""),
                                     displayedLink = item.optString("displayed_link", ""),
-                                    snippet = "Jenis: ${extractItemType(title)}\nDaya: $wattInfo"
+                                    snippet = "Jenis: ${extractItemType(title)}\nDaya: $wattInfo",
+                                    deviceType = deviceType,
+                                    wattage = wattInfo
                                 )
                             )
                         }
