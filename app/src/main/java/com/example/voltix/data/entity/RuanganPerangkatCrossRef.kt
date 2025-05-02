@@ -3,15 +3,16 @@ package com.example.voltix.data.entity
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
+import java.time.LocalTime
 
 @Entity(
-    tableName = "user_perangkat_cross_ref",
-    primaryKeys = ["userId", "perangkatId"],
+    tableName = "ruangan_perangkat_cross_ref",
+    primaryKeys = ["ruanganId", "perangkatId"],
     foreignKeys = [
         ForeignKey(
-            entity = UserEntity::class,
+            entity = RuanganEntity::class,
             parentColumns = ["id"],
-            childColumns = ["userId"],
+            childColumns = ["ruanganId"],
             onDelete = ForeignKey.CASCADE
         ),
         ForeignKey(
@@ -22,11 +23,13 @@ import androidx.room.Index
         )
     ],
     indices = [
-        Index("userId"),
+        Index("ruanganId"),
         Index("perangkatId")
     ]
 )
-data class UserPerangkatCrossRef(
-    val userId: Int,
-    val perangkatId: Int
+data class RuanganPerangkatCrossRef(
+    val ruanganId: Int,
+    val perangkatId: Int,
+    val waktuNyala: LocalTime,
+    val waktuMati: LocalTime,
 )

@@ -1,4 +1,4 @@
-package com.example.voltix.ui.components
+package com.example.voltix.ui.component
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect

@@ -2,6 +2,7 @@ plugins {
     id("com.google.gms.google-services")
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
+
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
@@ -50,7 +51,7 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.androidx.room.common)
     implementation(libs.androidx.runtime.livedata)
-
+    implementation ("androidx.lifecycle:lifecycle-viewmodel-savedstate:2.6.1")
     val credentialManagerVersion = "1.5.0-alpha05"
     implementation("androidx.credentials:credentials:$credentialManagerVersion")
     implementation("androidx.credentials:credentials-play-services-auth:$credentialManagerVersion")
@@ -88,6 +89,8 @@ dependencies {
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
     implementation("androidx.datastore:datastore-preferences:1.0.0")
+
+    implementation ("com.airbnb.android:lottie-compose:6.5.1")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

@@ -10,29 +10,38 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import com.example.voltix.data.entity.KategoriPerangkat
+import com.example.voltix.data.entity.jenis  // Import enum jenis
+import java.lang.reflect.Modifier
 
 @Composable
 fun DropdownKategori(
-    selectedKategori: KategoriPerangkat,
-    onKategoriSelected: (KategoriPerangkat) -> Unit
+    selectedJenis: jenis,  // Ubah parameter ke jenis
+    onJenisSelected: (jenis) -> Unit  // Ubah callback ke jenis
 ) {
     var expanded by remember { mutableStateOf(false) }
 
     Box {
         OutlinedButton(onClick = { expanded = true }) {
-            Text(text = selectedKategori.name)
+            Text(text = when(selectedJenis) {  // Tambahkan formatting yang lebih baik
+                jenis.Lampu -> "Lampu"
+                jenis.Lainnya -> "Lainnya"
+            })
         }
 
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            KategoriPerangkat.values().forEach { kategori ->
+            jenis.values().forEach { jenisItem ->  // Gunakan values() dari enum jenis
                 DropdownMenuItem(
-                    text = { Text(kategori.name) },
+                    text = {
+                        Text(when(jenisItem) {  // Format text yang ditampilkan
+                            jenis.Lampu -> "Lampu"
+                            jenis.Lainnya -> "Lainnya"
+                        })
+                    },
                     onClick = {
-                        onKategoriSelected(kategori)
+                        onJenisSelected(jenisItem)
                         expanded = false
                     }
                 )

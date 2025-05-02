@@ -44,52 +44,48 @@ import com.example.voltix.viewmodel.googlelens.SearchViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SearchScreen(navController: NavController, viewModel: SearchViewModel) {
+fun SearchScreen(
+    navController: NavController,
+    viewModel: SearchViewModel = hiltViewModel(),
+) {
+    // Collect UI State
+    val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-
-    val imageBitmap = viewModel.imageBitmap
-    val searchResults = viewModel.searchResults
-    val isLoading = viewModel.isLoading
-
     var showEmptyState by remember { mutableStateOf(true) }
 
-    val takeImageLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                val data = result.data
-                val extras = data?.extras
-                val bitmap = extras?.get("data") as Bitmap?
+    val takeImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val bitmap = result.data?.extras?.get("data") as? Bitmap
+            bitmap?.let {
+                viewModel.updateIsLoading(true)
+                viewModel.updateImageBitmap(it)
 
-                bitmap?.let {
-                    viewModel.updateIsLoading(true)
-                    showEmptyState = false
-                    viewModel.updateImageBitmap(it)
-
-                    viewModel.saveBitmapToFile(context, it) { file ->
-                        viewModel.uploadImage(file) { imageUrl ->
-                            if (imageUrl != null) {
-                                viewModel.fetchResults(context, imageUrl) { results ->
-                                    viewModel.updateSearchResults(results)
-                                    viewModel.updateIsLoading(false)
-                                }
-                            } else {
-                                Toast.makeText(
-                                    context,
-                                    "Gambar gagal diunggah. Silahkan coba lagi",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                viewModel.saveBitmapToFile(context, it) { file ->
+                    viewModel.uploadImage(file) { imageUrl ->
+                        if (imageUrl != null) {
+                            viewModel.fetchResults(context, imageUrl) { results ->
+                                viewModel.updateSearchResults(results)
                                 viewModel.updateIsLoading(false)
                             }
+                        } else {
+                            Toast.makeText(
+                                context,
+                                "Gambar gagal diunggah. Silahkan coba lagi",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            viewModel.updateIsLoading(false)
                         }
                     }
                 }
             }
         }
+    }
 
     Scaffold(
         topBar = {
             SmallTopAppBar(
-//                title = { Text("Electronics Scanner", fontWeight = FontWeight.Bold) },
                 title = { Text("Pemindai Elektronik", fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.smallTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -109,7 +105,7 @@ fun SearchScreen(navController: NavController, viewModel: SearchViewModel) {
         ) {
             // Image preview
             AnimatedVisibility(
-                visible = imageBitmap != null,
+                visible = uiState.imageBitmap != null,
                 enter = fadeIn(tween(300)) + slideInVertically(tween(300)) { it / 2 },
                 exit = fadeOut()
             ) {
@@ -121,10 +117,9 @@ fun SearchScreen(navController: NavController, viewModel: SearchViewModel) {
                         .fillMaxWidth()
                         .height(200.dp)
                 ) {
-                    imageBitmap?.let { bitmap ->
+                    uiState.imageBitmap?.let { bitmap ->
                         Image(
                             bitmap = bitmap.asImageBitmap(),
-//                            contentDescription = "Captured Image",
                             contentDescription = "Tangkapan Gambar",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize()
@@ -146,14 +141,12 @@ fun SearchScreen(navController: NavController, viewModel: SearchViewModel) {
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-//                        "Don't know what this device is?",
                         "Ingin tahu perangkat apa ini?",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-//                        "Take a photo and let us identify your electronics and their power usage.",
                         "Ambil sebuah foto dan kami akan mengindentifikasinya.",
                         fontSize = 14.sp,
                         textAlign = TextAlign.Center,
@@ -173,13 +166,12 @@ fun SearchScreen(navController: NavController, viewModel: SearchViewModel) {
                                 .height(48.dp),
                             shape = RoundedCornerShape(24.dp)
                         ) {
-//                            Text("📷 Take Photo", fontSize = 16.sp)
                             Text("📷 Ambil foto", fontSize = 16.sp)
                         }
-                        if (imageBitmap != null) {
+                        if (uiState.imageBitmap != null) {
                             Button(
                                 onClick = {
-                                    imageBitmap?.let { bitmap ->
+                                    uiState.imageBitmap?.let { bitmap ->
                                         viewModel.updateIsLoading(true)
                                         showEmptyState = false
                                         viewModel.processImage(context, bitmap) { query ->
@@ -198,8 +190,11 @@ fun SearchScreen(navController: NavController, viewModel: SearchViewModel) {
                                     containerColor = MaterialTheme.colorScheme.secondary
                                 )
                             ) {
-//                                Text("🔍 Identify", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSecondary)
-                                Text("🔍 Identifikasi", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSecondary)
+                                Text(
+                                    "🔍 Identifikasi",
+                                    fontSize = 16.sp,
+                                    color = MaterialTheme.colorScheme.onSecondary
+                                )
                             }
                         }
                     }
@@ -208,10 +203,10 @@ fun SearchScreen(navController: NavController, viewModel: SearchViewModel) {
 
             // Results
             when {
-                searchResults.isNotEmpty() -> {
-                    Log.d("SearchScreen", "Showing ${searchResults.size} results")
+                uiState.searchResults.isNotEmpty() -> {
+                    Log.d("SearchScreen", "Showing ${uiState.searchResults.size} results")
                     Text(
-                        "Hasil (${searchResults.size})",
+                        "Hasil (${uiState.searchResults.size})",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onBackground
@@ -221,94 +216,41 @@ fun SearchScreen(navController: NavController, viewModel: SearchViewModel) {
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        searchResults.forEach { result ->
-                            Log.d("SearchScreen", "Displaying result: ${result.title}")
+                        uiState.searchResults.forEach { result ->
                             SearchResultItem(
                                 data = result,
-                                onItemClick = { deviceType, wattage ->
-                                    Log.d("SearchScreen", "Item clicked - Type: $deviceType, Wattage: $wattage")
+                                onItemClick = { deviceName, wattage ->
                                     navController.navigate(
                                         Screen.InputPerangkat.createRoute(
-                                            deviceName = deviceType,
+                                            ruanganId = viewModel.currentRuanganId,
+                                            deviceName = deviceName,
                                             wattage = wattage
                                         )
                                     )
                                 }
                             )
                         }
-                        Spacer(modifier = Modifier.height(72.dp))
-                    }
-                }
-
-                isLoading -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        CircularProgressIndicator(
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(48.dp)
-                        )
-                        Text(
-//                            "Analyzing your device...",
-                            "Menganalisa perangkat anda...",
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-                        )
-                    }
-                }
-
-                showEmptyState -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 48.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier
-                                .size(100.dp)
-                                .shadow(8.dp, CircleShape)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text("📷", fontSize = 40.sp)
-                            }
-                        }
-                        Text(
-//                            "No results yet",
-                            "Belum ada hasil",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        Text(
-//                            "Take a photo of your electronic device to get started!",
-                            "Ambil foto perangkat elektronik anda!",
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                            modifier = Modifier.padding(horizontal = 32.dp)
-                        )
-                    }
-                }
-
-                else -> {
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-//                            "No matches found. Try another photo.",
-                            "Tidak ditemukan. Coba foto lain",
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-                        )
                     }
                 }
             }
         }
+    }
+
+    // Show loading indicator
+    if (uiState.isLoading) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+    }
+
+    // Show error messages if any
+    uiState.error?.let { error ->
+        Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+        viewModel.clearError()
     }
 }
