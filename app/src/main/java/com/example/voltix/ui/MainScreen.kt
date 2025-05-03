@@ -28,7 +28,7 @@ fun MainScreen() {
     // pembuatan list yang berpasangan
     val bottomItems = listOf(
         Screen.DaftarRuangan to R.drawable.ic_fa_list,
-        Screen.Simulation to R.drawable.ic_fa_tag,
+        Screen.SimulasiPage to R.drawable.ic_fa_tag,
         Screen.ImagePicker to R.drawable.ic_fa_camera
     )
 

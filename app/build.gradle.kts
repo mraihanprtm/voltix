@@ -52,6 +52,7 @@ dependencies {
     implementation(libs.androidx.room.common)
     implementation(libs.androidx.runtime.livedata)
     implementation ("androidx.lifecycle:lifecycle-viewmodel-savedstate:2.6.1")
+    implementation(libs.androidx.room.common.jvm)
     val credentialManagerVersion = "1.5.0-alpha05"
     implementation("androidx.credentials:credentials:$credentialManagerVersion")
     implementation("androidx.credentials:credentials-play-services-auth:$credentialManagerVersion")

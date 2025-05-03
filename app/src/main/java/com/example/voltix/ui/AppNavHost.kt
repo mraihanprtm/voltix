@@ -6,6 +6,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.voltix.ui.pages.ruangan.DaftarRuanganScreen
 import com.example.voltix.ui.pages.OnboardingScreen
@@ -13,9 +14,14 @@ import com.example.voltix.ui.pages.googlelens.SearchScreen
 import com.example.voltix.ui.pages.ruangan.DetailRuangan
 //import com.example.voltix.ui.pages.simulasi.SimulasiPage
 import com.example.voltix.ui.pages.ruangan.InputPerangkatScreen
+import com.example.voltix.ui.screen.SimulasiBebasScreen
+import com.example.voltix.ui.screen.SimulasiBerdasarkanRuanganScreen
+import com.example.voltix.ui.screen.SimulasiScreen
 
 sealed class Screen(val route: String, val title: String = "") {
-    object Simulation : Screen("simulation", "Simulation")
+    object SimulasiPage : Screen("simulasi", "Simulasi")
+    object SimulasiBebas : Screen("simulasi_bebas", "Simulasi Bebas")
+    object SimulasiBerdasarkanRuangan : Screen("simulasi_berdasarkan_ruangan", "Simulasi Berdasarkan Ruangan")
     object DaftarRuangan : Screen("daftar_ruangan", "Daftar Ruangan")
     object DetailRuangan : Screen("detail_ruangan/{ruanganId}", "Detail Ruangan") {
         fun createRoute(ruanganId: Int) = "detail_ruangan/$ruanganId"
@@ -41,8 +47,6 @@ sealed class Screen(val route: String, val title: String = "") {
             return "input_perangkat?ruanganId=$ruanganId&deviceName=${Uri.encode(deviceName)}&wattage=${Uri.encode(wattage)}"
         }
     }
-
-
 }
 
 @Composable
@@ -51,13 +55,37 @@ fun AppNavHost(navController: NavHostController) {
         navController = navController,
         startDestination = Screen.Onboarding.route
     ) {
-        composable(Screen.Simulation.route) {
-//            SimulasiPage()
-        }
 
         composable(Screen.DaftarRuangan.route) {
             DaftarRuanganScreen(navController = navController)
         }
+
+        composable(Screen.SimulasiPage.route) {
+            SimulasiScreen(
+                onSimulasiBebasClick = {
+                    navController.navigate(Screen.SimulasiBebas.route)
+                },
+                onSimulasiBerdasarkanRuanganClick = {
+                    navController.navigate(Screen.SimulasiBerdasarkanRuangan.route)
+                }
+            )
+        }
+
+        composable(Screen.SimulasiBebas.route) {
+            SimulasiBebasScreen(
+                onPerangkatSelect = { /* Handle device selection if needed */ }
+            )
+        }
+
+        composable(Screen.SimulasiBerdasarkanRuangan.route) {
+            SimulasiBerdasarkanRuanganScreen(
+                onRoomSelect = { roomName, devices ->
+                    // Optional: Handle room selection, e.g., show a dialog or navigate elsewhere
+                    println("Selected room: $roomName with ${devices.size} devices")
+                }
+            )
+        }
+
 
         composable(Screen.ImagePicker.route) {
             SearchScreen(
