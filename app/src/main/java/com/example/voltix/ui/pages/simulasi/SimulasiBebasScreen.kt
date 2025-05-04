@@ -215,7 +215,7 @@ fun SimulasiBebasScreen(
             },
             onDismiss = {
                 showSimulationDialog = false
-                navController.navigate(Screen.SimulasiBebas.route)
+                navController.navigate(Screen.SimulasiPage.route)
             }
         )
     }

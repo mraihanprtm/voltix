@@ -54,6 +54,8 @@ fun DetailRuangan(
     val showEditDialog by viewModel::showEditDialog
     var isLoading by remember { mutableStateOf(true) }
     val namaRuangan by ruanganViewModel.namaRuangan.collectAsState()
+    val dayaListrik by viewModel.totalDaya.collectAsState()
+    val biayaListrik by viewModel.totalBiaya.collectAsState()
 
     // Update ketika ruanganId berubah
     LaunchedEffect(ruanganId) {
@@ -216,6 +218,38 @@ fun DetailRuangan(
                                 }
                             }
                         }
+                    }
+
+                    item {
+                        Row(
+                            modifier = Modifier.padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_fa_list),
+                                contentDescription = "List Icon",
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Kalkulasi Listrik",
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontWeight = FontWeight.Medium,
+                                    fontSize = 20.sp
+                                ),
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
+                        Divider(
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
+                            thickness = 1.dp
+                        )
+                        Text(
+                            text = "Daya Listrik = $dayaListrik"
+                        )
+                        Text(
+                            text = "Biaya Listrik = $biayaListrik"
+                        )
                     }
                 }
             }
@@ -650,3 +684,4 @@ fun EditPerangkatDialog(viewModel: PerangkatViewModel) {
         }
     )
 }
+
