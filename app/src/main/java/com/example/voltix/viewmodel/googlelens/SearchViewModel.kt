@@ -2,11 +2,11 @@ package com.example.voltix.viewmodel.googlelens
 
 import android.content.Context
 import android.graphics.Bitmap
-import androidx.compose.runtime.mutableStateOf
+import android.graphics.BitmapFactory
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.saveable
 import com.example.voltix.data.entity.ElectronicInformationModel
 import com.example.voltix.data.repository.SearchRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,38 +27,69 @@ class SearchViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(SearchUiState())
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
 
-    private var _currentRuanganId = mutableStateOf(0)
-    val currentRuanganId: Int get() = _currentRuanganId.value
+    init {
 
-    fun updateRuanganId(ruanganId: Int) {
-        _currentRuanganId.value = ruanganId
+        // Restore imageBitmap from saved file path
+        savedStateHandle.get<String>("imageFilePath")?.let { path ->
+            try {
+                val file = File(path)
+                if (file.exists()) {
+                    val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+                    _uiState.update { it.copy(imageBitmap = bitmap) }
+                    Log.d("SearchViewModel", "Restored imageBitmap from $path")
+                } else {
+                    Log.w("SearchViewModel", "Image file not found: $path")
+                }
+            } catch (e: Exception) {
+                setError("Gagal memuat gambar tersimpan: ${e.message}")
+            }
+        }
+        // Restore searchResults
+        savedStateHandle.get<Array<ElectronicInformationModel>>("searchResults")?.let { results ->
+            _uiState.update { it.copy(searchResults = results.toList()) }
+            Log.d("SearchViewModel", "Restored searchResults: ${results.size} items")
+        }
+        // Log ViewModel initialization
+        Log.d("SearchViewModel", "Initialized ViewModel: $this")
+    }
+
+    override fun onCleared() {
+        Log.d("SearchViewModel", "ViewModel cleared: $this")
+        super.onCleared()
     }
 
     fun updateSearchResults(results: List<ElectronicInformationModel>) {
         _uiState.update { currentState ->
             currentState.copy(searchResults = results)
         }
+        savedStateHandle["searchResults"] = results.toTypedArray()
+        Log.d("SearchViewModel", "Saved searchResults to SavedStateHandle: ${results.size} items")
     }
 
     fun updateImageBitmap(bitmap: Bitmap?) {
         _uiState.update { currentState ->
             currentState.copy(imageBitmap = bitmap)
         }
+        Log.d("SearchViewModel", "Updated imageBitmap: ${bitmap != null}")
     }
 
     fun updateIsLoading(loading: Boolean) {
         _uiState.update { currentState ->
             currentState.copy(isLoading = loading)
         }
+        Log.d("SearchViewModel", "Updated isLoading: $loading")
     }
 
     fun saveBitmapToFile(context: Context, bitmap: Bitmap, callback: (File) -> Unit) {
         viewModelScope.launch {
             try {
                 val file = repository.saveBitmapToFile(context, bitmap)
+                savedStateHandle["imageFilePath"] = file.absolutePath
                 callback(file)
+                Log.d("SearchViewModel", "Saved bitmap to file: ${file.absolutePath}, saved to SavedStateHandle")
             } catch (e: Exception) {
-                setError(e.message ?: "Error saving image")
+                setError("Gagal menyimpan gambar: ${e.message}")
+                Log.e("SearchViewModel", "Failed to save bitmap: ${e.stackTraceToString()}")
             }
         }
     }
@@ -68,8 +99,10 @@ class SearchViewModel @Inject constructor(
             try {
                 val url = repository.uploadImageToCloudinary(imageFile)
                 callback(url)
+                Log.d("SearchViewModel", "Uploaded image, url: $url")
             } catch (e: Exception) {
-                setError(e.message ?: "Error uploading image")
+                setError("Gagal mengunggah gambar: ${e.message}")
+                Log.e("SearchViewModel", "Failed to upload image: ${e.stackTraceToString()}")
                 callback(null)
             }
         }
@@ -79,8 +112,10 @@ class SearchViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 repository.processImage(context, bitmap, callback)
+                Log.d("SearchViewModel", "Processed image")
             } catch (e: Exception) {
-                setError(e.message ?: "Error processing image")
+                setError("Gagal memproses gambar: ${e.message}")
+                Log.e("SearchViewModel", "Failed to process image: ${e.stackTraceToString()}")
             }
         }
     }
@@ -89,23 +124,34 @@ class SearchViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 repository.fetchSearchResults(context, query, callback)
+                Log.d("SearchViewModel", "Fetched results for query: $query")
             } catch (e: Exception) {
-                setError(e.message ?: "Error fetching results")
+                setError("Gagal mengambil hasil: ${e.message}")
+                Log.e("SearchViewModel", "Failed to fetch results: ${e.stackTraceToString()}")
                 callback(emptyList())
             }
         }
+    }
+
+    fun resetState() {
+        _uiState.update { SearchUiState() }
+        savedStateHandle.remove<String>("imageFilePath")
+        savedStateHandle.remove<Array<ElectronicInformationModel>>("searchResults")
+        Log.d("SearchViewModel", "Reset state, cleared SavedStateHandle")
     }
 
     private fun setError(error: String) {
         _uiState.update { currentState ->
             currentState.copy(error = error)
         }
+        Log.e("SearchViewModel", "Error set: $error")
     }
 
     fun clearError() {
         _uiState.update { currentState ->
             currentState.copy(error = null)
         }
+        Log.d("SearchViewModel", "Cleared error")
     }
 }
 

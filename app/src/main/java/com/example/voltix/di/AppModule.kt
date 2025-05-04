@@ -55,6 +55,12 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideSimulationDAO(database: AppDatabase): SimulationDAO {
+        return database.simulationDao()
+    }
+
+    @Provides
+    @Singleton
     fun provideUserRepository(
         userDao: UserDao,
         userPerangkatCrossRefDao: UserPerangkatCrossRefDao,

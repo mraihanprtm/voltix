@@ -2,37 +2,45 @@ package com.example.voltix.ui
 
 import android.net.Uri
 import androidx.compose.runtime.Composable
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.voltix.ui.pages.ruangan.DaftarRuanganScreen
 import com.example.voltix.ui.pages.OnboardingScreen
 import com.example.voltix.ui.pages.googlelens.SearchScreen
 import com.example.voltix.ui.pages.ruangan.DetailRuangan
-//import com.example.voltix.ui.pages.simulasi.SimulasiPage
 import com.example.voltix.ui.pages.ruangan.InputPerangkatScreen
+import com.example.voltix.ui.screen.SavedSimulationsScreen
 import com.example.voltix.ui.screen.SimulasiBebasScreen
-import com.example.voltix.ui.screen.SimulasiBerdasarkanRuanganScreen
 import com.example.voltix.ui.screen.SimulasiScreen
+import com.example.voltix.ui.screen.SimulationComparisonScreen
 
 sealed class Screen(val route: String, val title: String = "") {
     object SimulasiPage : Screen("simulasi", "Simulasi")
-    object SimulasiBebas : Screen("simulasi_bebas", "Simulasi Bebas")
-    object SimulasiBerdasarkanRuangan : Screen("simulasi_berdasarkan_ruangan", "Simulasi Berdasarkan Ruangan")
+    object SavedSimulations {
+        const val route = "saved_simulations"
+    }
+    object SimulasiBebas {
+        const val route = "simulasi_bebas"
+        fun createRoute(simulationId: Int? = null) = if (simulationId != null) {
+            "simulasi_bebas?simulationId=$simulationId"
+        } else {
+            route
+        }
+    }
+
+    object SimulationComparison {
+        const val route = "simulation_comparison"
+        fun createRoute(simulationIds: String) = "$route/$simulationIds"
+    }
     object DaftarRuangan : Screen("daftar_ruangan", "Daftar Ruangan")
     object DetailRuangan : Screen("detail_ruangan/{ruanganId}", "Detail Ruangan") {
         fun createRoute(ruanganId: Int) = "detail_ruangan/$ruanganId"
     }
-    object ImagePicker : Screen("image_picker/{ruanganId}", "Image Picker") {
-        fun createRoute(ruanganId: Int): String {
-            return "image_picker/$ruanganId"
-        }
-    }
-
-
+    object ImagePicker : Screen("image_picker", "Image Picker")
     object Dashboard : Screen("dashboard", "Dashboard")
     object Onboarding : Screen("onboarding", "Onboarding")
     object InputPerangkat : Screen(
@@ -55,45 +63,58 @@ fun AppNavHost(navController: NavHostController) {
         navController = navController,
         startDestination = Screen.Onboarding.route
     ) {
-
         composable(Screen.DaftarRuangan.route) {
             DaftarRuanganScreen(navController = navController)
         }
 
         composable(Screen.SimulasiPage.route) {
             SimulasiScreen(
+                navController = navController,
                 onSimulasiBebasClick = {
                     navController.navigate(Screen.SimulasiBebas.route)
-                },
-                onSimulasiBerdasarkanRuanganClick = {
-                    navController.navigate(Screen.SimulasiBerdasarkanRuangan.route)
                 }
             )
         }
 
-        composable(Screen.SimulasiBebas.route) {
-            SimulasiBebasScreen(
-                onPerangkatSelect = { /* Handle device selection if needed */ }
+        composable(Screen.SavedSimulations.route) {
+            SavedSimulationsScreen(
+                navController = navController,
+                viewModel = hiltViewModel()
             )
-        }
-
-        composable(Screen.SimulasiBerdasarkanRuangan.route) {
-            SimulasiBerdasarkanRuanganScreen(
-                onRoomSelect = { roomName, devices ->
-                    // Optional: Handle room selection, e.g., show a dialog or navigate elsewhere
-                    println("Selected room: $roomName with ${devices.size} devices")
-                }
-            )
-        }
-
-
-        composable(Screen.ImagePicker.route) {
-            SearchScreen(
-                navController = navController)
         }
 
         composable(
-            route = "input_perangkat?ruanganId={ruanganId}&deviceName={deviceName}&wattage={wattage}",
+            route = Screen.SimulasiBebas.route + "?simulationId={simulationId}",
+            arguments = listOf(
+                navArgument("simulationId") {
+                    type = NavType.IntType
+                    defaultValue = -1
+                    nullable = false
+                }
+            )
+        ) { backStackEntry ->
+            SimulasiBebasScreen(
+                onDeviceSelect = { device ->
+                    println("Selected device: ${device.nama}")
+                },
+                navController = navController,
+                simulationId = backStackEntry.arguments?.getInt("simulationId")?.takeIf { it != -1 },
+                viewModel = hiltViewModel()
+            )
+        }
+
+        composable(Screen.SimulationComparison.route) {
+            SimulationComparisonScreen(
+                viewModel = hiltViewModel()
+            )
+        }
+
+        composable(Screen.ImagePicker.route) {
+            SearchScreen(navController = navController)
+        }
+
+        composable(
+            route = Screen.InputPerangkat.route,
             arguments = listOf(
                 navArgument("ruanganId") {
                     type = NavType.IntType
@@ -114,7 +135,6 @@ fun AppNavHost(navController: NavHostController) {
             val ruanganId = backStackEntry.arguments?.getInt("ruanganId") ?: 0
             val deviceName = backStackEntry.arguments?.getString("deviceName") ?: ""
             val wattage = backStackEntry.arguments?.getString("wattage") ?: ""
-
             InputPerangkatScreen(
                 navController = navController,
                 ruanganId = ruanganId,
@@ -122,7 +142,6 @@ fun AppNavHost(navController: NavHostController) {
                 initialWattage = wattage
             )
         }
-
 
         composable(Screen.Onboarding.route) {
             OnboardingScreen(

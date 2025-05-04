@@ -26,12 +26,13 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.example.voltix.ui.Screen
 import com.example.voltix.ui.theme.VoltixTheme
 
 @Composable
 fun SimulasiScreen(
+    navController: NavHostController,
     onSimulasiBebasClick: () -> Unit,
-    onSimulasiBerdasarkanRuanganClick: () -> Unit,
 ) {
     var isVisible by remember { mutableStateOf(true) } // Set true for preview
 
@@ -64,15 +65,15 @@ fun SimulasiScreen(
                         modifier = Modifier.padding(bottom = 32.dp)
                     )
                     SimulationCard(
-                        title = "Simulasi Bebas",
+                        title = "Simulasi",
                         description = "Buat simulasi dari awal atau gunakan template ruangan",
                         onClick = onSimulasiBebasClick
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     SimulationCard(
-                        title = "Simulasi Berdasarkan Ruangan",
+                        title = "Bandingkan Simulasi",
                         description = "Pilih ruangan untuk simulasi otomatis",
-                        onClick = onSimulasiBerdasarkanRuanganClick
+                        onClick = { navController.navigate(Screen.SimulationComparison.route) }
                     )
                 }
             }

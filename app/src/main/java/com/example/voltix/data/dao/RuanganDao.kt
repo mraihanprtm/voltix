@@ -22,7 +22,6 @@ interface RuanganDAO {
     @Update
     suspend fun updateRuangan(ruangan: RuanganEntity)
 
-
     @Query("SELECT namaRuangan FROM ruangan WHERE id = :ruanganId")
     fun getNamaRuangan(ruanganId: Int): Flow<String?>
 

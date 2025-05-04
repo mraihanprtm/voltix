@@ -30,6 +30,7 @@ import androidx.room.TypeConverters
 import com.example.voltix.R
 import com.example.voltix.data.database.Converters
 import com.example.voltix.data.entity.jenis
+import com.example.voltix.ui.Screen
 import com.example.voltix.ui.component.DropdownKategori
 import com.example.voltix.ui.component.TimePickerDialogButton
 import com.example.voltix.viewmodel.simulasi.PerangkatViewModel
@@ -82,7 +83,21 @@ fun InputPerangkatScreen(
             if (isSaving) {
                 isSaving = false
                 onPerangkatDisimpan()
-                navController.popBackStack()
+                // Navigate back to ImagePicker with state preservation
+                val popped = navController.popBackStack(
+                    route = Screen.DetailRuangan.route,
+                    inclusive = false,
+                    saveState = true
+                )
+                if (!popped) {
+                    navController.navigate(Screen.ImagePicker.route) {
+                        popUpTo(navController.graph.startDestinationId) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
             }
         }
     )

@@ -6,6 +6,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -48,31 +49,19 @@ fun DetailRuangan(
     ruanganViewModel: RuanganViewModel = hiltViewModel()
 ) {
     val configuration = LocalConfiguration.current
-    val screenHeight = configuration.screenHeightDp.dp
     val perangkatList by viewModel.perangkatByRuangan.observeAsState(initial = emptyList())
     val melebihiDaya by viewModel.melebihiDaya.collectAsState()
-    var showWarningDialog by remember { mutableStateOf(melebihiDaya) }
+    val showEditDialog by viewModel::showEditDialog
     var isLoading by remember { mutableStateOf(true) }
     val namaRuangan by ruanganViewModel.namaRuangan.collectAsState()
 
+    // Update ketika ruanganId berubah
     LaunchedEffect(ruanganId) {
         viewModel.loadPerangkatByRuangan(ruanganId)
         ruanganViewModel.loadNamaRuangan(ruanganId)
         kotlinx.coroutines.delay(1000)
         isLoading = false
     }
-
-    val fabScale by animateFloatAsState(
-        targetValue = if (isLoading) 1f else 1.1f,
-        animationSpec = tween(durationMillis = 200),
-        finishedListener = {
-            if (!isLoading) {
-                kotlinx.coroutines.MainScope().launch {
-                    kotlinx.coroutines.delay(100)
-                }
-            }
-        }
-    )
 
     Scaffold(
         floatingActionButton = {
@@ -82,7 +71,6 @@ fun DetailRuangan(
                 modifier = Modifier
                     .shadow(12.dp, CircleShape)
                     .size(72.dp)
-                    .scale(fabScale)
                     .background(
                         Brush.linearGradient(
                             colors = listOf(
@@ -117,6 +105,7 @@ fun DetailRuangan(
                     )
                 )
         ) {
+            // Header Ruangan
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -155,6 +144,7 @@ fun DetailRuangan(
                 }
             }
 
+            // Content
             if (isLoading) {
                 LoadingStateView()
             } else if (perangkatList.isEmpty()) {
@@ -191,80 +181,50 @@ fun DetailRuangan(
                             thickness = 1.dp
                         )
                     }
+
                     items(perangkatList) { perangkat ->
                         PerangkatCard(viewModel, perangkat)
+                    }
+
+                    if (melebihiDaya) {
+                        item {
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 16.dp, bottom = 32.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.error)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ic_fa_exclamation_triangle),
+                                        contentDescription = "Warning",
+                                        modifier = Modifier.size(24.dp),
+                                        tint = MaterialTheme.colorScheme.onError
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Total daya perangkat melebihi batas listrik Anda!",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onError
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
-    }
 
-    AnimatedVisibility(
-        visible = melebihiDaya && showWarningDialog,
-        enter = fadeIn(tween(300)) + scaleIn(tween(300)),
-        exit = fadeOut(tween(300)) + scaleOut(tween(300))
-    ) {
-        AlertDialog(
-            onDismissRequest = { showWarningDialog = false },
-            shape = RoundedCornerShape(16.dp),
-            containerColor = MaterialTheme.colorScheme.surface,
-            modifier = Modifier
-                .padding(horizontal = 16.dp)
-                .shadow(8.dp, RoundedCornerShape(16.dp)),
-            title = {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_fa_exclamation_triangle),
-                        contentDescription = "Warning",
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Peringatan",
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-            },
-            text = {
-                Text(
-                    text = "Total daya perangkat melebihi batas listrik Anda!",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = { showWarningDialog = false },
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(
-                            Brush.linearGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.primary,
-                                    MaterialTheme.colorScheme.secondary
-                                )
-                            )
-                        )
-                ) {
-                    Text(
-                        text = "OK",
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                }
-            }
-        )
-    }
-
-    AnimatedVisibility(
-        visible = viewModel.showEditDialog,
-        enter = fadeIn(tween(300)) + scaleIn(tween(300)),
-        exit = fadeOut(tween(300)) + scaleOut(tween(300))
-    ) {
-        EditPerangkatDialog(viewModel)
+        // Show EditPerangkatDialog when showEditDialog is true
+        if (showEditDialog) {
+            EditPerangkatDialog(viewModel)
+        }
     }
 }
 

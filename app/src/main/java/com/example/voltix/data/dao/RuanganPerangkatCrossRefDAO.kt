@@ -11,6 +11,9 @@ interface RuanganPerangkatCrossRefDAO {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRuanganPerangkatCrossRef(crossRef: RuanganPerangkatCrossRef)
 
+    @Update
+    suspend fun updateRuanganPerangkatCrossRef(crossRef: RuanganPerangkatCrossRef)
+
     @Delete
     suspend fun deleteRuanganPerangkatCrossRef(crossRef: RuanganPerangkatCrossRef)
 
@@ -43,29 +46,16 @@ interface RuanganPerangkatCrossRefDAO {
     fun getPerangkatForRuangan(ruanganId: Int): LiveData<List<RuanganPerangkatCrossRef>>
 
     @Query("""
-        SELECT 
-            p.id as perangkatId,
-            p.nama as nama,
-            p.daya as daya,
-            rp.waktuNyala as waktuNyala,
-            rp.waktuMati as waktuMati
-        FROM perangkat p 
-        INNER JOIN ruangan_perangkat_cross_ref rp 
-        ON p.id = rp.perangkatId 
-        WHERE rp.ruanganId = :ruanganId
+        SELECT p.id AS perangkatId, p.nama, p.daya, p.jumlah, p.jenis, c.waktuNyala, c.waktuMati
+        FROM perangkat p
+        INNER JOIN ruangan_perangkat_cross_ref c ON p.id = c.perangkatId
+        WHERE c.ruanganId = :ruanganId
     """)
     suspend fun getPerangkatWithWaktuByRuanganId(ruanganId: Int): List<PerangkatWithWaktu>
 
     @Query("SELECT * FROM ruangan_perangkat_cross_ref WHERE ruanganId = :ruanganId AND perangkatId = :perangkatId LIMIT 1")
     suspend fun getCrossRefByRuanganAndPerangkatId(ruanganId: Int, perangkatId: Int): RuanganPerangkatCrossRef?
 
-    @Update
-    suspend fun updateRuanganPerangkatCrossRef(crossRef: RuanganPerangkatCrossRef)
-
-    @Query("""
-        SELECT * FROM ruangan_perangkat_cross_ref 
-        WHERE ruanganId = :ruanganId AND perangkatId = :perangkatId 
-        LIMIT 1
-    """)
+    @Query("SELECT * FROM ruangan_perangkat_cross_ref WHERE ruanganId = :ruanganId AND perangkatId = :perangkatId")
     suspend fun getCrossRef(ruanganId: Int, perangkatId: Int): RuanganPerangkatCrossRef?
 }

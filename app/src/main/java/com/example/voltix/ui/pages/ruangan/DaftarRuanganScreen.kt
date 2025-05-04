@@ -145,7 +145,7 @@ fun DaftarRuanganScreen(
 
     // Add Dialog
     if (showAddDialog) {
-        ModernAddRuanganDialog(
+        AddRuanganDialog(
             namaBaru = namaBaru,
             onNamaChange = { namaBaru = it },
             onConfirm = {
@@ -300,7 +300,7 @@ fun EmptyStateView() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ModernAddRuanganDialog(
+fun AddRuanganDialog(
     namaBaru: String,
     onNamaChange: (String) -> Unit,
     onConfirm: () -> Unit,

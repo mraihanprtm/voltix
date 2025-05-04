@@ -1,6 +1,8 @@
 package com.example.voltix.ui.screen
 
+import android.util.Log
 import androidx.compose.animation.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -22,51 +24,70 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.voltix.data.entity.PerangkatEntity
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.painterResource
+import androidx.navigation.NavController
+import com.example.voltix.R
+import com.example.voltix.data.entity.RuanganEntity
+import com.example.voltix.data.entity.SimulationDeviceEntity
+import com.example.voltix.data.entity.SimulationEntity
 import com.example.voltix.data.entity.jenis
-import com.example.voltix.ui.theme.VoltixTheme
+import com.example.voltix.ui.Screen
+import com.example.voltix.ui.component.DropdownKategori
+import com.example.voltix.ui.component.TimePickerDialogButton
+import com.example.voltix.ui.viewmodel.SimulasiBebasViewModel
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun SimulasiBebasScreen(
-    onPerangkatSelect: (PerangkatEntity) -> Unit
+    onDeviceSelect: (SimulationDeviceEntity) -> Unit,
+    navController: NavController,
+    simulationId: Int? = null,
+    viewModel: SimulasiBebasViewModel = hiltViewModel()
 ) {
-    // State management
-    var devices by remember { mutableStateOf(listOf<PerangkatEntity>()) }
-    var showTemplateDialog by remember { mutableStateOf(false) }
+    val devices by viewModel.devices.observeAsState(initial = emptyList())
+    val ruanganList by viewModel.ruanganList.observeAsState(initial = emptyList())
+    val simulationList by viewModel.simulationList.observeAsState(initial = emptyList())
+    val isLoading by viewModel.isLoading.observeAsState(initial = false)
+    val melebihiDaya by viewModel.melebihiDaya.collectAsState()
+    var showRoomDialog by remember { mutableStateOf(false) }
     var showAddEditDialog by remember { mutableStateOf(false) }
-    var editingDevice by remember { mutableStateOf<PerangkatEntity?>(null) }
-    var isVisible by remember { mutableStateOf(true) } // Set true for preview
+    var showNameDialog by remember { mutableStateOf(false) }
+    var showSimulationDialog by remember { mutableStateOf(simulationId == null) }
+    var editingDevice by remember { mutableStateOf<SimulationDeviceEntity?>(null) }
+    var waktuNyala by remember { mutableStateOf(LocalTime.of(0, 0)) }
+    var waktuMati by remember { mutableStateOf(LocalTime.of(23, 59)) }
 
-    // Static templates
-    val templates = listOf(
-        "Ruang Tamu" to listOf(
-            PerangkatEntity(id = 1, nama = "Lampu LED", jumlah = 2, jenis = jenis.Lainnya, daya = 60),
-            PerangkatEntity(id = 2, nama = "Televisi OLED", jumlah = 1, jenis = jenis.Lainnya, daya = 200)
-        ),
-        "Kamar Tidur" to listOf(
-            PerangkatEntity(id = 3, nama = "Lampu LED", jumlah = 1, jenis = jenis.Lainnya, daya = 60),
-            PerangkatEntity(id = 4, nama = "AC Inverter", jumlah = 1, jenis = jenis.Lainnya, daya = 1500)
-        ),
-        "Dapur" to listOf(
-            PerangkatEntity(id = 5, nama = "Kulkas", jumlah = 1, jenis = jenis.Lainnya, daya = 300),
-            PerangkatEntity(id = 6, nama = "Microwave", jumlah = 1, jenis = jenis.Lainnya, daya = 800)
-        )
-    )
+    LaunchedEffect(simulationId) {
+        Log.d("SimulasiBebasScreen", "simulationId changed: $simulationId")
+        if (simulationId != null) {
+            viewModel.loadSimulation(simulationId)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.loadAllSimulations()
+    }
 
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White),
         topBar = {
-            TopBar(onTemplateClick = { showTemplateDialog = true })
+            TopBar(onRoomSelectClick = { showRoomDialog = true })
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
+                    Log.d("SimulasiBebasScreen", "FAB clicked, opening AddEditDeviceDialog")
                     editingDevice = null
+                    waktuNyala = LocalTime.of(0, 0)
+                    waktuMati = LocalTime.of(23, 59)
                     showAddEditDialog = true
                 },
                 containerColor = Color(0xFF3F51B5),
@@ -76,85 +97,132 @@ fun SimulasiBebasScreen(
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Tambah Perangkat")
             }
+        },
+        bottomBar = {
+            Button(
+                onClick = { navController.navigate(Screen.SimulasiPage.route) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3F51B5)),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Selesai", color = Color.White, fontSize = 16.sp)
+            }
         }
     ) { padding ->
-        AnimatedVisibility(
-            visible = isVisible,
-            enter = fadeIn() + slideInVertically(),
-            exit = fadeOut() + slideOutVertically()
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 16.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = 16.dp)
-            ) {
-                if (devices.isEmpty()) {
-                    EmptyStateMessage()
-                } else {
-                    DeviceList(
-                        devices = devices,
-                        onSelect = onPerangkatSelect,
-                        onEdit = { device ->
-                            editingDevice = device
-                            showAddEditDialog = true
-                        },
-                        onDelete = { device ->
-                            devices = devices.filter { it.id != device.id }
-                        }
-                    )
-                }
+
+            if (isLoading) {
+                Log.d("SimulasiBebasScreen", "Showing loading indicator")
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+            } else if (devices.isEmpty() && simulationId != null) {
+                Log.d("SimulasiBebasScreen", "Showing EmptyStateMessage")
+                EmptyStateMessage()
+            } else {
+                Log.d("SimulasiBebasScreen", "Showing DeviceList with ${devices.size} devices")
+                DeviceList(
+                    devices = devices,
+                    melebihiDaya = melebihiDaya,
+                    onSelect = onDeviceSelect,
+                    onEdit = { device ->
+                        Log.d("SimulasiBebasScreen", "Editing device: ${device.nama}")
+                        editingDevice = device
+                        waktuNyala = device.waktuNyala
+                        waktuMati = device.waktuMati
+                        showAddEditDialog = true
+                    },
+                    onDelete = { device ->
+                        Log.d("SimulasiBebasScreen", "Deleting device: ${device.nama}")
+                        viewModel.deleteDevice(device.deviceId)
+                    }
+                )
             }
         }
     }
 
-    // Dialogs with animations
-    AnimatedVisibility(
-        visible = showTemplateDialog,
-        enter = fadeIn() + scaleIn(),
-        exit = fadeOut() + scaleOut()
-    ) {
-        TemplateDialog(
-            templates = templates,
-            onTemplateSelect = { templateDevices ->
-                devices = templateDevices.map { it.copy(id = devices.size + 1) }
-                showTemplateDialog = false
+    if (showRoomDialog) {
+        Log.d("SimulasiBebasScreen", "Showing RoomSelectionDialog")
+        RoomSelectionDialog(
+            rooms = ruanganList,
+            onRoomSelect = { ruangan ->
+                Log.d("SimulasiBebasScreen", "Room selected: ${ruangan.namaRuangan}")
+                viewModel.loadRoomDevices(ruangan.id)
+                showRoomDialog = false
             },
-            onDismiss = { showTemplateDialog = false }
+            onDismiss = {
+                Log.d("SimulasiBebasScreen", "RoomSelectionDialog dismissed")
+                showRoomDialog = false
+            }
         )
     }
 
-    AnimatedVisibility(
-        visible = showAddEditDialog,
-        enter = fadeIn() + scaleIn(),
-        exit = fadeOut() + scaleOut()
-    ) {
+    if (showAddEditDialog) {
+        Log.d("SimulasiBebasScreen", "Showing AddEditDeviceDialog")
         AddEditDeviceDialog(
             device = editingDevice,
-            onSave = { nama, daya ->
+            waktuNyala = waktuNyala,
+            waktuMati = waktuMati,
+            onSave = { nama, daya, newWaktuNyala, newWaktuMati ->
+                Log.d("SimulasiBebasScreen", "Saving device: $nama, $daya W")
                 if (editingDevice == null) {
-                    devices = devices + PerangkatEntity(
-                        id = devices.size + 1,
-                        nama = nama,
-                        jumlah = 1,
-                        jenis = jenis.Lainnya,
-                        daya = daya
-                    )
+                    viewModel.insertDevice(nama, daya, newWaktuNyala, newWaktuMati)
                 } else {
-                    devices = devices.map {
-                        if (it.id == editingDevice?.id) it.copy(nama = nama, daya = daya)
-                        else it
+                    editingDevice?.let { device ->
+                        viewModel.updateDevice(device, nama, daya, newWaktuNyala, newWaktuMati)
                     }
                 }
                 showAddEditDialog = false
             },
-            onDismiss = { showAddEditDialog = false }
+            onDismiss = {
+                Log.d("SimulasiBebasScreen", "AddEditDeviceDialog dismissed")
+                showAddEditDialog = false
+            }
+        )
+    }
+
+    if (showNameDialog) {
+        Log.d("SimulasiBebasScreen", "Showing SimulationNameDialog")
+        SimulationNameDialog(
+            onSave = { name ->
+                Log.d("SimulasiBebasScreen", "Saving simulation: $name")
+                viewModel.startSimulation(name)
+                showNameDialog = false
+            },
+            onDismiss = {
+                Log.d("SimulasiBebasScreen", "SimulationNameDialog dismissed")
+                showNameDialog = false
+            }
+        )
+    }
+
+    if (showSimulationDialog) {
+        Log.d("SimulasiBebasScreen", "Showing SimulationSelectionDialog")
+        SimulationSelectionDialog(
+            simulations = simulationList,
+            onSimulationSelect = { simulation ->
+                viewModel.loadSimulation(simulation.id)
+                showSimulationDialog = false
+            },
+            onNewSimulation = {
+                showNameDialog = true
+                showSimulationDialog = false
+            },
+            onDismiss = {
+                showSimulationDialog = false
+                navController.navigate(Screen.SimulasiBebas.route)
+            }
         )
     }
 }
 
 @Composable
-private fun TopBar(onTemplateClick: () -> Unit) {
+private fun TopBar(onRoomSelectClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -163,7 +231,7 @@ private fun TopBar(onTemplateClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Simulasi Bebas",
+            text = "Simulasi Listrik",
             style = MaterialTheme.typography.headlineMedium.copy(
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF1A237E),
@@ -171,13 +239,13 @@ private fun TopBar(onTemplateClick: () -> Unit) {
             )
         )
         Button(
-            onClick = onTemplateClick,
+            onClick = onRoomSelectClick,
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(0xFF3F51B5)
             ),
             shape = RoundedCornerShape(12.dp)
         ) {
-            Text("Template", color = Color.White)
+            Text("Template Ruangan", color = Color.White)
         }
     }
 }
@@ -199,7 +267,7 @@ private fun EmptyStateMessage() {
             )
         )
         Text(
-            text = "Tambah perangkat baru atau gunakan template ruangan.",
+            text = "Tambah perangkat baru atau pilih ruangan untuk memulai simulasi.",
             style = MaterialTheme.typography.bodyMedium.copy(
                 color = Color(0xFF424242).copy(alpha = 0.7f)
             ),
@@ -210,23 +278,55 @@ private fun EmptyStateMessage() {
 
 @Composable
 private fun DeviceList(
-    devices: List<PerangkatEntity>,
-    onSelect: (PerangkatEntity) -> Unit,
-    onEdit: (PerangkatEntity) -> Unit,
-    onDelete: (PerangkatEntity) -> Unit
+    devices: List<SimulationDeviceEntity>,
+    melebihiDaya: Boolean,
+    onSelect: (SimulationDeviceEntity) -> Unit,
+    onEdit: (SimulationDeviceEntity) -> Unit,
+    onDelete: (SimulationDeviceEntity) -> Unit
 ) {
     LazyColumn {
-        items(devices) { perangkat ->
+        if (melebihiDaya) {
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp, bottom = 32.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_fa_exclamation_triangle),
+                            contentDescription = "Warning",
+                            modifier = Modifier.size(24.dp),
+                            tint = MaterialTheme.colorScheme.onError
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Total daya perangkat melebihi batas listrik Anda!",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onError
+                        )
+                    }
+                }
+            }
+        }
+        items(devices) { device ->
             AnimatedVisibility(
                 visible = true,
                 enter = fadeIn() + slideInHorizontally(),
                 exit = fadeOut() + slideOutHorizontally()
             ) {
                 DeviceCard(
-                    perangkat = perangkat,
-                    onSelect = { onSelect(perangkat) },
-                    onEdit = { onEdit(perangkat) },
-                    onDelete = { onDelete(perangkat) }
+                    device = device,
+                    onSelect = { onSelect(device) },
+                    onEdit = { onEdit(device) },
+                    onDelete = { onDelete(device) }
                 )
             }
         }
@@ -235,7 +335,7 @@ private fun DeviceList(
 
 @Composable
 private fun DeviceCard(
-    perangkat: PerangkatEntity,
+    device: SimulationDeviceEntity,
     onSelect: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
@@ -261,14 +361,14 @@ private fun DeviceCard(
         ) {
             Column {
                 Text(
-                    text = perangkat.nama,
+                    text = device.nama,
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Medium,
                         color = Color(0xFF1A237E)
                     )
                 )
                 Text(
-                    text = "${perangkat.daya} W",
+                    text = "${device.daya} W, ${device.waktuNyala} - ${device.waktuMati}",
                     style = MaterialTheme.typography.bodyMedium.copy(
                         color = Color(0xFF424242)
                     )
@@ -295,41 +395,50 @@ private fun DeviceCard(
 }
 
 @Composable
-private fun TemplateDialog(
-    templates: List<Pair<String, List<PerangkatEntity>>>,
-    onTemplateSelect: (List<PerangkatEntity>) -> Unit,
+private fun RoomSelectionDialog(
+    rooms: List<RuanganEntity>,
+    onRoomSelect: (RuanganEntity) -> Unit,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "Pilih Template Ruangan",
+                text = "Pilih Ruangan",
                 style = MaterialTheme.typography.titleLarge.copy(
                     color = Color(0xFF1A237E)
                 )
             )
         },
         text = {
-            LazyColumn {
-                items(templates) { (name, devices) ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                            .clickable { onTemplateSelect(devices) }
-                            .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(8.dp)),
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color(0xFFF5F7FA)
-                        )
-                    ) {
-                        Text(
-                            text = name,
-                            modifier = Modifier.padding(16.dp),
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                color = Color(0xFF1A237E)
+            if (rooms.isEmpty()) {
+                Text(
+                    text = "Belum ada ruangan terdaftar.",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = Color(0xFF424242)
+                    )
+                )
+            } else {
+                LazyColumn {
+                    items(rooms) { ruangan ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                                .clickable { onRoomSelect(ruangan) }
+                                .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(8.dp)),
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color(0xFFF5F7FA)
                             )
-                        )
+                        ) {
+                            Text(
+                                text = ruangan.namaRuangan,
+                                modifier = Modifier.padding(16.dp),
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    color = Color(0xFF1A237E)
+                                )
+                            )
+                        }
                     }
                 }
             }
@@ -344,59 +453,258 @@ private fun TemplateDialog(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AddEditDeviceDialog(
-    device: PerangkatEntity?,
-    onSave: (String, Int) -> Unit,
+fun AddEditDeviceDialog(
+    device: SimulationDeviceEntity?,
+    waktuNyala: LocalTime,
+    waktuMati: LocalTime,
+    onSave: (String, Int, LocalTime, LocalTime) -> Unit,
     onDismiss: () -> Unit
 ) {
     var nama by remember { mutableStateOf(device?.nama ?: "") }
     var daya by remember { mutableStateOf(device?.daya?.toString() ?: "") }
+    var jumlah by remember { mutableStateOf(device?.jumlah?.toString() ?: "1") }
+    var selectedJenis by remember { mutableStateOf(jenis.Lainnya) }
+    var waktuNyalaInput by remember { mutableStateOf(waktuNyala) }
+    var waktuMatiInput by remember { mutableStateOf(waktuMati) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(16.dp),
+        containerColor = MaterialTheme.colorScheme.surface,
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .shadow(8.dp, RoundedCornerShape(16.dp)),
         title = {
-            Text(
-                text = if (device == null) "Tambah Perangkat" else "Edit Perangkat",
-                style = MaterialTheme.typography.titleLarge.copy(
-                    color = Color(0xFF1A237E)
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_fa_edit),
+                    contentDescription = if (device == null) "Tambah" else "Edit",
+                    modifier = Modifier.size(24.dp)
                 )
-            )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (device == null) "Tambah Perangkat" else "Edit Perangkat",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
         },
         text = {
             Column {
                 OutlinedTextField(
                     value = nama,
                     onValueChange = { nama = it },
-                    label = { Text("Nama Perangkat") },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFF3F51B5),
-                        unfocusedBorderColor = Color(0xFF424242)
+                    label = { Text("Nama") },
+                    leadingIcon = {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_fa_tag),
+                            contentDescription = "Nama",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    },
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
                     )
                 )
-                Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = daya,
                     onValueChange = { daya = it },
-                    label = { Text("Daya (Watt)") },
+                    label = { Text("Daya (W)") },
+                    leadingIcon = {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_fa_plug),
+                            contentDescription = "Daya",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    },
+                    singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFF3F51B5),
-                        unfocusedBorderColor = Color(0xFF424242)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
                     )
                 )
+                OutlinedTextField(
+                    value = jumlah,
+                    onValueChange = { jumlah = it },
+                    label = { Text("Jumlah") },
+                    leadingIcon = {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_fa_hashtag),
+                            contentDescription = "Jumlah",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    )
+                )
+                Text(
+                    text = "Jenis Elektronik",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium),
+                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                )
+                DropdownKategori(
+                    selectedJenis = selectedJenis,
+                    onJenisSelected = { selectedJenis = it }
+                )
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = "Jadwal Penggunaan",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium),
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_fa_clock),
+                                contentDescription = "Waktu Nyala",
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            TimePickerDialogButton(
+                                label = "Waktu Nyala",
+                                time = waktuNyalaInput,
+                                onTimeSelected = { waktuNyalaInput = it }
+                            )
+                        }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_fa_clock),
+                                contentDescription = "Waktu Mati",
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            TimePickerDialogButton(
+                                label = "Waktu Mati",
+                                time = waktuMatiInput,
+                                onTimeSelected = { waktuMatiInput = it }
+                            )
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
             TextButton(
                 onClick = {
-                    if (nama.isNotBlank() && daya.toIntOrNull() != null) {
-                        onSave(nama, daya.toInt())
+                    if (nama.isNotBlank() && daya.toIntOrNull() != null && jumlah.toIntOrNull() != null) {
+                        onSave(nama, daya.toInt() * jumlah.toInt(), waktuNyalaInput, waktuMatiInput)
                     }
                 },
-                enabled = nama.isNotBlank() && daya.toIntOrNull() != null
+                enabled = nama.isNotBlank() && daya.toIntOrNull() != null && jumlah.toIntOrNull() != null,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(
+                        Brush.linearGradient(
+                            colors = if (nama.isNotBlank() && daya.toIntOrNull() != null && jumlah.toIntOrNull() != null)
+                                listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary)
+                            else
+                                listOf(
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                                    MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f)
+                                )
+                        )
+                    )
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                Text(
+                    text = "Simpan",
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                Text(
+                    text = "Batal",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+        }
+    )
+}
+
+@Composable
+private fun SimulationNameDialog(
+    onSave: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var name by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Nama Simulasi",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    color = Color(0xFF1A237E)
+                )
+            )
+        },
+        text = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Masukkan nama simulasi") },
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF3F51B5),
+                    unfocusedBorderColor = Color(0xFF424242)
+                )
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (name.isNotBlank()) {
+                        onSave(name)
+                    }
+                },
+                enabled = name.isNotBlank()
             ) {
                 Text("Simpan", color = Color(0xFF3F51B5))
             }
@@ -411,12 +719,73 @@ private fun AddEditDeviceDialog(
     )
 }
 
-@Preview(showBackground = true)
 @Composable
-fun SimulasiBebasScreenPreview() {
-    VoltixTheme {
-        SimulasiBebasScreen(
-            onPerangkatSelect = {}
-        )
-    }
+private fun SimulationSelectionDialog(
+    simulations: List<SimulationEntity>,
+    onSimulationSelect: (SimulationEntity) -> Unit,
+    onNewSimulation: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Pilih Simulasi",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    color = Color(0xFF1A237E)
+                )
+            )
+        },
+        text = {
+            Column {
+                if (simulations.isEmpty()) {
+                    Text(
+                        text = "Belum ada simulasi tersimpan.",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = Color(0xFF424242)
+                        )
+                    )
+                } else {
+                    LazyColumn {
+                        items(simulations) { simulation ->
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                                    .clickable { onSimulationSelect(simulation) }
+                                    .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(8.dp)),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = Color(0xFFF5F7FA)
+                                )
+                            ) {
+                                Text(
+                                    text = simulation.name,
+                                    modifier = Modifier.padding(16.dp),
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        color = Color(0xFF1A237E)
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = onNewSimulation,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3F51B5)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Buat Simulasi Baru", color = Color.White)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Batal", color = Color(0xFF3F51B5))
+            }
+        },
+        containerColor = Color.White,
+        shape = RoundedCornerShape(16.dp)
+    )
 }

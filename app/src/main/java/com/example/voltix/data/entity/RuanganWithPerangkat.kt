@@ -23,6 +23,8 @@ data class PerangkatWithWaktu(
     val perangkatId: Int,
     val nama: String,
     val daya: Int,
+    val jumlah: Int,
+    val jenis: jenis,
     val waktuNyala: LocalTime,
     val waktuMati: LocalTime
 )

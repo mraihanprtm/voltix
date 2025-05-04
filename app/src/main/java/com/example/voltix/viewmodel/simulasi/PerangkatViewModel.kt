@@ -54,6 +54,7 @@ class PerangkatViewModel @Inject constructor(
     private var batasDayaPengguna: Int = 0
 
     var perangkatDiedit by mutableStateOf<PerangkatEntity?>(null)
+
     var showEditDialog by mutableStateOf(false)
 
     init {
