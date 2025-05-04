@@ -43,16 +43,40 @@ class SimulasiBebasViewModel @Inject constructor(
     val melebihiDaya: StateFlow<Boolean> = _melebihiDaya.asStateFlow()
     private var batasDayaPengguna: Int = 2200 // Fallback value
 
+    private val _totalDaya = MutableStateFlow(0.0)
+    val totalDaya: StateFlow<Double> = _totalDaya.asStateFlow()
+
+    private val _biayaListrik = MutableStateFlow(0.0)
+    val biayaListrik: StateFlow<Double> = _biayaListrik.asStateFlow()
+
+    private val _jenisListrik = MutableStateFlow(0)
+    val jenisListrik: StateFlow<Int> = _jenisListrik
+
+
     init {
         Log.d("SimulasiBebasViewModel", "ViewModel initialized")
         loadBatasDayaPengguna()
     }
 
     private fun updateMelebihiDaya(devices: List<SimulationDeviceEntity>) {
-        val totalPower = devices.sumOf { it.daya * it.jumlah.toDouble() }
+        val totalPower = devices.sumOf { it.daya * it.jumlah.toDouble() } // dalam watt
+        _totalDaya.value = totalPower
+
+        val totalHours = devices.sumOf {
+            val duration = java.time.Duration.between(it.waktuNyala, it.waktuMati).toMinutes().coerceAtLeast(0).toDouble() / 60.0
+            duration * it.jumlah
+        }
+
+        // Konversi watt ke kWh
+        val totalEnergyKWh = (totalPower / 1000.0) * totalHours
+        val hargaPerKWh = jenisListrik.value.toDouble() // Misalnya tarif listrik per kWh (PLN R-1/Tarif Dasar Listrik 2023)
+        _biayaListrik.value = totalEnergyKWh * hargaPerKWh
+
         _melebihiDaya.value = totalPower > batasDayaPengguna
-        Log.d("SimulasiBebasViewModel", "Total power: $totalPower W, Limit: $batasDayaPengguna W, Melebihi: ${_melebihiDaya.value}")
+
+        Log.d("SimulasiBebasViewModel", "Total Power: $totalPower W, Total Energy: $totalEnergyKWh kWh, Biaya: ${_biayaListrik.value}, Melebihi: ${_melebihiDaya.value}")
     }
+
 
     private fun loadBatasDayaPengguna() {
         viewModelScope.launch {
@@ -64,6 +88,7 @@ class SimulasiBebasViewModel @Inject constructor(
                     Log.d("SimulasiBebasViewModel", "Current User Data: $currentUser")
                     if (currentUser != null) {
                         batasDayaPengguna = currentUser.jenisListrik
+                        _jenisListrik.value = currentUser.jenisListrik
                         Log.d("SimulasiBebasViewModel", "Batas Daya set to: $batasDayaPengguna")
                     } else {
                         Log.w("SimulasiBebasViewModel", "User data not found for ID: $userId")

@@ -62,6 +62,8 @@ fun SimulasiBebasScreen(
     var editingDevice by remember { mutableStateOf<SimulationDeviceEntity?>(null) }
     var waktuNyala by remember { mutableStateOf(LocalTime.of(0, 0)) }
     var waktuMati by remember { mutableStateOf(LocalTime.of(23, 59)) }
+    val totalDaya by viewModel.totalDaya.collectAsState()
+    val totalBiaya by viewModel.biayaListrik.collectAsState()
 
     LaunchedEffect(simulationId) {
         Log.d("SimulasiBebasScreen", "simulationId changed: $simulationId")
@@ -141,6 +143,12 @@ fun SimulasiBebasScreen(
                         Log.d("SimulasiBebasScreen", "Deleting device: ${device.nama}")
                         viewModel.deleteDevice(device.deviceId)
                     }
+                )
+                Text(
+                    text = "Total Daya Listrik = ${totalDaya.toInt()}"
+                )
+                Text(
+                    text = "Total Biaya Listrik = ${totalBiaya.toInt()}"
                 )
             }
         }
