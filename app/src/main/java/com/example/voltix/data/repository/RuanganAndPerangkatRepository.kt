@@ -33,7 +33,6 @@ class RuanganAndPerangkatRepository @Inject constructor(
         perangkatDao.deletePerangkat(perangkat)
     }
 
-
     suspend fun getPerangkatById(id: Int): PerangkatEntity? {
         return perangkatDao.getPerangkatById(id)
     }
@@ -44,6 +43,24 @@ class RuanganAndPerangkatRepository @Inject constructor(
 
     suspend fun getAllPerangkatList(): List<PerangkatEntity> {
         return perangkatDao.getAllPerangkat()
+    }
+
+    // === Lampu ===
+
+    suspend fun insertLampu(lampu: LampuEntity) {
+        perangkatDao.insertLampu(lampu)
+    }
+
+    suspend fun updateLampu(lampu: LampuEntity) {
+        perangkatDao.updateLampu(lampu)
+    }
+
+    suspend fun deleteLampuByPerangkatId(perangkatId: Int) {
+        perangkatDao.deleteLampuByPerangkatId(perangkatId)
+    }
+
+    suspend fun getLampuByPerangkatId(perangkatId: Int): LampuEntity? {
+        return perangkatDao.getLampuByPerangkatId(perangkatId)
     }
 
     // === Ruangan ===

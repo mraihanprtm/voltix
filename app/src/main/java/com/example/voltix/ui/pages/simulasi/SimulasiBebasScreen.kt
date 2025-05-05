@@ -62,8 +62,8 @@ fun SimulasiBebasScreen(
     var editingDevice by remember { mutableStateOf<SimulationDeviceEntity?>(null) }
     var waktuNyala by remember { mutableStateOf(LocalTime.of(0, 0)) }
     var waktuMati by remember { mutableStateOf(LocalTime.of(23, 59)) }
-    val totalDaya by viewModel.totalDaya.collectAsState()
-    val totalBiaya by viewModel.biayaListrik.collectAsState()
+    val dayaListrik by viewModel.totalDaya.collectAsState()
+    val biayaListrik by viewModel.biayaListrik.collectAsState()
 
     LaunchedEffect(simulationId) {
         Log.d("SimulasiBebasScreen", "simulationId changed: $simulationId")
@@ -144,12 +144,67 @@ fun SimulasiBebasScreen(
                         viewModel.deleteDevice(device.deviceId)
                     }
                 )
-                Text(
-                    text = "Total Daya Listrik = ${totalDaya.toInt()}"
-                )
-                Text(
-                    text = "Total Biaya Listrik = ${totalBiaya.toInt()}"
-                )
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color.White
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalAlignment = Alignment.Start
+                    ) {
+                        Text(
+                            text = "Informasi Listrik",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            color = Color.Black
+                        )
+                        Spacer(modifier = Modifier.height(1.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Daya Listrik",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium,
+                                color = Color.Gray
+                            )
+                            Text(
+                                text = "$dayaListrik",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.Black
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Biaya Listrik",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium,
+                                color = Color.Gray
+                            )
+                            Text(
+                                text = "$biayaListrik",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.Black
+                            )
+                        }
+                    }
+                }
             }
         }
     }

@@ -29,9 +29,11 @@ import androidx.navigation.NavHostController
 import androidx.room.TypeConverters
 import com.example.voltix.R
 import com.example.voltix.data.database.Converters
+import com.example.voltix.data.entity.PerangkatEntity
 import com.example.voltix.data.entity.jenis
+import com.example.voltix.data.entity.jenisLampu
+import com.example.voltix.data.entity.LampuEntity
 import com.example.voltix.ui.Screen
-import com.example.voltix.ui.component.DropdownKategori
 import com.example.voltix.ui.component.TimePickerDialogButton
 import com.example.voltix.viewmodel.simulasi.PerangkatViewModel
 import java.time.LocalTime
@@ -44,26 +46,43 @@ fun InputPerangkatScreen(
     ruanganId: Int,
     initialDeviceName: String = "",
     initialWattage: String = "",
+    initialPerangkat: PerangkatEntity? = null, // Untuk mode edit
+    initialLampu: LampuEntity? = null, // Data LampuEntity jika ada
     viewModel: PerangkatViewModel = hiltViewModel(),
     onPerangkatDisimpan: () -> Unit = {}
 ) {
+    val isEditMode = initialPerangkat != null
     var nama by remember { mutableStateOf(initialDeviceName) }
     var daya by remember { mutableStateOf(initialWattage) }
-    var jumlah by remember { mutableStateOf("1") }
-    var selectedJenis by remember { mutableStateOf(jenis.Lainnya) }
+    var jumlah by remember { mutableStateOf(initialPerangkat?.jumlah?.toString() ?: "1") }
+    var selectedJenis by remember { mutableStateOf(initialPerangkat?.jenis ?: jenis.Lainnya) }
+    var selectedJenisLampu by remember { mutableStateOf(initialLampu?.jenis ?: jenisLampu.LED) }
+    var lumen by remember { mutableStateOf(initialLampu?.lumen?.toString() ?: "") }
     var waktuNyala by remember { mutableStateOf(LocalTime.of(6, 0)) }
     var waktuMati by remember { mutableStateOf(LocalTime.of(18, 0)) }
     var isFormValid by remember { mutableStateOf(false) }
     var isSaving by remember { mutableStateOf(false) }
+    var isLampuDropdownExpanded by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
 
+    // Inisialisasi waktu nyala dan mati jika dalam mode edit
+    LaunchedEffect(initialPerangkat) {
+        if (isEditMode) {
+            viewModel.getCrossRef(initialPerangkat!!.id, ruanganId)?.let { crossRef ->
+                waktuNyala = crossRef.waktuNyala
+                waktuMati = crossRef.waktuMati
+            }
+        }
+    }
+
     // Form validation
-    LaunchedEffect(nama, daya, jumlah) {
+    LaunchedEffect(nama, daya, jumlah, selectedJenis, lumen) {
         isFormValid = nama.isNotBlank() &&
                 daya.toIntOrNull() != null &&
                 daya.toIntOrNull()!! > 0 &&
                 jumlah.toIntOrNull() != null &&
-                jumlah.toIntOrNull()!! > 0
+                jumlah.toIntOrNull()!! > 0 &&
+                (selectedJenis != jenis.Lampu || (lumen.toIntOrNull() != null && lumen.toIntOrNull()!! > 0))
     }
 
     // Save button pulse animation
@@ -83,7 +102,7 @@ fun InputPerangkatScreen(
             if (isSaving) {
                 isSaving = false
                 onPerangkatDisimpan()
-                // Navigate back to ImagePicker with state preservation
+                // Navigate back to DetailRuangan with state preservation
                 val popped = navController.popBackStack(
                     route = Screen.DetailRuangan.route,
                     inclusive = false,
@@ -152,12 +171,12 @@ fun InputPerangkatScreen(
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.ic_fa_plus),
-                            contentDescription = "Add Device",
+                            contentDescription = if (isEditMode) "Edit Device" else "Add Device",
                             modifier = Modifier.size(48.dp)
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Input Perangkat",
+                            text = if (isEditMode) "Edit Perangkat" else "Input Perangkat",
                             style = MaterialTheme.typography.headlineSmall.copy(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 24.sp
@@ -165,7 +184,7 @@ fun InputPerangkatScreen(
                             color = MaterialTheme.colorScheme.onPrimary
                         )
                         Text(
-                            text = "Masukkan detail perangkat elektronik",
+                            text = if (isEditMode) "Ubah detail perangkat elektronik" else "Masukkan detail perangkat elektronik",
                             style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
                             color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
                             textAlign = TextAlign.Center
@@ -265,7 +284,7 @@ fun InputPerangkatScreen(
             }
         }
 
-        // Kategori Section
+        // Kategori Section (Radio Buttons)
         AnimatedVisibility(
             visible = true,
             enter = fadeIn(tween(300, delayMillis = 200)) + slideInVertically(tween(300, delayMillis = 200)),
@@ -301,9 +320,147 @@ fun InputPerangkatScreen(
                         )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    DropdownKategori(
-                        selectedJenis = selectedJenis,
-                        onJenisSelected = { selectedJenis = it },
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selectedJenis == jenis.Lampu,
+                                onClick = { selectedJenis = jenis.Lampu }
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Lampu",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selectedJenis == jenis.Lainnya,
+                                onClick = { selectedJenis = jenis.Lainnya }
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Lainnya",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Lampu Section (jika jenis adalah Lampu)
+        AnimatedVisibility(
+            visible = selectedJenis == jenis.Lampu,
+            enter = fadeIn(tween(300, delayMillis = 250)) + slideInVertically(tween(300, delayMillis = 250)),
+            exit = fadeOut(tween(300)) + slideOutVertically(tween(300))
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(4.dp, RoundedCornerShape(12.dp)),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_fa_lightbulb),
+                            contentDescription = "Lampu",
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Detail Lampu",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 16.sp
+                            )
+                        )
+                    }
+                    // Dropdown untuk Jenis Lampu
+                    ExposedDropdownMenuBox(
+                        expanded = isLampuDropdownExpanded,
+                        onExpandedChange = { isLampuDropdownExpanded = it }
+                    ) {
+                        OutlinedTextField(
+                            value = selectedJenisLampu.name,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Jenis Lampu") },
+                            leadingIcon = {
+                                Image(
+                                    painter = painterResource(id = R.drawable.ic_fa_bulb),
+                                    contentDescription = "Jenis Lampu",
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .menuAnchor(),
+                            colors = TextFieldDefaults.outlinedTextFieldColors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                            )
+                        )
+                        ExposedDropdownMenu(
+                            expanded = isLampuDropdownExpanded,
+                            onDismissRequest = { isLampuDropdownExpanded = false }
+                        ) {
+                            jenisLampu.values().forEach { jenis ->
+                                DropdownMenuItem(
+                                    text = { Text(jenis.name) },
+                                    onClick = {
+                                        selectedJenisLampu = jenis
+                                        isLampuDropdownExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    // Input untuk Lumen
+                    OutlinedTextField(
+                        value = lumen,
+                        onValueChange = { newValue ->
+                            if (newValue.isEmpty() || newValue.toIntOrNull() != null) {
+                                lumen = newValue
+                            }
+                        },
+                        label = { Text("Lumen") },
+                        leadingIcon = {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_fa_brightness),
+                                contentDescription = "Lumen",
+                                modifier = Modifier.size(24.dp)
+                            )
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp)),
+                        colors = TextFieldDefaults.outlinedTextFieldColors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            errorBorderColor = MaterialTheme.colorScheme.error
+                        ),
+                        isError = lumen.isNotEmpty() && (lumen.toIntOrNull() == null || lumen.toIntOrNull()!! <= 0)
                     )
                 }
             }
@@ -380,20 +537,37 @@ fun InputPerangkatScreen(
                 onClick = {
                     if (isFormValid) {
                         isSaving = true
-                        viewModel.insertPerangkatToRuangan(
-                            nama = nama,
-                            jumlah = jumlah.toIntOrNull() ?: 1,
-                            daya = daya.toIntOrNull() ?: 0,
-                            kategori = selectedJenis,
-                            waktuNyala = waktuNyala,
-                            waktuMati = waktuMati,
-                            ruanganId = ruanganId
-                        )
+                        if (isEditMode) {
+                            viewModel.editPerangkat(
+                                nama = nama,
+                                jumlah = jumlah.toIntOrNull() ?: 1,
+                                daya = daya.toIntOrNull() ?: 0,
+                                kategori = selectedJenis,
+                                waktuNyala = waktuNyala,
+                                waktuMati = waktuMati,
+                                jenisLampu = if (selectedJenis == jenis.Lampu) selectedJenisLampu else null,
+                                lumen = if (selectedJenis == jenis.Lampu) lumen.toIntOrNull() else null
+                            )
+                        } else {
+                            viewModel.insertPerangkatToRuangan(
+                                nama = nama,
+                                jumlah = jumlah.toIntOrNull() ?: 1,
+                                daya = daya.toIntOrNull() ?: 0,
+                                kategori = selectedJenis,
+                                waktuNyala = waktuNyala,
+                                waktuMati = waktuMati,
+                                ruanganId = ruanganId,
+                                jenisLampu = if (selectedJenis == jenis.Lampu) selectedJenisLampu else null,
+                                lumen = if (selectedJenis == jenis.Lampu) lumen.toIntOrNull() else null
+                            )
+                        }
                         // Reset form
                         nama = ""
                         daya = ""
                         jumlah = "1"
                         selectedJenis = jenis.Lainnya
+                        selectedJenisLampu = jenisLampu.LED
+                        lumen = ""
                     }
                 },
                 modifier = Modifier
@@ -428,7 +602,7 @@ fun InputPerangkatScreen(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = if (isSaving) "Menyimpan..." else "Simpan Perangkat",
+                        text = if (isSaving) "Menyimpan..." else if (isEditMode) "Simpan Perubahan" else "Simpan Perangkat",
                         style = MaterialTheme.typography.labelLarge.copy(
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp

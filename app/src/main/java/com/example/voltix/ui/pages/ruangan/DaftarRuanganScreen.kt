@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -26,10 +27,12 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.example.voltix.data.entity.JenisRuangan
 import com.example.voltix.data.entity.RuanganEntity
 import com.example.voltix.viewmodel.simulasi.RuanganViewModel
 import kotlinx.coroutines.launch
@@ -43,19 +46,18 @@ fun DaftarRuanganScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf<RuanganEntity?>(null) }
     var showEditDialog by remember { mutableStateOf<RuanganEntity?>(null) }
-    var namaBaru by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(true) }
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(1000)
+        isLoading = false
+    }
 
     val fabScale by animateFloatAsState(
         targetValue = if (isLoading) 1f else 1.1f,
-        animationSpec = tween(durationMillis = 200),
-        finishedListener = {
-            if (!isLoading) {
-                kotlinx.coroutines.MainScope().launch {
-                    kotlinx.coroutines.delay(100)
-                }
-            }
-        }
+        animationSpec = tween(durationMillis = 200)
     )
 
     Scaffold(
@@ -86,6 +88,7 @@ fun DaftarRuanganScreen(
                 )
             }
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
@@ -116,7 +119,14 @@ fun DaftarRuanganScreen(
             }
 
             // Content
-            if (daftarRuangan.isEmpty()) {
+            if (isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else if (daftarRuangan.isEmpty()) {
                 EmptyStateView()
             } else {
                 LazyColumn(
@@ -134,7 +144,6 @@ fun DaftarRuanganScreen(
                             },
                             onEdit = {
                                 showEditDialog = ruangan
-                                namaBaru = ruangan.namaRuangan
                             }
                         )
                     }
@@ -146,18 +155,24 @@ fun DaftarRuanganScreen(
     // Add Dialog
     if (showAddDialog) {
         AddRuanganDialog(
-            namaBaru = namaBaru,
-            onNamaChange = { namaBaru = it },
-            onConfirm = {
-                if (namaBaru.isNotBlank()) {
-                    viewModel.insertRuangan(RuanganEntity(namaRuangan = namaBaru))
-                    namaBaru = ""
+            onConfirm = { nama, panjang, lebar, jenis ->
+                if (nama.isNotBlank() && panjang > 0 && lebar > 0) {
+                    viewModel.insertRuangan(
+                        RuanganEntity(
+                            namaRuangan = nama,
+                            panjangRuangan = panjang,
+                            lebarRuangan = lebar,
+                            jenisRuangan = jenis
+                        )
+                    )
+                    scope.launch {
+                        snackbarHostState.showSnackbar("Ruangan berhasil ditambahkan")
+                    }
                     showAddDialog = false
                 }
             },
             onDismiss = {
                 showAddDialog = false
-                namaBaru = ""
             }
         )
     }
@@ -167,6 +182,9 @@ fun DaftarRuanganScreen(
         DeleteConfirmationDialog(
             onConfirm = {
                 viewModel.deleteRuangan(ruangan)
+                scope.launch {
+                    snackbarHostState.showSnackbar("Ruangan berhasil dihapus")
+                }
                 showDeleteDialog = null
             },
             onDismiss = {
@@ -178,18 +196,16 @@ fun DaftarRuanganScreen(
     // Edit Dialog
     showEditDialog?.let { ruangan ->
         EditRuanganDialog(
-            currentName = ruangan.namaRuangan,
-            onNameChange = { newName ->
-                namaBaru = newName
-            },
-            onConfirm = {
-                viewModel.updateRuangan(ruangan.copy(namaRuangan = namaBaru))
+            ruangan = ruangan,
+            onConfirm = { updatedRuangan ->
+                viewModel.updateRuangan(updatedRuangan)
+                scope.launch {
+                    snackbarHostState.showSnackbar("Ruangan berhasil diperbarui")
+                }
                 showEditDialog = null
-                namaBaru = ""
             },
             onDismiss = {
                 showEditDialog = null
-                namaBaru = ""
             }
         )
     }
@@ -223,15 +239,21 @@ fun RuanganCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
-                text = ruangan.namaRuangan,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 18.sp
-                ),
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f)
-            )
+            Column {
+                Text(
+                    text = ruangan.namaRuangan,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 18.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "${ruangan.panjangRuangan}m x ${ruangan.lebarRuangan}m, ${ruangan.jenisRuangan}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+            }
 
             Box {
                 IconButton(onClick = { showMenu = true }) {
@@ -253,7 +275,7 @@ fun RuanganCard(
                             onEdit()
                         },
                         leadingIcon = {
-                            Icon(Icons.Default.Edit, "Edit")
+                            Icon(Icons.Default.Edit, contentDescription = "Edit")
                         }
                     )
                     DropdownMenuItem(
@@ -263,7 +285,7 @@ fun RuanganCard(
                             onDelete()
                         },
                         leadingIcon = {
-                            Icon(Icons.Default.Delete, "Delete")
+                            Icon(Icons.Default.Delete, contentDescription = "Delete")
                         }
                     )
                 }
@@ -301,11 +323,23 @@ fun EmptyStateView() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddRuanganDialog(
-    namaBaru: String,
-    onNamaChange: (String) -> Unit,
-    onConfirm: () -> Unit,
+    onConfirm: (String, Float, Float, JenisRuangan) -> Unit,
     onDismiss: () -> Unit
 ) {
+    var nama by remember { mutableStateOf("") }
+    var panjang by remember { mutableStateOf("") }
+    var lebar by remember { mutableStateOf("") }
+    var selectedJenis by remember { mutableStateOf(JenisRuangan.Lainnya) }
+    var isFormValid by remember { mutableStateOf(false) }
+    var isDropdownExpanded by remember { mutableStateOf(false) }
+
+    // Validasi form
+    LaunchedEffect(nama, panjang, lebar) {
+        isFormValid = nama.isNotBlank() &&
+                panjang.toFloatOrNull()?.let { it > 0 } ?: false &&
+                lebar.toFloatOrNull()?.let { it > 0 } ?: false
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(16.dp),
@@ -320,31 +354,113 @@ fun AddRuanganDialog(
             )
         },
         text = {
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
-                    value = namaBaru,
-                    onValueChange = onNamaChange,
+                    value = nama,
+                    onValueChange = { nama = it },
                     label = { Text("Nama Ruangan") },
                     singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = TextFieldDefaults.outlinedTextFieldColors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                         unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                    )
+                    ),
+                    isError = nama.isBlank() && nama.isNotEmpty()
                 )
+                OutlinedTextField(
+                    value = panjang,
+                    onValueChange = { newValue ->
+                        if (newValue.isEmpty() || newValue.toFloatOrNull() != null) {
+                            panjang = newValue
+                        }
+                    },
+                    label = { Text("Panjang (m)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    ),
+                    isError = panjang.isNotEmpty() && (panjang.toFloatOrNull() == null || panjang.toFloatOrNull()!! <= 0)
+                )
+                OutlinedTextField(
+                    value = lebar,
+                    onValueChange = { newValue ->
+                        if (newValue.isEmpty() || newValue.toFloatOrNull() != null) {
+                            lebar = newValue
+                        }
+                    },
+                    label = { Text("Lebar (m)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    ),
+                    isError = lebar.isNotEmpty() && (lebar.toFloatOrNull() == null || lebar.toFloatOrNull()!! <= 0)
+                )
+                Text(
+                    text = "Jenis Ruangan",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium),
+                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                )
+                ExposedDropdownMenuBox(
+                    expanded = isDropdownExpanded,
+                    onExpandedChange = { isDropdownExpanded = it }
+                ) {
+                    OutlinedTextField(
+                        value = selectedJenis.name,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Jenis Ruangan") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .menuAnchor(),
+                        colors = TextFieldDefaults.outlinedTextFieldColors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                        )
+                    )
+                    ExposedDropdownMenu(
+                        expanded = isDropdownExpanded,
+                        onDismissRequest = { isDropdownExpanded = false }
+                    ) {
+                        JenisRuangan.values().forEach { jenis ->
+                            DropdownMenuItem(
+                                text = { Text(jenis.name) },
+                                onClick = {
+                                    selectedJenis = jenis
+                                    isDropdownExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
             TextButton(
-                onClick = onConfirm,
-                enabled = namaBaru.isNotBlank(),
+                onClick = {
+                    if (isFormValid) {
+                        onConfirm(
+                            nama,
+                            panjang.toFloatOrNull() ?: 0f,
+                            lebar.toFloatOrNull() ?: 0f,
+                            selectedJenis
+                        )
+                    }
+                },
+                enabled = isFormValid,
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
                     .background(
-                        if (namaBaru.isNotBlank())
+                        if (isFormValid)
                             MaterialTheme.colorScheme.primary
                         else
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
@@ -372,7 +488,7 @@ fun AddRuanganDialog(
     )
 }
 
-// Tambahkan dialog konfirmasi hapus:
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DeleteConfirmationDialog(
     onConfirm: () -> Unit,
@@ -380,8 +496,17 @@ fun DeleteConfirmationDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Hapus Ruangan") },
-        text = { Text("Apakah Anda yakin ingin menghapus ruangan ini?") },
+        shape = RoundedCornerShape(16.dp),
+        containerColor = MaterialTheme.colorScheme.surface,
+        title = {
+            Text(
+                text = "Hapus Ruangan",
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+            )
+        },
+        text = {
+            Text("Apakah Anda yakin ingin menghapus ruangan ini?")
+        },
         confirmButton = {
             TextButton(
                 onClick = onConfirm,
@@ -396,47 +521,185 @@ fun DeleteConfirmationDialog(
             TextButton(onClick = onDismiss) {
                 Text("Batal")
             }
-        }
+        },
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .shadow(8.dp, RoundedCornerShape(16.dp))
     )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditRuanganDialog(
-    currentName: String,
-    onNameChange: (String) -> Unit,
-    onConfirm: () -> Unit,
+    ruangan: RuanganEntity,
+    onConfirm: (RuanganEntity) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var editedName by remember { mutableStateOf(currentName) }
+    var nama by remember { mutableStateOf(ruangan.namaRuangan) }
+    var panjang by remember { mutableStateOf(ruangan.panjangRuangan.toString()) }
+    var lebar by remember { mutableStateOf(ruangan.lebarRuangan.toString()) }
+    var selectedJenis by remember { mutableStateOf(ruangan.jenisRuangan) }
+    var isFormValid by remember { mutableStateOf(true) }
+    var isDropdownExpanded by remember { mutableStateOf(false) }
+
+    // Validasi form
+    LaunchedEffect(nama, panjang, lebar) {
+        isFormValid = nama.isNotBlank() &&
+                panjang.toFloatOrNull()?.let { it > 0 } ?: false &&
+                lebar.toFloatOrNull()?.let { it > 0 } ?: false
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit Nama Ruangan") },
-        text = {
-            OutlinedTextField(
-                value = editedName,
-                onValueChange = { editedName = it },
-                label = { Text("Nama Ruangan") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+        shape = RoundedCornerShape(16.dp),
+        containerColor = MaterialTheme.colorScheme.surface,
+        title = {
+            Text(
+                text = "Edit Ruangan",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = MaterialTheme.colorScheme.onSurface
             )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = nama,
+                    onValueChange = { nama = it },
+                    label = { Text("Nama Ruangan") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    ),
+                    isError = nama.isBlank()
+                )
+                OutlinedTextField(
+                    value = panjang,
+                    onValueChange = { newValue ->
+                        if (newValue.isEmpty() || newValue.toFloatOrNull() != null) {
+                            panjang = newValue
+                        }
+                    },
+                    label = { Text("Panjang (m)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    ),
+                    isError = panjang.isNotEmpty() && (panjang.toFloatOrNull() == null || panjang.toFloatOrNull()!! <= 0)
+                )
+                OutlinedTextField(
+                    value = lebar,
+                    onValueChange = { newValue ->
+                        if (newValue.isEmpty() || newValue.toFloatOrNull() != null) {
+                            lebar = newValue
+                        }
+                    },
+                    label = { Text("Lebar (m)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    ),
+                    isError = lebar.isNotEmpty() && (lebar.toFloatOrNull() == null || lebar.toFloatOrNull()!! <= 0)
+                )
+                Text(
+                    text = "Jenis Ruangan",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium),
+                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                )
+                ExposedDropdownMenuBox(
+                    expanded = isDropdownExpanded,
+                    onExpandedChange = { isDropdownExpanded = it }
+                ) {
+                    OutlinedTextField(
+                        value = selectedJenis.name,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Jenis Ruangan") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .menuAnchor(),
+                        colors = TextFieldDefaults.outlinedTextFieldColors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                        )
+                    )
+                    ExposedDropdownMenu(
+                        expanded = isDropdownExpanded,
+                        onDismissRequest = { isDropdownExpanded = false }
+                    ) {
+                        JenisRuangan.values().forEach { jenis ->
+                            DropdownMenuItem(
+                                text = { Text(jenis.name) },
+                                onClick = {
+                                    selectedJenis = jenis
+                                    isDropdownExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
         },
         confirmButton = {
             TextButton(
                 onClick = {
-                    onNameChange(editedName)
-                    onConfirm()
+                    if (isFormValid) {
+                        onConfirm(
+                            ruangan.copy(
+                                namaRuangan = nama,
+                                panjangRuangan = panjang.toFloatOrNull() ?: ruangan.panjangRuangan,
+                                lebarRuangan = lebar.toFloatOrNull() ?: ruangan.lebarRuangan,
+                                jenisRuangan = selectedJenis
+                            )
+                        )
+                    }
                 },
-                enabled = editedName.isNotBlank() && editedName != currentName
+                enabled = isFormValid && (
+                        nama != ruangan.namaRuangan ||
+                                panjang.toFloatOrNull() != ruangan.panjangRuangan ||
+                                lebar.toFloatOrNull() != ruangan.lebarRuangan ||
+                                selectedJenis != ruangan.jenisRuangan
+                        ),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(
+                        if (isFormValid)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                    )
             ) {
-                Text("Simpan")
+                Text(
+                    text = "Simpan",
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    style = MaterialTheme.typography.labelLarge
+                )
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Batal")
+                Text(
+                    text = "Batal",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.labelLarge
+                )
             }
-        }
+        },
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .shadow(8.dp, RoundedCornerShape(16.dp))
     )
 }

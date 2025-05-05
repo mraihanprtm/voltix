@@ -12,6 +12,8 @@ import com.example.voltix.data.entity.PerangkatEntity
 import com.example.voltix.data.entity.RuanganPerangkatCrossRef
 import com.example.voltix.data.entity.UserEntity
 import com.example.voltix.data.entity.jenis
+import com.example.voltix.data.entity.jenisLampu
+import com.example.voltix.data.entity.LampuEntity
 import com.example.voltix.data.repository.RuanganAndPerangkatRepository
 import com.example.voltix.data.repository.UserRepository
 import com.google.firebase.auth.FirebaseAuth
@@ -143,7 +145,9 @@ class PerangkatViewModel @Inject constructor(
         kategori: jenis,
         waktuNyala: LocalTime,
         waktuMati: LocalTime,
-        ruanganId: Int
+        ruanganId: Int,
+        jenisLampu: jenisLampu? = null,
+        lumen: Int? = null
     ) {
         viewModelScope.launch {
             try {
@@ -154,6 +158,16 @@ class PerangkatViewModel @Inject constructor(
                     jenis = kategori
                 )
                 val perangkatId = repository.insertAndGetId(perangkat).toInt()
+
+                // Simpan LampuEntity jika jenis adalah Lampu
+                if (kategori == jenis.Lampu && jenisLampu != null && lumen != null) {
+                    val lampu = LampuEntity(
+                        perangkatId = perangkatId,
+                        jenis = jenisLampu,
+                        lumen = lumen
+                    )
+                    repository.insertLampu(lampu)
+                }
 
                 val crossRef = RuanganPerangkatCrossRef(
                     ruanganId = ruanganId,
@@ -183,7 +197,9 @@ class PerangkatViewModel @Inject constructor(
         daya: Int,
         kategori: jenis,
         waktuNyala: LocalTime,
-        waktuMati: LocalTime
+        waktuMati: LocalTime,
+        jenisLampu: jenisLampu? = null,
+        lumen: Int? = null
     ) {
         viewModelScope.launch {
             try {
@@ -196,6 +212,21 @@ class PerangkatViewModel @Inject constructor(
                         jumlah = jumlah
                     )
                     repository.updatePerangkat(updatedPerangkat)
+
+                    // Update atau hapus LampuEntity
+                    if (kategori == jenis.Lampu && jenisLampu != null && lumen != null) {
+                        val existingLampu = repository.getLampuByPerangkatId(currentPerangkat.id)
+                        val updatedLampu = LampuEntity(
+                            id = existingLampu?.id ?: 0,
+                            perangkatId = currentPerangkat.id,
+                            jenis = jenisLampu,
+                            lumen = lumen
+                        )
+                        repository.updateLampu(updatedLampu)
+                    } else {
+                        // Hapus LampuEntity jika kategori bukan Lampu
+                        repository.deleteLampuByPerangkatId(currentPerangkat.id)
+                    }
 
                     // Update cross ref dengan waktu baru
                     currentRuanganId?.let { ruanganId ->
@@ -216,7 +247,9 @@ class PerangkatViewModel @Inject constructor(
                             "Edit perangkat ${currentPerangkat.nama}: " +
                                     "waktuNyala=$waktuNyala, " +
                                     "waktuMati=$waktuMati, " +
-                                    "durasi=$durasi"
+                                    "durasi=$durasi, " +
+                                    "jenisLampu=$jenisLampu, " +
+                                    "lumen=$lumen"
                         )
 
                         loadPerangkatByRuangan(ruanganId)
@@ -252,6 +285,14 @@ class PerangkatViewModel @Inject constructor(
         }
     }
 
+    suspend fun getCrossRef(perangkatId: Int, ruanganId: Int): RuanganPerangkatCrossRef? {
+        return repository.getCrossRef(ruanganId, perangkatId)
+    }
+
+    suspend fun getLampuByPerangkatId(perangkatId: Int): LampuEntity? {
+        return repository.getLampuByPerangkatId(perangkatId)
+    }
+
     private fun updateTotalDaya(perangkatList: List<PerangkatEntity>) {
         val total = perangkatList.sumOf { perangkat ->
             perangkat.daya * perangkat.jumlah
@@ -281,7 +322,6 @@ class PerangkatViewModel @Inject constructor(
         }
     }
 
-    // PerangkatViewModel.kt (tambahan method)
     fun updateJenisListrik(newJenisListrik: Int) {
         viewModelScope.launch {
             try {

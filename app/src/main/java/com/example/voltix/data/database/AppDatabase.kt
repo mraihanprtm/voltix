@@ -12,6 +12,7 @@ import com.example.voltix.data.dao.SimulationDAO
 
 import com.example.voltix.data.dao.UserDao
 import com.example.voltix.data.dao.UserPerangkatCrossRefDao
+import com.example.voltix.data.entity.LampuEntity
 import com.example.voltix.data.entity.PerangkatEntity
 import com.example.voltix.data.entity.RuanganEntity
 import com.example.voltix.data.entity.RuanganPerangkatCrossRef
@@ -23,7 +24,7 @@ import com.example.voltix.data.entity.UserEntity
 import com.example.voltix.data.entity.UserPerangkatCrossRef
 
 @Database(
-    entities = [UserEntity::class, PerangkatEntity::class, RuanganEntity::class, RuanganPerangkatCrossRef::class, UserPerangkatCrossRef::class, SimulationEntity::class, SimulationDeviceEntity::class],
+    entities = [UserEntity::class, PerangkatEntity::class, RuanganEntity::class, LampuEntity::class, RuanganPerangkatCrossRef::class, UserPerangkatCrossRef::class, SimulationEntity::class, SimulationDeviceEntity::class],
     version = 1,
     exportSchema = false
 )

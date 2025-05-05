@@ -6,7 +6,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -33,6 +32,7 @@ import androidx.navigation.NavHostController
 import com.airbnb.lottie.compose.*
 import com.example.voltix.R
 import com.example.voltix.data.entity.jenis
+import com.example.voltix.data.entity.jenisLampu
 import com.example.voltix.ui.Screen
 import com.example.voltix.ui.component.DropdownKategori
 import com.example.voltix.ui.component.TimePickerDialogButton
@@ -185,7 +185,7 @@ fun DetailRuangan(
                     }
 
                     items(perangkatList) { perangkat ->
-                        PerangkatCard(viewModel, perangkat)
+                        PerangkatCard(viewModel, perangkat, ruanganId, navController)
                     }
 
                     if (melebihiDaya) {
@@ -244,12 +244,67 @@ fun DetailRuangan(
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
                             thickness = 1.dp
                         )
-                        Text(
-                            text = "Daya Listrik = $dayaListrik"
-                        )
-                        Text(
-                            text = "Biaya Listrik = $biayaListrik"
-                        )
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color.White
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                horizontalAlignment = Alignment.Start
+                            ) {
+                                Text(
+                                    text = "Informasi Listrik",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp,
+                                    color = Color.Black
+                                )
+                                Spacer(modifier = Modifier.height(1.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = "Daya Listrik",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color.Gray
+                                    )
+                                    Text(
+                                        text = "$dayaListrik",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color.Black
+                                    )
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = "Biaya Listrik",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color.Gray
+                                    )
+                                    Text(
+                                        text = "$biayaListrik",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color.Black
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -257,13 +312,18 @@ fun DetailRuangan(
 
         // Show EditPerangkatDialog when showEditDialog is true
         if (showEditDialog) {
-            EditPerangkatDialog(viewModel)
+            EditPerangkatDialog(viewModel, ruanganId)
         }
     }
 }
 
 @Composable
-fun PerangkatCard(viewModel: PerangkatViewModel, perangkat: com.example.voltix.data.entity.PerangkatEntity) {
+fun PerangkatCard(
+    viewModel: PerangkatViewModel,
+    perangkat: com.example.voltix.data.entity.PerangkatEntity,
+    ruanganId: Int,
+    navController: NavHostController
+) {
     var isExpanded by remember { mutableStateOf(false) }
 
     AnimatedVisibility(
@@ -474,14 +534,46 @@ fun LoadingStateView() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditPerangkatDialog(viewModel: PerangkatViewModel) {
+fun EditPerangkatDialog(viewModel: PerangkatViewModel, ruanganId: Int) {
     val perangkat = viewModel.perangkatDiedit
     var nama by remember { mutableStateOf(perangkat?.nama ?: "") }
     var daya by remember { mutableStateOf(perangkat?.daya?.toString() ?: "") }
     var jumlah by remember { mutableStateOf(perangkat?.jumlah?.toString() ?: "") }
-    var selectedJenis by remember { mutableStateOf(jenis.Lainnya) }
-    var waktuNyala by remember { mutableStateOf(LocalTime.of(6, 0)) } // jam 06:00
-    var waktuMati by remember { mutableStateOf(LocalTime.of(18, 0)) } // jam 18:00
+    var selectedJenis by remember { mutableStateOf(perangkat?.jenis ?: jenis.Lainnya) }
+    var selectedJenisLampu by remember { mutableStateOf(jenisLampu.LED) }
+    var lumen by remember { mutableStateOf("") }
+    var waktuNyala by remember { mutableStateOf(LocalTime.of(6, 0)) }
+    var waktuMati by remember { mutableStateOf(LocalTime.of(18, 0)) }
+    var isFormValid by remember { mutableStateOf(false) }
+    var isLampuDropdownExpanded by remember { mutableStateOf(false) } // Perbaikan dropdown
+
+    // Inisialisasi data dari database untuk waktu dan lampu
+    LaunchedEffect(perangkat) {
+        if (perangkat != null) {
+            // Ambil waktu dari RuanganPerangkatCrossRef
+            viewModel.getCrossRef(perangkat.id, ruanganId)?.let { crossRef ->
+                waktuNyala = crossRef.waktuNyala
+                waktuMati = crossRef.waktuMati
+            }
+            // Ambil data LampuEntity jika ada
+            if (perangkat.jenis == jenis.Lampu) {
+                viewModel.getLampuByPerangkatId(perangkat.id)?.let { lampu ->
+                    selectedJenisLampu = lampu.jenis
+                    lumen = lampu.lumen.toString()
+                }
+            }
+        }
+    }
+
+    // Validasi form
+    LaunchedEffect(nama, daya, jumlah, selectedJenis, lumen) {
+        isFormValid = nama.isNotBlank() &&
+                daya.toIntOrNull() != null &&
+                daya.toIntOrNull()!! > 0 &&
+                jumlah.toIntOrNull() != null &&
+                jumlah.toIntOrNull()!! > 0 &&
+                (selectedJenis != jenis.Lampu || (lumen.toIntOrNull() != null && lumen.toIntOrNull()!! > 0))
+    }
 
     AlertDialog(
         onDismissRequest = { viewModel.showEditDialog = false },
@@ -528,11 +620,16 @@ fun EditPerangkatDialog(viewModel: PerangkatViewModel) {
                     colors = TextFieldDefaults.outlinedTextFieldColors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                         unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                    )
+                    ),
+                    isError = nama.isBlank()
                 )
                 OutlinedTextField(
                     value = daya,
-                    onValueChange = { daya = it },
+                    onValueChange = { newValue ->
+                        if (newValue.isEmpty() || newValue.toIntOrNull() != null) {
+                            daya = newValue
+                        }
+                    },
                     label = { Text("Daya (W)") },
                     leadingIcon = {
                         Image(
@@ -549,11 +646,16 @@ fun EditPerangkatDialog(viewModel: PerangkatViewModel) {
                     colors = TextFieldDefaults.outlinedTextFieldColors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                         unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                    )
+                    ),
+                    isError = daya.isNotEmpty() && (daya.toIntOrNull() == null || daya.toIntOrNull()!! <= 0)
                 )
                 OutlinedTextField(
                     value = jumlah,
-                    onValueChange = { jumlah = it },
+                    onValueChange = { newValue ->
+                        if (newValue.isEmpty() || newValue.toIntOrNull() != null) {
+                            jumlah = newValue
+                        }
+                    },
                     label = { Text("Jumlah") },
                     leadingIcon = {
                         Image(
@@ -570,7 +672,8 @@ fun EditPerangkatDialog(viewModel: PerangkatViewModel) {
                     colors = TextFieldDefaults.outlinedTextFieldColors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                         unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                    )
+                    ),
+                    isError = jumlah.isNotEmpty() && (jumlah.toIntOrNull() == null || jumlah.toIntOrNull()!! <= 0)
                 )
                 Text(
                     text = "Jenis Elektronik",
@@ -581,6 +684,101 @@ fun EditPerangkatDialog(viewModel: PerangkatViewModel) {
                     selectedJenis = selectedJenis,
                     onJenisSelected = { selectedJenis = it },
                 )
+                // Lampu Section (jika jenis adalah Lampu)
+                AnimatedVisibility(
+                    visible = selectedJenis == jenis.Lampu,
+                    enter = fadeIn(tween(300)) + expandVertically(tween(300)),
+                    exit = fadeOut(tween(300)) + shrinkVertically(tween(300))
+                ) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(
+                                text = "Detail Lampu",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium)
+                            )
+                            // Dropdown untuk Jenis Lampu
+                            ExposedDropdownMenuBox(
+                                expanded = isLampuDropdownExpanded,
+                                onExpandedChange = { isLampuDropdownExpanded = it }
+                            ) {
+                                OutlinedTextField(
+                                    value = selectedJenisLampu.name,
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    label = { Text("Jenis Lampu") },
+                                    leadingIcon = {
+                                        Image(
+                                            painter = painterResource(id = R.drawable.ic_fa_bolt),
+                                            contentDescription = "Jenis Lampu",
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .menuAnchor(),
+                                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                                    )
+                                )
+                                ExposedDropdownMenu(
+                                    expanded = isLampuDropdownExpanded,
+                                    onDismissRequest = { isLampuDropdownExpanded = false }
+                                ) {
+                                    jenisLampu.values().forEach { jenis ->
+                                        DropdownMenuItem(
+                                            text = { Text(jenis.name) },
+                                            onClick = {
+                                                selectedJenisLampu = jenis
+                                                isLampuDropdownExpanded = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                            // Input untuk Lumen
+                            OutlinedTextField(
+                                value = lumen,
+                                onValueChange = { newValue ->
+                                    if (newValue.isEmpty() || newValue.toIntOrNull() != null) {
+                                        lumen = newValue
+                                    }
+                                },
+                                label = { Text("Lumen") },
+                                leadingIcon = {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.ic_fa_bolt),
+                                        contentDescription = "Lumen",
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                },
+                                singleLine = true,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp)),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = TextFieldDefaults.outlinedTextFieldColors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                    errorBorderColor = MaterialTheme.colorScheme.error
+                                ),
+                                isError = lumen.isNotEmpty() && (lumen.toIntOrNull() == null || lumen.toIntOrNull()!! <= 0)
+                            )
+                        }
+                    }
+                }
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -635,21 +833,26 @@ fun EditPerangkatDialog(viewModel: PerangkatViewModel) {
         confirmButton = {
             TextButton(
                 onClick = {
-                    viewModel.editPerangkat(
-                        nama = nama,
-                        daya = daya.toIntOrNull() ?: 0,
-                        kategori = selectedJenis,
-                        jumlah = jumlah.toIntOrNull() ?: 1,
-                        waktuNyala = waktuNyala,
-                        waktuMati = waktuMati
-                    )
+                    if (perangkat != null) {
+                        viewModel.editPerangkat(
+                            nama = nama,
+                            daya = daya.toIntOrNull() ?: 0,
+                            kategori = selectedJenis,
+                            jumlah = jumlah.toIntOrNull() ?: 1,
+                            waktuNyala = waktuNyala,
+                            waktuMati = waktuMati,
+                            jenisLampu = if (selectedJenis == jenis.Lampu) selectedJenisLampu else null,
+                            lumen = if (selectedJenis == jenis.Lampu) lumen.toIntOrNull() else null
+                        )
+                        viewModel.showEditDialog = false
+                    }
                 },
-                enabled = nama.isNotBlank() && daya.toIntOrNull() != null && jumlah.toIntOrNull() != null,
+                enabled = isFormValid,
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
                     .background(
                         Brush.linearGradient(
-                            colors = if (nama.isNotBlank() && daya.toIntOrNull() != null && jumlah.toIntOrNull() != null)
+                            colors = if (isFormValid)
                                 listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary)
                             else
                                 listOf(
@@ -684,4 +887,3 @@ fun EditPerangkatDialog(viewModel: PerangkatViewModel) {
         }
     )
 }
-
