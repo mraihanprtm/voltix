@@ -3,6 +3,9 @@ package com.example.voltix.data.repository
 import android.content.Context
 import android.graphics.Bitmap
 import android.widget.Toast
+import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.viewmodel.compose.saveable
 import com.android.volley.Request
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
@@ -18,7 +21,34 @@ import org.json.JSONException
 import java.io.File
 import javax.inject.Inject
 
-class SearchRepository @Inject constructor() {
+class SearchRepository @Inject constructor(private val savedStateHandle: SavedStateHandle) {
+    private val _imageBitmap = mutableStateOf<Bitmap?>(null)
+    val imageBitmap: Bitmap? get() = _imageBitmap.value
+
+    private val _searchResults = mutableStateOf<List<ElectronicInformationModel>>(emptyList())
+    val searchResults: List<ElectronicInformationModel> get() = _searchResults.value
+
+    private val _isLoading = mutableStateOf(false)
+    val isLoading: Boolean get() = _isLoading.value
+
+    // Add SavedStateHandle for persistence
+    var selectedDeviceName by savedStateHandle.saveable {
+        mutableStateOf<String?>(null)
+    }
+
+    var selectedWattage by savedStateHandle.saveable {
+        mutableStateOf<String?>(null)
+    }
+
+    var selectedRuanganId by savedStateHandle.saveable {
+        mutableStateOf<Int?>(null)
+    }
+
+    fun saveSelectedDevice(deviceName: String, wattage: String, ruanganId: Int) {
+        selectedDeviceName = deviceName
+        selectedWattage = wattage
+        selectedRuanganId = ruanganId
+    }
 
     suspend fun saveBitmapToFile(context: Context, bitmap: Bitmap): File = withContext(Dispatchers.IO) {
         val file = File(context.cacheDir, "temp_image.jpg")
@@ -64,7 +94,6 @@ class SearchRepository @Inject constructor() {
                     val visualMatches = response.getJSONArray("visual_matches")
                     val results = mutableListOf<ElectronicInformationModel>()
 
-
                     for (i in 0 until visualMatches.length()) {
                         val item = visualMatches.getJSONObject(i)
                         val title = item.optString("title", "No Title")
@@ -72,7 +101,7 @@ class SearchRepository @Inject constructor() {
 
                         val wattRegex = Regex("""\b(\d+)\s?(-|\s)?\s?(W|w|Watt|watt)\b""")
                         val wattMatch = wattRegex.find(title) ?: wattRegex.find(snippet)
-                        val wattInfo = wattMatch?.value?.replace(Regex("[^0-9]"), "")
+                        val wattInfo = wattMatch?.value ?: "Unknown Wattage"
                         val deviceType = extractItemType(title)
 
                         if (wattMatch != null) {
@@ -81,7 +110,7 @@ class SearchRepository @Inject constructor() {
                                     title = title,
                                     link = item.optString("link", ""),
                                     displayedLink = item.optString("displayed_link", ""),
-                                    snippet = "Jenis: ${extractItemType(title)}\nDaya: $wattInfo",
+                                    snippet = snippet,
                                     deviceType = deviceType,
                                     wattage = wattInfo
                                 )

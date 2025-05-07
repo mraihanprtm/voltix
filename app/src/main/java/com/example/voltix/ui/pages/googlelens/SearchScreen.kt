@@ -1,12 +1,14 @@
 package com.example.voltix.ui.pages.googlelens
 
+import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.provider.MediaStore
 import android.util.Log
-import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -18,9 +20,10 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,67 +39,155 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import androidx.navigation.NavHostController
 import com.example.voltix.data.entity.ElectronicInformationModel
 import com.example.voltix.ui.Screen
 import com.example.voltix.ui.component.SearchResultItem
 import com.example.voltix.viewmodel.googlelens.SearchViewModel
+import kotlinx.coroutines.launch
+import java.io.FileNotFoundException
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SearchScreen(navController: NavController, viewModel: SearchViewModel) {
+fun SearchScreen(
+    navController: NavController,
+    viewModel: SearchViewModel = hiltViewModel(LocalActivity.current as ComponentActivity)
+) {
+    // Collect UI State
+    val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    var showEmptyState by remember { mutableStateOf(uiState.imageBitmap == null && uiState.searchResults.isEmpty()) }
 
-    val imageBitmap = viewModel.imageBitmap
-    val searchResults = viewModel.searchResults
-    val isLoading = viewModel.isLoading
+    // Update showEmptyState based on uiState
+    LaunchedEffect(uiState.imageBitmap, uiState.searchResults) {
+        showEmptyState = uiState.imageBitmap == null && uiState.searchResults.isEmpty()
+    }
 
-    var showEmptyState by remember { mutableStateOf(true) }
-
-    val takeImageLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                val data = result.data
-                val extras = data?.extras
-                val bitmap = extras?.get("data") as Bitmap?
-
-                bitmap?.let {
-                    viewModel.updateIsLoading(true)
-                    showEmptyState = false
-                    viewModel.updateImageBitmap(it)
-
-                    viewModel.saveBitmapToFile(context, it) { file ->
-                        viewModel.uploadImage(file) { imageUrl ->
-                            if (imageUrl != null) {
-                                viewModel.fetchResults(context, imageUrl) { results ->
-                                    viewModel.updateSearchResults(results)
-                                    viewModel.updateIsLoading(false)
-                                }
-                            } else {
-                                Toast.makeText(
-                                    context,
-                                    "Gambar gagal diunggah. Silahkan coba lagi",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+    // Camera launcher for taking photos
+    val takeImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val bitmap = result.data?.extras?.get("data") as? Bitmap
+            bitmap?.let {
+                viewModel.updateIsLoading(true)
+                showEmptyState = false
+                viewModel.updateImageBitmap(it)
+                viewModel.saveBitmapToFile(context, it) { file ->
+                    Log.d("SearchScreen", "Bitmap saved, uploading file: ${file.absolutePath}")
+                    viewModel.uploadImage(file) { imageUrl ->
+                        if (imageUrl != null) {
+                            viewModel.fetchResults(context, imageUrl) { results ->
+                                viewModel.updateSearchResults(results)
                                 viewModel.updateIsLoading(false)
+                                Log.d("SearchScreen", "Search results updated: ${results.size} items")
                             }
+                        } else {
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Gambar gagal diunggah. Silakan coba lagi")
+                            }
+                            viewModel.updateIsLoading(false)
                         }
                     }
                 }
             }
         }
+    }
+
+    // Gallery launcher for picking images
+    val pickImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            try {
+                val bitmap = MediaStore.Images.Media.getBitmap(context.contentResolver, it)
+                viewModel.updateIsLoading(true)
+                showEmptyState = false
+                viewModel.updateImageBitmap(bitmap)
+                viewModel.saveBitmapToFile(context, bitmap) { file ->
+                    Log.d("SearchScreen", "Bitmap saved, uploading file: ${file.absolutePath}")
+                    viewModel.uploadImage(file) { imageUrl ->
+                        if (imageUrl != null) {
+                            viewModel.fetchResults(context, imageUrl) { results ->
+                                viewModel.updateSearchResults(results)
+                                viewModel.updateIsLoading(false)
+                                Log.d("SearchScreen", "Search results updated: ${results.size} items")
+                            }
+                        } else {
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Gambar gagal diunggah. Silakan coba lagi")
+                            }
+                            viewModel.updateIsLoading(false)
+                        }
+                    }
+                }
+            } catch (e: FileNotFoundException) {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("Gambar tidak ditemukan")
+                }
+                viewModel.updateIsLoading(false)
+            }
+        }
+    }
+
+    // Permission launchers
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+            takeImageLauncher.launch(intent)
+        } else {
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("Izin kamera diperlukan")
+            }
+        }
+    }
+
+    // Gallery permission launcher
+    val galleryPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            pickImageLauncher.launch("image/*")
+        } else {
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("Izin galeri diperlukan")
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
             SmallTopAppBar(
-//                title = { Text("Electronics Scanner", fontWeight = FontWeight.Bold) },
                 title = { Text("Pemindai Elektronik", fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.smallTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
-        }
+        },
+        floatingActionButton = {
+            if (uiState.imageBitmap != null || uiState.searchResults.isNotEmpty()) {
+                FloatingActionButton(
+                    onClick = {
+                        viewModel.resetState()
+                        showEmptyState = true
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar("Pencarian direset")
+                        }
+                    },
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.shadow(8.dp, RoundedCornerShape(16.dp))
+                ) {
+                    Icon(Icons.Default.Refresh, contentDescription = "Cari Barang Baru")
+                }
+            }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -109,7 +200,7 @@ fun SearchScreen(navController: NavController, viewModel: SearchViewModel) {
         ) {
             // Image preview
             AnimatedVisibility(
-                visible = imageBitmap != null,
+                visible = uiState.imageBitmap != null,
                 enter = fadeIn(tween(300)) + slideInVertically(tween(300)) { it / 2 },
                 exit = fadeOut()
             ) {
@@ -121,10 +212,9 @@ fun SearchScreen(navController: NavController, viewModel: SearchViewModel) {
                         .fillMaxWidth()
                         .height(200.dp)
                 ) {
-                    imageBitmap?.let { bitmap ->
+                    uiState.imageBitmap?.let { bitmap ->
                         Image(
                             bitmap = bitmap.asImageBitmap(),
-//                            contentDescription = "Captured Image",
                             contentDescription = "Tangkapan Gambar",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize()
@@ -146,15 +236,13 @@ fun SearchScreen(navController: NavController, viewModel: SearchViewModel) {
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-//                        "Don't know what this device is?",
                         "Ingin tahu perangkat apa ini?",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-//                        "Take a photo and let us identify your electronics and their power usage.",
-                        "Ambil sebuah foto dan kami akan mengindentifikasinya.",
+                        "Ambil foto atau pilih dari galeri untuk mengidentifikasi.",
                         fontSize = 14.sp,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
@@ -165,42 +253,62 @@ fun SearchScreen(navController: NavController, viewModel: SearchViewModel) {
                     ) {
                         Button(
                             onClick = {
-                                val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-                                takeImageLauncher.launch(intent)
+                                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
                             },
                             modifier = Modifier
                                 .weight(1f)
                                 .height(48.dp),
                             shape = RoundedCornerShape(24.dp)
                         ) {
-//                            Text("📷 Take Photo", fontSize = 16.sp)
-                            Text("📷 Ambil foto", fontSize = 16.sp)
+                            Text("📷 Ambil Foto", fontSize = 16.sp)
                         }
-                        if (imageBitmap != null) {
-                            Button(
-                                onClick = {
-                                    imageBitmap?.let { bitmap ->
-                                        viewModel.updateIsLoading(true)
-                                        showEmptyState = false
-                                        viewModel.processImage(context, bitmap) { query ->
-                                            viewModel.fetchResults(context, query) { results ->
-                                                viewModel.updateSearchResults(results)
-                                                viewModel.updateIsLoading(false)
-                                            }
+                        Button(
+                            onClick = {
+                                galleryPermissionLauncher.launch(Manifest.permission.READ_MEDIA_IMAGES)
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp),
+                            shape = RoundedCornerShape(24.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondary
+                            )
+                        ) {
+                            Text(
+                                "🖼️ Dari Galeri",
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onSecondary
+                            )
+                        }
+                    }
+                    if (uiState.imageBitmap != null) {
+                        Button(
+                            onClick = {
+                                uiState.imageBitmap?.let { bitmap ->
+                                    viewModel.updateIsLoading(true)
+                                    showEmptyState = false
+                                    viewModel.processImage(context, bitmap) { query ->
+                                        viewModel.fetchResults(context, query) { results ->
+                                            viewModel.updateSearchResults(results)
+                                            viewModel.updateIsLoading(false)
+                                            Log.d("SearchScreen", "Search results updated via processImage: ${results.size} items")
                                         }
                                     }
-                                },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(48.dp),
-                                shape = RoundedCornerShape(24.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.secondary
-                                )
-                            ) {
-//                                Text("🔍 Identify", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSecondary)
-                                Text("🔍 Identifikasi", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSecondary)
-                            }
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            shape = RoundedCornerShape(24.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Text(
+                                "🔍 Identifikasi",
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
                         }
                     }
                 }
@@ -208,10 +316,9 @@ fun SearchScreen(navController: NavController, viewModel: SearchViewModel) {
 
             // Results
             when {
-                searchResults.isNotEmpty() -> {
-                    Log.d("SearchScreen", "Showing ${searchResults.size} results")
+                uiState.searchResults.isNotEmpty() -> {
                     Text(
-                        "Hasil (${searchResults.size})",
+                        "Hasil (${uiState.searchResults.size})",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onBackground
@@ -221,94 +328,52 @@ fun SearchScreen(navController: NavController, viewModel: SearchViewModel) {
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        searchResults.forEach { result ->
-                            Log.d("SearchScreen", "Displaying result: ${result.title}")
+                        uiState.searchResults.forEach { result ->
                             SearchResultItem(
                                 data = result,
-                                onItemClick = { deviceType, wattage ->
-                                    Log.d("SearchScreen", "Item clicked - Type: $deviceType, Wattage: $wattage")
+                                onItemClick = { deviceName, wattage ->
+                                    // TODO: Replace ruanganId=0 with actual ruanganId from previous screen
                                     navController.navigate(
                                         Screen.InputPerangkat.createRoute(
-                                            deviceName = deviceType,
-                                            wattage = wattage
+                                            ruanganId = 0,
+                                            deviceName = deviceName,
+                                            wattage = wattage.toString()
                                         )
                                     )
                                 }
                             )
                         }
-                        Spacer(modifier = Modifier.height(72.dp))
                     }
                 }
-
-                isLoading -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        CircularProgressIndicator(
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(48.dp)
-                        )
-                        Text(
-//                            "Analyzing your device...",
-                            "Menganalisa perangkat anda...",
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-                        )
-                    }
-                }
-
-                showEmptyState -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 48.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier
-                                .size(100.dp)
-                                .shadow(8.dp, CircleShape)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text("📷", fontSize = 40.sp)
-                            }
-                        }
-                        Text(
-//                            "No results yet",
-                            "Belum ada hasil",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        Text(
-//                            "Take a photo of your electronic device to get started!",
-                            "Ambil foto perangkat elektronik anda!",
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                            modifier = Modifier.padding(horizontal = 32.dp)
-                        )
-                    }
-                }
-
-                else -> {
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-//                            "No matches found. Try another photo.",
-                            "Tidak ditemukan. Coba foto lain",
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-                        )
-                    }
+                !showEmptyState && uiState.searchResults.isEmpty() && !uiState.isLoading -> {
+                    Text(
+                        "Tidak ada hasil ditemukan.",
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
                 }
             }
+        }
+    }
+
+    // Show loading indicator
+    if (uiState.isLoading) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+    }
+
+    // Show error messages if any
+    uiState.error?.let { error ->
+        LaunchedEffect(error) {
+            snackbarHostState.showSnackbar(error)
+            viewModel.clearError()
         }
     }
 }

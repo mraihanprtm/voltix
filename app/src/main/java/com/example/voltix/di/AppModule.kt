@@ -1,15 +1,11 @@
 package com.example.voltix.di
 
 import android.content.Context
-import com.example.voltix.data.dao.PerangkatDao
-import com.example.voltix.data.dao.SimulasiPerangkatDao
-import com.example.voltix.data.dao.UserDao
+import androidx.room.Room
 import com.example.voltix.data.database.AppDatabase
+import com.example.voltix.data.dao.*
 import com.example.voltix.data.remote.AuthManager
-import com.example.voltix.data.repository.SearchRepository
-import com.example.voltix.data.repository.SimulasiRepository
-import com.example.voltix.data.repository.UserRepository
-import com.example.voltix.repository.PerangkatRepository
+import com.example.voltix.data.repository.*
 import com.google.firebase.auth.FirebaseAuth
 import dagger.Module
 import dagger.Provides
@@ -25,43 +21,71 @@ object AppModule {
     @Provides
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
-        return AppDatabase.getDatabase(context)
+        return Room.databaseBuilder(
+            context,
+            AppDatabase::class.java,
+            "voltix_database"
+        ).build()
     }
 
     @Provides
     @Singleton
-    fun provideUserDao(appDatabase: AppDatabase): UserDao {
-        return appDatabase.userDao()
+    fun provideUserDao(database: AppDatabase): UserDao {
+        return database.userDao()
     }
 
     @Provides
     @Singleton
-    fun providePerangkatDao(appDatabase: AppDatabase): PerangkatDao {
-        return appDatabase.perangkatDao()
+    fun providePerangkatDao(database: AppDatabase): PerangkatDAO {
+        return database.perangkatDao()
     }
 
     @Provides
     @Singleton
-    fun provideUserRepository(userDao: UserDao, auth: FirebaseAuth): UserRepository {
-        return UserRepository(userDao, auth)
+    fun provideRuanganDao(database: AppDatabase): RuanganDAO {
+        return database.ruanganDao()
+    }
+
+    // Tambahkan provider untuk RuanganPerangkatCrossRefDAO
+    @Provides
+    @Singleton
+    fun provideRuanganPerangkatCrossRefDao(database: AppDatabase): RuanganPerangkatCrossRefDAO {
+        return database.ruanganPerangkatCrossRefDao()
     }
 
     @Provides
     @Singleton
-    fun providePerangkatRepository(perangkatDao: PerangkatDao): PerangkatRepository {
-        return PerangkatRepository(perangkatDao)
+    fun provideSimulationDAO(database: AppDatabase): SimulationDAO {
+        return database.simulationDao()
     }
 
     @Provides
     @Singleton
-    fun provideSearchRepository(): SearchRepository {
-        return SearchRepository()
+    fun provideUserRepository(
+        userDao: UserDao,
+        userPerangkatCrossRefDao: UserPerangkatCrossRefDao,
+        @ApplicationContext context: Context,  // Jika diperlukan
+        auth: FirebaseAuth  // Inject FirebaseAuth
+    ): UserRepository {
+        return UserRepository(userDao, userPerangkatCrossRefDao, auth)
     }
 
     @Provides
     @Singleton
-    fun provideSimulasiPerangkatDao(appDatabase: AppDatabase): SimulasiPerangkatDao {
-        return appDatabase.simulasiDao()
+    fun providePerangkatRepository(
+        perangkatDao: PerangkatDAO,
+        ruanganDao: RuanganDAO,
+        ruanganPerangkatCrossRefDao: RuanganPerangkatCrossRefDAO  // Tambahkan parameter ini
+    ): RuanganAndPerangkatRepository {
+        return RuanganAndPerangkatRepository(perangkatDao, ruanganDao, ruanganPerangkatCrossRefDao)
+    }
+
+    @Provides
+    @Singleton
+    fun provideRuanganRepository(
+        ruanganDao: RuanganDAO
+    ): RuanganRepository {
+        return RuanganRepository(ruanganDao)
     }
 
     @Provides
@@ -73,13 +97,8 @@ object AppModule {
         return AuthManager(context, userRepository)
     }
 
-
     @Provides
-    @Singleton
-    fun provideSimulasiRepository(
-        dao: SimulasiPerangkatDao,
-        @ApplicationContext context: Context
-    ): SimulasiRepository {
-        return SimulasiRepository(dao, context)
+    fun provideUserPerangkatCrossRefDao(database: AppDatabase): UserPerangkatCrossRefDao {
+        return database.userPerangkatCrossRefDao()
     }
 }

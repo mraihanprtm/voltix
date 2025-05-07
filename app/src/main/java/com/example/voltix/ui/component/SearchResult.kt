@@ -22,59 +22,36 @@ import com.example.voltix.data.entity.ElectronicInformationModel
 @Composable
 fun SearchResultItem(
     data: ElectronicInformationModel,
-    onItemClick: (deviceType: String, wattage: String) -> Unit
+    onItemClick: (deviceName: String, wattage: String) -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
-            .clickable {
-                onItemClick(
-                    data.deviceType ?: "",
-                    data.wattage ?: ""
-                )
-            },
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            .padding(vertical = 4.dp),
+        onClick = {
+            // Handle nullable values
+            val deviceName = data.title ?: "Unknown Device"
+            val wattage = data.wattage?.toString() ?: "0"
+
+            onItemClick(deviceName, wattage)
+        }
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // Tambahkan log untuk debugging
-            Log.d("SearchResultItem", "Title: ${data.title}")
-            Log.d("SearchResultItem", "DeviceType: ${data.deviceType}")
-            Log.d("SearchResultItem", "Wattage: ${data.wattage}")
-
-            Text(text = data.title ?: "", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = data.title ?: "Unknown Device",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Medium
+            )
             Spacer(modifier = Modifier.height(4.dp))
-            Text(text = data.displayedLink ?: "", fontSize = 14.sp, color = Color.Gray)
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // Tampilkan informasi device type dan wattage
-            if (!data.deviceType.isNullOrEmpty() || !data.wattage.isNullOrEmpty()) {
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(8.dp)) {
-                        if (!data.deviceType.isNullOrEmpty()) {
-                            Text(
-                                text = "Jenis: ${data.deviceType}",
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                        if (!data.wattage.isNullOrEmpty()) {
-                            Text(
-                                text = "Daya: ${data.wattage}W",
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
-                }
-            }
-
-            Text(text = data.snippet ?: "", fontSize = 14.sp, color = Color.DarkGray)
+            Text(
+                text = "Power: ${data.wattage?.toString() ?: "0"} Watt",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

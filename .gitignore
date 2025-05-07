@@ -29,3 +29,9 @@ local.properties
 *.lock
 *.bin
 local.properties
+/.gradle
+/.gradle
+/.gradle/8.10.2/checksums
+/.gradle/8.10.2/checksums
+/.gradle
+local.properties

@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Menu
 
@@ -15,8 +16,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.voltix.R
 
 @Composable
 fun MainScreen() {
@@ -24,9 +27,9 @@ fun MainScreen() {
 
     // pembuatan list yang berpasangan
     val bottomItems = listOf(
-        Screen.InputPerangkat to Icons.Default.Home,
-        Screen.Simulation to Icons.Default.Menu,
-        Screen.ImagePicker to Icons.Default.Person
+        Screen.DaftarRuangan to R.drawable.ic_fa_list,
+        Screen.SimulasiPage to R.drawable.ic_fa_tag,
+        Screen.ImagePicker to R.drawable.ic_fa_camera
     )
 
     Scaffold(
@@ -50,7 +53,7 @@ fun MainScreen() {
                                     launchSingleTop = true
                                 }
                             },
-                            icon = { Icon(icon, contentDescription = screen.route) },
+                            icon = { Icon(painter = painterResource(id = icon), contentDescription = screen.route) },
                             label = { Text(screen.title.replaceFirstChar { it.uppercase() }) }
                         )
                     }
