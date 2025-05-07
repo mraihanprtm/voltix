@@ -2,6 +2,7 @@ plugins {
     id("com.google.gms.google-services")
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
+
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
@@ -13,7 +14,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.voltix"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -49,7 +50,9 @@ dependencies {
     implementation("com.google.android.gms:play-services-auth:21.3.0")
     implementation(libs.firebase.auth)
     implementation(libs.androidx.room.common)
-
+    implementation(libs.androidx.runtime.livedata)
+    implementation ("androidx.lifecycle:lifecycle-viewmodel-savedstate:2.6.1")
+    implementation(libs.androidx.room.common.jvm)
     val credentialManagerVersion = "1.5.0-alpha05"
     implementation("androidx.credentials:credentials:$credentialManagerVersion")
     implementation("androidx.credentials:credentials-play-services-auth:$credentialManagerVersion")
@@ -64,13 +67,9 @@ dependencies {
     implementation("com.itextpdf:itext7-core:7.2.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-    implementation ("com.google.mlkit:text-recognition:16.0.0")
     implementation ("androidx.navigation:navigation-compose:2.7.5")
     implementation("androidx.compose.material3:material3:1.2.0")
     implementation("androidx.compose.material3:material3-window-size-class:1.2.0")
-    implementation ("com.google.mlkit:object-detection:17.0.0")
-    implementation ("com.google.mlkit:object-detection-custom:17.0.0")
-    implementation ("com.google.mlkit:text-recognition:16.0.0")
     implementation (platform("com.google.firebase:firebase-bom:32.7.1"))
     implementation ("com.google.mlkit:image-labeling:17.0.9")
     implementation ("com.android.volley:volley:1.2.1")
@@ -85,6 +84,14 @@ dependencies {
 
     implementation("io.coil-kt.coil3:coil-compose:3.1.0")
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.1.0")
+    implementation ("androidx.lifecycle:lifecycle-runtime-compose:2.8.0")
+    // Room
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    ksp("androidx.room:room-compiler:2.6.1")
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
+
+    implementation ("com.airbnb.android:lottie-compose:6.5.1")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

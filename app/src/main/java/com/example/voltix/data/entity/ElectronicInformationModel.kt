@@ -1,8 +1,10 @@
 package com.example.voltix.data.entity
 
-class ElectronicInformationModel (
-    var title: String?,
-    var link: String?,
-    var displayedLink: String?,
-    var snippet: String?
+data class ElectronicInformationModel(
+    val title: String?,
+    val link: String?,
+    val displayedLink: String?,
+    val snippet: String?,
+    val deviceType: String?, // Menambahkan field untuk jenis perangkat
+    val wattage: String?     // Menambahkan field untuk daya
 )
