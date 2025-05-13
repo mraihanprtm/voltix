@@ -13,6 +13,7 @@ import com.example.voltix.ui.pages.OnboardingScreen
 import com.example.voltix.ui.pages.googlelens.SearchScreen
 import com.example.voltix.ui.pages.ruangan.DetailRuangan
 import com.example.voltix.ui.pages.ruangan.InputPerangkatScreen
+import com.example.voltix.ui.pages.rekomendasi.RekomendasiPenghematanLampu
 import com.example.voltix.ui.screen.SavedSimulationsScreen
 import com.example.voltix.ui.screen.SimulasiBebasScreen
 import com.example.voltix.ui.screen.SimulasiScreen
@@ -40,6 +41,7 @@ sealed class Screen(val route: String, val title: String = "") {
     object DetailRuangan : Screen("detail_ruangan/{ruanganId}", "Detail Ruangan") {
         fun createRoute(ruanganId: Int) = "detail_ruangan/$ruanganId"
     }
+    object Rekomendasi : Screen("rekomendasi", "Rekomendasi")
     object ImagePicker : Screen("image_picker", "Image Picker")
     object Dashboard : Screen("dashboard", "Dashboard")
     object Onboarding : Screen("onboarding", "Onboarding")
@@ -106,6 +108,12 @@ fun AppNavHost(navController: NavHostController) {
         composable(Screen.SimulationComparison.route) {
             SimulationComparisonScreen(
                 viewModel = hiltViewModel()
+            )
+        }
+
+        composable(Screen.Rekomendasi.route) {
+            RekomendasiPenghematanLampu(
+                navController = navController
             )
         }
 

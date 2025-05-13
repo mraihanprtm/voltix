@@ -1,13 +1,17 @@
 package com.example.voltix.viewmodel.simulasi
+
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.voltix.data.entity.RuanganEntity
+import com.example.voltix.data.entity.RuanganWithPerangkat
 import com.example.voltix.data.repository.RuanganRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -15,7 +19,14 @@ import javax.inject.Inject
 class RuanganViewModel @Inject constructor(
     private val ruanganRepository: RuanganRepository
 ) : ViewModel() {
+    // Expose list of rooms as LiveData
     val allRuangan: LiveData<List<RuanganEntity>> = ruanganRepository.allRuangan
+
+    // Backing state for detail
+    private val _ruanganDetail = MutableStateFlow<RuanganWithPerangkat?>(null)
+    val ruanganDetail: StateFlow<RuanganWithPerangkat?> = _ruanganDetail.asStateFlow()
+
+    // Original namaRuangan state (if still needed)
     private val _namaRuangan = MutableStateFlow<String?>(null)
     val namaRuangan: StateFlow<String?> = _namaRuangan.asStateFlow()
 
@@ -42,6 +53,16 @@ class RuanganViewModel @Inject constructor(
             ruanganRepository.getNamaRuangan(ruanganId).collect { nama ->
                 _namaRuangan.value = nama
             }
+        }
+    }
+
+    // Load single room with perangkat
+    fun loadDetail(ruanganId: Int) {
+        viewModelScope.launch {
+            ruanganRepository.getRuanganWithPerangkat(ruanganId)
+                .collect { detail ->
+                    _ruanganDetail.value = detail
+                }
         }
     }
 }
