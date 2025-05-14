@@ -11,9 +11,9 @@ import androidx.navigation.navArgument
 import com.example.voltix.ui.pages.ruangan.DaftarRuanganScreen
 import com.example.voltix.ui.pages.OnboardingScreen
 import com.example.voltix.ui.pages.googlelens.SearchScreen
+import com.example.voltix.ui.pages.rekomendasi.RekomendasiScreen
 import com.example.voltix.ui.pages.ruangan.DetailRuangan
 import com.example.voltix.ui.pages.ruangan.InputPerangkatScreen
-import com.example.voltix.ui.pages.rekomendasi.RekomendasiPenghematanLampu
 import com.example.voltix.ui.screen.SavedSimulationsScreen
 import com.example.voltix.ui.screen.SimulasiBebasScreen
 import com.example.voltix.ui.screen.SimulasiScreen
@@ -21,9 +21,11 @@ import com.example.voltix.ui.screen.SimulationComparisonScreen
 
 sealed class Screen(val route: String, val title: String = "") {
     object SimulasiPage : Screen("simulasi", "Simulasi")
+
     object SavedSimulations {
         const val route = "saved_simulations"
     }
+
     object SimulasiBebas {
         const val route = "simulasi_bebas"
         fun createRoute(simulationId: Int? = null) = if (simulationId != null) {
@@ -37,14 +39,23 @@ sealed class Screen(val route: String, val title: String = "") {
         const val route = "simulation_comparison"
         fun createRoute(simulationIds: String) = "$route/$simulationIds"
     }
+
     object DaftarRuangan : Screen("daftar_ruangan", "Daftar Ruangan")
+
     object DetailRuangan : Screen("detail_ruangan/{ruanganId}", "Detail Ruangan") {
         fun createRoute(ruanganId: Int) = "detail_ruangan/$ruanganId"
     }
-    object Rekomendasi : Screen("rekomendasi", "Rekomendasi")
+
+    object Rekomendasi : Screen("rekomendasi", "Rekomendasi") {
+        fun createRoute(ruanganId: Int): String = "rekomendasi/$ruanganId"
+    }
+
     object ImagePicker : Screen("image_picker", "Image Picker")
+
     object Dashboard : Screen("dashboard", "Dashboard")
+
     object Onboarding : Screen("onboarding", "Onboarding")
+
     object InputPerangkat : Screen(
         "input_perangkat?ruanganId={ruanganId}&deviceName={deviceName}&wattage={wattage}",
         "Input Perangkat"
@@ -86,6 +97,14 @@ fun AppNavHost(navController: NavHostController) {
         }
 
         composable(
+            route = "${Screen.Rekomendasi.route}/{ruanganId}",
+            arguments = listOf(navArgument("ruanganId") { type = NavType.IntType })
+        ) { backStack ->
+            val id = backStack.arguments?.getInt("ruanganId") ?: 0
+            RekomendasiScreen(ruanganId = id, navController = navController)
+        }
+
+        composable(
             route = Screen.SimulasiBebas.route + "?simulationId={simulationId}",
             arguments = listOf(
                 navArgument("simulationId") {
@@ -108,12 +127,6 @@ fun AppNavHost(navController: NavHostController) {
         composable(Screen.SimulationComparison.route) {
             SimulationComparisonScreen(
                 viewModel = hiltViewModel()
-            )
-        }
-
-        composable(Screen.Rekomendasi.route) {
-            RekomendasiPenghematanLampu(
-                navController = navController
             )
         }
 

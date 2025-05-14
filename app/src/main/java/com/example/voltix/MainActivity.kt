@@ -21,11 +21,6 @@ class MainActivity : ComponentActivity() {
                 Surface(color = MaterialTheme.colorScheme.background) {
                     val loginViewModel: LoginViewModel = hiltViewModel()
                     AppNavigation(loginViewModel = loginViewModel)
-//                    SimulasiScreen(
-//                        onSimulasiBebasClick = { println("Simulasi Bebas dipilih") },
-//                        onSimulasiBerdasarkanRuanganClick = { println("Simulasi Berdasarkan Ruangan dipilih") }
-//                    )
-
                 }
             }
         }

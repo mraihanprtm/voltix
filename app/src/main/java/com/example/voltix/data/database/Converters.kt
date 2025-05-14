@@ -4,6 +4,7 @@ import androidx.room.TypeConverter
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import java.util.Date
 
 class Converters {
     private val formatter = DateTimeFormatter.ISO_LOCAL_TIME
@@ -30,4 +31,12 @@ class Converters {
             LocalTime.parse(it, formatter)
         }
     }
+
+    @TypeConverter
+    fun fromTimestamp(value: Long?): Date? =
+        value?.let { Date(it) }
+
+    @TypeConverter
+    fun dateToTimestamp(date: Date?): Long? =
+        date?.time
 }

@@ -9,20 +9,26 @@ import com.example.voltix.data.entity.RekomendasiPenghematanLampuEntity
 
 @Dao
 interface RekomendasiDao {
-
     @Insert
     suspend fun insert(rekom: RekomendasiPenghematanLampuEntity): Long
 
     @Transaction
-    @Query("SELECT * FROM rekomendasi_penghematan_lampu WHERE id = :id")
+    @Query("""
+        SELECT * FROM rekomendasi_penghematan_lampu
+        WHERE id = :id
+    """)
     suspend fun getDetailById(id: Int): RekomendasiDetail
 
     @Transaction
-    @Query("SELECT * FROM rekomendasi_penghematan_lampu WHERE userId = :userId ORDER BY tanggal DESC")
+    @Query("""
+        SELECT * FROM rekomendasi_penghematan_lampu
+        WHERE userId = :userId
+    """)
     suspend fun getHistoryByUser(userId: Int): List<RekomendasiDetail>
 
-    // apabila ingin semua rekomendasi publik (userId IS NULL)
     @Transaction
-    @Query("SELECT * FROM rekomendasi_penghematan_lampu WHERE userId IS NULL")
+    @Query("""
+        SELECT * FROM rekomendasi_penghematan_lampu
+    """)
     suspend fun getPublicRecommendations(): List<RekomendasiDetail>
 }

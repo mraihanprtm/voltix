@@ -5,6 +5,7 @@ import com.example.voltix.data.dao.PerangkatDAO
 import com.example.voltix.data.dao.RuanganDAO
 import com.example.voltix.data.dao.RuanganPerangkatCrossRefDAO
 import com.example.voltix.data.entity.*
+import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -96,7 +97,7 @@ class RuanganAndPerangkatRepository @Inject constructor(
         return crossRefDao.getPerangkatWithWaktuByRuanganId(ruanganId)
     }
 
-    fun getRuanganWithPerangkat(ruanganId: Int): LiveData<List<RuanganWithPerangkat>> {
+    fun getRuanganWithPerangkat(ruanganId: Int): Flow<RuanganWithPerangkat> {
         return ruanganDao.getRuanganWithPerangkat(ruanganId)
     }
 

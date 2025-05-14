@@ -2,6 +2,7 @@ package com.example.voltix.data.entity
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 enum class jenisLampu {
@@ -18,6 +19,9 @@ enum class jenisLampu {
             childColumns = ["perangkatId"],
             onDelete = ForeignKey.CASCADE
         )
+    ],
+    indices = [
+        Index("perangkatId")
     ]
 )
 data class LampuEntity(

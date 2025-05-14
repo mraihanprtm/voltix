@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
 import androidx.room.ColumnInfo
+import androidx.room.Index
 import java.util.Date
 
 @Entity(
@@ -27,6 +28,11 @@ import java.util.Date
             childColumns = ["lampuId"],
             onDelete = ForeignKey.CASCADE
         )
+    ],
+    indices = [
+        Index("userId"),
+        Index("ruanganId"),
+        Index("lampuId")
     ]
 )
 data class RekomendasiPenghematanLampuEntity(

@@ -6,93 +6,70 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
-import com.example.voltix.data.entity.RekomendasiDetail
 import com.example.voltix.data.entity.RekomendasiPenghematanLampuEntity
-import com.example.voltix.data.repository.RekomendasiRepository
 import com.example.voltix.domain.LampRecommendationCalculator
 import com.example.voltix.domain.LampRecommendationInput
-import com.example.voltix.domain.LampRecommendationResult
-import java.util.Date
 import javax.inject.Inject
 
 @HiltViewModel
 class RekomendasiViewModel @Inject constructor(
-    private val repository: RekomendasiRepository,
-    private val calculator: LampRecommendationCalculator
+    private val calculator: LampRecommendationCalculator,
+    private val rekomRepo: com.example.voltix.data.repository.RekomendasiRepository,
+    private val perangkatRepo: com.example.voltix.data.repository.RuanganAndPerangkatRepository
 ) : ViewModel() {
 
-    // LiveData untuk history rekomendasi per user
-    private val _userHistory = MutableLiveData<List<RekomendasiDetail>>()
-    val userHistory: LiveData<List<RekomendasiDetail>> = _userHistory
-
-    // LiveData untuk rekomendasi publik (tanpa user)
-    private val _publicRecommendations = MutableLiveData<List<RekomendasiDetail>>()
-    val publicRecommendations: LiveData<List<RekomendasiDetail>> = _publicRecommendations
-
-    private val _result = MutableLiveData<LampRecommendationResult>()
-    val result: LiveData<LampRecommendationResult> = _result
-
-    private val _loading = MutableLiveData<Boolean>()
+    private val _loading = MutableLiveData(false)
     val loading: LiveData<Boolean> = _loading
-    private val _error = MutableLiveData<String?>()
+
+    private val _error = MutableLiveData<String?>(null)
     val error: LiveData<String?> = _error
 
-    // Load history rekomendasi berdasarkan userId
-    fun loadUserHistory(userId: Int) {
-        viewModelScope.launch {
-            val list = repository.getUserHistory(userId)
-            _userHistory.value = list
-        }
-    }
+    private val _result = MutableLiveData<com.example.voltix.domain.LampRecommendationResult?>(null)
+    val result: LiveData<com.example.voltix.domain.LampRecommendationResult?> = _result
 
-    // Load rekomendasi publik (userId IS NULL)
-    fun loadPublicRecommendations() {
-        viewModelScope.launch {
-            val list = repository.getPublicRekomendasi()
-            _publicRecommendations.value = list
-        }
-    }
+    private val _detail = MutableLiveData<com.example.voltix.data.entity.RekomendasiDetail?>()
+    val detail: LiveData<com.example.voltix.data.entity.RekomendasiDetail?> = _detail
 
-    // Simpan rekomendasi baru
-    fun saveRecommendation(rekom: RekomendasiPenghematanLampuEntity, onComplete: (() -> Unit)? = null) {
-        viewModelScope.launch {
-            repository.insertRekomendasi(rekom)
-            onComplete?.invoke()
-        }
-    }
-
-    // Ambil detail per id rekom
-    private val _detail = MutableLiveData<RekomendasiDetail>()
-    val detail: LiveData<RekomendasiDetail> = _detail
-
-    fun loadDetail(id: Int) {
-        viewModelScope.launch {
-            val d = repository.getRekomendasiDetail(id)
-            _detail.value = d
-        }
-    }
+    private val _perangkat = MutableLiveData<com.example.voltix.data.entity.PerangkatEntity?>()
+    val perangkat: LiveData<com.example.voltix.data.entity.PerangkatEntity?> = _perangkat
 
     fun calculateAndSave(
         input: LampRecommendationInput,
-        userId: Int? = null,
+        userId: Int?,
         ruanganId: Int,
         lampuId: Int
     ) {
         viewModelScope.launch {
             try {
                 _loading.value = true
-                val calcRes = calculator.calculate(input)
-                val rekomEntity = RekomendasiPenghematanLampuEntity(
+                _error.value = null
+
+                val res = calculator.calculate(input)
+                _result.value = res
+
+                val entity = RekomendasiPenghematanLampuEntity(
                     userId = userId,
                     ruanganId = ruanganId,
-                    lampuId = lampuId,
-                    tanggal = Date()
+                    lampuId = lampuId
                 )
-                repository.insertRekomendasi(rekomEntity)
-                _result.value = calcRes
-                _error.value = null
+                rekomRepo.insertRekomendasi(entity)
+
             } catch (e: Exception) {
-                _error.value = e.localizedMessage
+                _error.value = e.localizedMessage ?: "Error saat kalkulasi"
+            } finally {
+                _loading.value = false
+            }
+        }
+    }
+
+    fun loadDetail(id: Int) {
+        viewModelScope.launch {
+            try {
+                _loading.value = true
+                _error.value = null
+                _detail.value = rekomRepo.getRekomendasiDetail(id)
+            } catch (e: Exception) {
+                _error.value = e.localizedMessage ?: "Gagal memuat detail"
             } finally {
                 _loading.value = false
             }

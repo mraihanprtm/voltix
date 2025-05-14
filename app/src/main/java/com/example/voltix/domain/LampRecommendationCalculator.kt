@@ -1,6 +1,8 @@
 package com.example.voltix.domain
 
-class LampRecommendationCalculator {
+import javax.inject.Inject
+
+class LampRecommendationCalculator @Inject constructor() {
     fun calculate(input: LampRecommendationInput): LampRecommendationResult {
         val area = input.panjang * input.lebar
         val E = RoomStandard.minLux[input.jenisRuangan]
