@@ -3,6 +3,7 @@ package com.example.voltix.data.repository
 import androidx.lifecycle.LiveData
 import com.example.voltix.data.dao.RuanganDAO
 import com.example.voltix.data.entity.RuanganEntity
+import com.example.voltix.data.entity.RuanganWithPerangkat
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -34,4 +35,7 @@ class RuanganRepository @Inject constructor(
     suspend fun getAllRuangan(): List<RuanganEntity> {
         return ruanganDao.getAllRuanganList()
     }
+
+    fun getRuanganWithPerangkat(ruanganId: Int): Flow<RuanganWithPerangkat> =
+        ruanganDao.getRuanganWithPerangkat(ruanganId)
 }

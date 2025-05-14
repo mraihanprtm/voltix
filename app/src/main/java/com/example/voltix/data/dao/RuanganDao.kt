@@ -33,5 +33,5 @@ interface RuanganDAO {
 
     @Transaction
     @Query("SELECT * FROM ruangan WHERE id = :ruanganId")
-    fun getRuanganWithPerangkat(ruanganId: Int): LiveData<List<RuanganWithPerangkat>>
+    fun getRuanganWithPerangkat(ruanganId: Int): Flow<RuanganWithPerangkat>
 }

@@ -12,6 +12,7 @@ import androidx.navigation.navArgument
 import com.example.voltix.ui.pages.ruangan.DaftarRuanganScreen
 import com.example.voltix.ui.pages.OnboardingScreen
 import com.example.voltix.ui.pages.googlelens.SearchScreen
+import com.example.voltix.ui.pages.rekomendasi.RekomendasiScreen
 import com.example.voltix.ui.pages.ruangan.DetailRuangan
 import com.example.voltix.ui.pages.ruangan.InputPerangkatScreen
 import com.example.voltix.ui.screen.DashboardScreen
@@ -43,6 +44,11 @@ sealed class Screen(val route: String, val title: String = "") {
     object DetailRuangan : Screen("detail_ruangan/{ruanganId}", "Detail Ruangan") {
         fun createRoute(ruanganId: Int) = "detail_ruangan/$ruanganId"
     }
+
+    object Rekomendasi : Screen("rekomendasi", "Rekomendasi") {
+        fun createRoute(ruanganId: Int): String = "rekomendasi/$ruanganId"
+    }
+
     object ImagePicker : Screen("image_picker/{ruanganId}", "Image Picker") {
         fun createRoute(ruanganId: Int) = "image_picker/$ruanganId"
     }
@@ -88,6 +94,14 @@ fun AppNavHost(navController: NavHostController) {
                 navController = navController,
                 viewModel = hiltViewModel()
             )
+        }
+
+        composable(
+            route = "${Screen.Rekomendasi.route}/{ruanganId}",
+            arguments = listOf(navArgument("ruanganId") { type = NavType.IntType })
+        ) { backStack ->
+            val id = backStack.arguments?.getInt("ruanganId") ?: 0
+            RekomendasiScreen(ruanganId = id, navController = navController)
         }
 
         composable(

@@ -2,6 +2,7 @@ package com.example.voltix.data.entity
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import java.time.LocalTime
 
@@ -14,6 +15,9 @@ import java.time.LocalTime
             childColumns = ["simulationId"],
             onDelete = ForeignKey.CASCADE
         )
+    ],
+    indices = [
+        Index("simulationId")
     ]
 )
 data class SimulationDeviceEntity(
