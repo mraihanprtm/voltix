@@ -83,6 +83,7 @@ dependencies {
     implementation("androidx.compose.material3:material3-window-size-class:1.2.0")
     implementation (platform("com.google.firebase:firebase-bom:32.7.1"))
     implementation ("com.google.mlkit:image-labeling:17.0.9")
+    implementation ("com.google.mlkit:text-recognition:16.0.0")
     implementation ("com.android.volley:volley:1.2.1")
     implementation ("com.github.bumptech.glide:glide:4.16.0")
     implementation ("com.squareup.okhttp3:logging-interceptor:4.9.3")
@@ -103,6 +104,7 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.0.0")
 
     implementation ("com.airbnb.android:lottie-compose:6.5.1")
+    implementation ("com.github.PhilJay:MPAndroidChart:v3.1.0")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

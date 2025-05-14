@@ -46,6 +46,8 @@ fun InputPerangkatScreen(
     ruanganId: Int,
     initialDeviceName: String = "",
     initialWattage: String = "",
+    initialLumen: String = "",
+    initialLampType: String = "",
     initialPerangkat: PerangkatEntity? = null, // Untuk mode edit
     initialLampu: LampuEntity? = null, // Data LampuEntity jika ada
     viewModel: PerangkatViewModel = hiltViewModel(),
@@ -55,9 +57,17 @@ fun InputPerangkatScreen(
     var nama by remember { mutableStateOf(initialDeviceName) }
     var daya by remember { mutableStateOf(initialWattage) }
     var jumlah by remember { mutableStateOf(initialPerangkat?.jumlah?.toString() ?: "1") }
-    var selectedJenis by remember { mutableStateOf(initialPerangkat?.jenis ?: jenis.Lainnya) }
-    var selectedJenisLampu by remember { mutableStateOf(initialLampu?.jenis ?: jenisLampu.LED) }
-    var lumen by remember { mutableStateOf(initialLampu?.lumen?.toString() ?: "") }
+    var selectedJenis by remember {
+        mutableStateOf(
+            when {
+                initialPerangkat != null -> initialPerangkat.jenis
+                initialLumen.isNotEmpty() || initialLampType.isNotEmpty() -> jenis.Lampu
+                else -> jenis.Lainnya
+            }
+        )
+    }
+    var selectedJenisLampu by remember { mutableStateOf(initialLampu?.jenis ?: initialLampType.toJenisLampu() ?: jenisLampu.LED) }
+    var lumen by remember { mutableStateOf(initialLumen) }
     var waktuNyala by remember { mutableStateOf(LocalTime.of(6, 0)) }
     var waktuMati by remember { mutableStateOf(LocalTime.of(18, 0)) }
     var isFormValid by remember { mutableStateOf(false) }
@@ -65,15 +75,8 @@ fun InputPerangkatScreen(
     var isLampuDropdownExpanded by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
 
-    // Inisialisasi waktu nyala dan mati jika dalam mode edit
-    LaunchedEffect(initialPerangkat) {
-        if (isEditMode) {
-            viewModel.getCrossRef(initialPerangkat!!.id, ruanganId)?.let { crossRef ->
-                waktuNyala = crossRef.waktuNyala
-                waktuMati = crossRef.waktuMati
-            }
-        }
-    }
+    // Determine if the device is a lamp
+    val isLamp = selectedJenis == jenis.Lampu || initialLumen.isNotEmpty() || initialLampType.isNotEmpty()
 
     // Form validation
     LaunchedEffect(nama, daya, jumlah, selectedJenis, lumen) {
@@ -82,7 +85,7 @@ fun InputPerangkatScreen(
                 daya.toIntOrNull()!! > 0 &&
                 jumlah.toIntOrNull() != null &&
                 jumlah.toIntOrNull()!! > 0 &&
-                (selectedJenis != jenis.Lampu || (lumen.toIntOrNull() != null && lumen.toIntOrNull()!! > 0))
+                (!isLamp || (lumen.toIntOrNull() != null && lumen.toIntOrNull()!! > 0))
     }
 
     // Save button pulse animation
@@ -109,7 +112,7 @@ fun InputPerangkatScreen(
                     saveState = true
                 )
                 if (!popped) {
-                    navController.navigate(Screen.ImagePicker.route) {
+                    navController.navigate(Screen.ImagePicker.createRoute(ruanganId)) {
                         popUpTo(navController.graph.startDestinationId) {
                             saveState = true
                         }
@@ -130,7 +133,7 @@ fun InputPerangkatScreen(
                 Brush.verticalGradient(
                     colors = listOf(
                         MaterialTheme.colorScheme.background,
-                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.1f)
                     )
                 )
             ),
@@ -159,7 +162,7 @@ fun InputPerangkatScreen(
                             Brush.linearGradient(
                                 colors = listOf(
                                     MaterialTheme.colorScheme.primary,
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 1f)
                                 )
                             )
                         )
@@ -169,14 +172,9 @@ fun InputPerangkatScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.align(Alignment.Center)
                     ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_fa_plus),
-                            contentDescription = if (isEditMode) "Edit Device" else "Add Device",
-                            modifier = Modifier.size(48.dp)
-                        )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = if (isEditMode) "Edit Perangkat" else "Input Perangkat",
+                            text = "Input Perangkat",
                             style = MaterialTheme.typography.headlineSmall.copy(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 24.sp
@@ -184,7 +182,7 @@ fun InputPerangkatScreen(
                             color = MaterialTheme.colorScheme.onPrimary
                         )
                         Text(
-                            text = if (isEditMode) "Ubah detail perangkat elektronik" else "Masukkan detail perangkat elektronik",
+                            text = "Masukkan detail perangkat elektronik",
                             style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
                             color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
                             textAlign = TextAlign.Center
@@ -359,7 +357,7 @@ fun InputPerangkatScreen(
 
         // Lampu Section (jika jenis adalah Lampu)
         AnimatedVisibility(
-            visible = selectedJenis == jenis.Lampu,
+            visible = isLamp,
             enter = fadeIn(tween(300, delayMillis = 250)) + slideInVertically(tween(300, delayMillis = 250)),
             exit = fadeOut(tween(300)) + slideOutVertically(tween(300))
         ) {
@@ -545,8 +543,8 @@ fun InputPerangkatScreen(
                                 kategori = selectedJenis,
                                 waktuNyala = waktuNyala,
                                 waktuMati = waktuMati,
-                                jenisLampu = if (selectedJenis == jenis.Lampu) selectedJenisLampu else null,
-                                lumen = if (selectedJenis == jenis.Lampu) lumen.toIntOrNull() else null
+                                jenisLampu = if (isLamp) selectedJenisLampu else null,
+                                lumen = if (isLamp) lumen.toIntOrNull() else null
                             )
                         } else {
                             viewModel.insertPerangkatToRuangan(
@@ -557,8 +555,8 @@ fun InputPerangkatScreen(
                                 waktuNyala = waktuNyala,
                                 waktuMati = waktuMati,
                                 ruanganId = ruanganId,
-                                jenisLampu = if (selectedJenis == jenis.Lampu) selectedJenisLampu else null,
-                                lumen = if (selectedJenis == jenis.Lampu) lumen.toIntOrNull() else null
+                                jenisLampu = if (isLamp) selectedJenisLampu else null,
+                                lumen = if (isLamp) lumen.toIntOrNull() else null
                             )
                         }
                         // Reset form
@@ -602,7 +600,7 @@ fun InputPerangkatScreen(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = if (isSaving) "Menyimpan..." else if (isEditMode) "Simpan Perubahan" else "Simpan Perangkat",
+                        text = if (isSaving) "Menyimpan..." else "Simpan Perangkat",
                         style = MaterialTheme.typography.labelLarge.copy(
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp
@@ -612,5 +610,14 @@ fun InputPerangkatScreen(
                 }
             }
         }
+    }
+}
+
+// Helper function to convert string to jenisLampu
+private fun String.toJenisLampu(): jenisLampu? {
+    return try {
+        jenisLampu.valueOf(this)
+    } catch (e: IllegalArgumentException) {
+        null
     }
 }

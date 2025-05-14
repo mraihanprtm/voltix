@@ -3,7 +3,8 @@ package com.example.voltix.data.entity
 import androidx.room.Embedded
 import androidx.room.Relation
 
-data class SimulationWithDevices(
+data class
+SimulationWithDevices(
     @Embedded val simulation: SimulationEntity,
     @Relation(
         parentColumn = "id",

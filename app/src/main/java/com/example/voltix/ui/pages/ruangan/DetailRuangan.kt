@@ -1,5 +1,6 @@
 package com.example.voltix.ui.pages.ruangan
 
+import android.annotation.SuppressLint
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
@@ -41,6 +42,7 @@ import com.example.voltix.viewmodel.simulasi.RuanganViewModel
 import kotlinx.coroutines.launch
 import java.time.LocalTime
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun DetailRuangan(
     navController: NavHostController,
@@ -57,7 +59,7 @@ fun DetailRuangan(
     val dayaListrik by viewModel.totalDaya.collectAsState()
     val biayaListrik by viewModel.totalBiaya.collectAsState()
 
-    // Update ketika ruanganId berubah
+    // Update when ruanganId changes
     LaunchedEffect(ruanganId) {
         viewModel.loadPerangkatByRuangan(ruanganId)
         ruanganViewModel.loadNamaRuangan(ruanganId)
@@ -67,37 +69,68 @@ fun DetailRuangan(
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { navController.navigate(Screen.InputPerangkat.createRoute(ruanganId = ruanganId)) },
-                shape = CircleShape,
-                modifier = Modifier
-                    .shadow(12.dp, CircleShape)
-                    .size(72.dp)
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                MaterialTheme.colorScheme.primary,
-                                MaterialTheme.colorScheme.secondary
-                            )
-                        ),
-                        shape = CircleShape
-                    ),
-                containerColor = Color.Transparent
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Icon(
-                    Icons.Default.Add,
-                    contentDescription = "Tambah Perangkat",
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(36.dp)
-                )
+                // New button to navigate to ImagePicker
+                FloatingActionButton(
+                    onClick = { navController.navigate(Screen.ImagePicker.createRoute(ruanganId)) },
+                    shape = CircleShape,
+                    modifier = Modifier
+                        .shadow(12.dp, CircleShape)
+                        .size(72.dp)
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.secondary,
+                                    MaterialTheme.colorScheme.secondary.copy(alpha = 0.8f)
+                                )
+                            ),
+                            shape = CircleShape
+                        ),
+                    containerColor = Color.Transparent
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_fa_camera),
+                        contentDescription = "Cari Perangkat",
+                        tint = MaterialTheme.colorScheme.onSecondary,
+                        modifier = Modifier.size(36.dp)
+                    )
+                }
+                // Existing button for adding device manually
+                FloatingActionButton(
+                    onClick = { navController.navigate(Screen.InputPerangkat.createRoute(ruanganId = ruanganId)) },
+                    shape = CircleShape,
+                    modifier = Modifier
+                        .shadow(12.dp, CircleShape)
+                        .size(72.dp)
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.colorScheme.secondary
+                                )
+                            ),
+                            shape = CircleShape
+                        ),
+                    containerColor = Color.Transparent
+                ) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = "Tambah Perangkat",
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(36.dp)
+                    )
+                }
             }
         },
         containerColor = MaterialTheme.colorScheme.background
-    ) { padding ->
+    ) { _ ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
+                .padding(horizontal = 8.dp, vertical = 8.dp) // Remove top padding
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
@@ -111,12 +144,9 @@ fun DetailRuangan(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp) // Reduced vertical padding
                     .shadow(6.dp, RoundedCornerShape(16.dp)),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color.Transparent
-                )
             ) {
                 Box(
                     modifier = Modifier
@@ -129,20 +159,17 @@ fun DetailRuangan(
                                 )
                             )
                         )
-                        .padding(16.dp)
+                        .padding(horizontal = 16.dp, vertical = 8.dp) // Reduced vertical padding
                 ) {
-                    Column {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Detail Ruangan ${namaRuangan ?: ruanganId}",
-                            style = MaterialTheme.typography.headlineSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 28.sp
-                            ),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.align(Alignment.CenterHorizontally)
-                        )
-                    }
+                    Text(
+                        text = "Detail Ruangan ${namaRuangan ?: ruanganId}",
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 28.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
                 }
             }
 
@@ -150,7 +177,7 @@ fun DetailRuangan(
             if (isLoading) {
                 LoadingStateView()
             } else if (perangkatList.isEmpty()) {
-                com.example.voltix.ui.component.EmptyStateView()
+                EmptyStateView()
             } else {
                 LazyColumn(
                     modifier = Modifier
@@ -262,7 +289,7 @@ fun DetailRuangan(
                                 horizontalAlignment = Alignment.Start
                             ) {
                                 Text(
-                                    text = "Informasi Listrik",
+                                    text = "Informasi Listrik Ruangan",
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 18.sp,
@@ -277,10 +304,10 @@ fun DetailRuangan(
                                         text = "Daya Listrik",
                                         style = MaterialTheme.typography.bodyLarge,
                                         fontWeight = FontWeight.Medium,
-                                        color = Color.Gray
+                                        color = Color.Black
                                     )
                                     Text(
-                                        text = "$dayaListrik",
+                                        text = "$dayaListrik Watt",
                                         style = MaterialTheme.typography.bodyLarge,
                                         fontWeight = FontWeight.SemiBold,
                                         color = Color.Black
@@ -294,10 +321,10 @@ fun DetailRuangan(
                                         text = "Biaya Listrik",
                                         style = MaterialTheme.typography.bodyLarge,
                                         fontWeight = FontWeight.Medium,
-                                        color = Color.Gray
+                                        color = Color.Black
                                     )
                                     Text(
-                                        text = "$biayaListrik",
+                                        text = String.format("Rp %.2f", biayaListrik),
                                         style = MaterialTheme.typography.bodyLarge,
                                         fontWeight = FontWeight.SemiBold,
                                         color = Color.Black

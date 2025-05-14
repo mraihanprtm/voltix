@@ -42,6 +42,11 @@ import com.example.voltix.ui.component.TimePickerDialogButton
 import com.example.voltix.ui.viewmodel.SimulasiBebasViewModel
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
+import com.example.voltix.ui.viewmodel.TimeRange
+import java.text.NumberFormat
+import java.util.Locale
 
 @Composable
 fun SimulasiBebasScreen(
@@ -55,11 +60,16 @@ fun SimulasiBebasScreen(
     val simulationList by viewModel.simulationList.observeAsState(initial = emptyList())
     val isLoading by viewModel.isLoading.observeAsState(initial = false)
     val melebihiDaya by viewModel.melebihiDaya.collectAsState()
+    val timeRange by viewModel.timeRange.collectAsState()
     var showRoomDialog by remember { mutableStateOf(false) }
     var showAddEditDialog by remember { mutableStateOf(false) }
     var showNameDialog by remember { mutableStateOf(false) }
     var showSimulationDialog by remember { mutableStateOf(simulationId == null) }
+    var showEditNameDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
     var editingDevice by remember { mutableStateOf<SimulationDeviceEntity?>(null) }
+    var editingSimulation by remember { mutableStateOf<SimulationEntity?>(null) }
+    var deletingSimulation by remember { mutableStateOf<SimulationEntity?>(null) }
     var waktuNyala by remember { mutableStateOf(LocalTime.of(0, 0)) }
     var waktuMati by remember { mutableStateOf(LocalTime.of(23, 59)) }
     val dayaListrik by viewModel.totalDaya.collectAsState()
@@ -119,6 +129,51 @@ fun SimulasiBebasScreen(
                 .padding(padding)
                 .padding(horizontal = 16.dp)
         ) {
+            // Time Range Selector
+            Text(
+                text = "Atur Rentang Waktu",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 20.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+
+            // Selector Rentang Waktu
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                TimeRange.values().forEach { range ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clickable { viewModel.setTimeRange(range) }
+                            .padding(horizontal = 8.dp)
+                    ) {
+                        RadioButton(
+                            selected = timeRange == range,
+                            onClick = { viewModel.setTimeRange(range) },
+                            colors = RadioButtonDefaults.colors(
+                                selectedColor = Color(0xFF3F51B5),
+                                unselectedColor = Color.Gray
+                            )
+                        )
+                        Text(
+                            text = when (range) {
+                                TimeRange.DAILY -> "Harian"
+                                TimeRange.MONTHLY -> "Bulanan"
+                                TimeRange.YEARLY -> "Tahunan"
+                            },
+                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 14.sp),
+                            color = if (timeRange == range) Color(0xFF1A237E) else Color.Gray
+                        )
+                    }
+                }
+            }
 
             if (isLoading) {
                 Log.d("SimulasiBebasScreen", "Showing loading indicator")
@@ -162,7 +217,7 @@ fun SimulasiBebasScreen(
                         horizontalAlignment = Alignment.Start
                     ) {
                         Text(
-                            text = "Informasi Listrik",
+                            text = "Informasi Listrik Simulasi",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp,
@@ -180,7 +235,11 @@ fun SimulasiBebasScreen(
                                 color = Color.Gray
                             )
                             Text(
-                                text = "$dayaListrik",
+                                text = when (timeRange) {
+                                    TimeRange.DAILY -> String.format("%.2f kWh/hari", dayaListrik)
+                                    TimeRange.MONTHLY -> String.format("%.2f kWh/bulan", dayaListrik)
+                                    TimeRange.YEARLY -> String.format("%.2f kWh/tahun", dayaListrik)
+                                },
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.SemiBold,
                                 color = Color.Black
@@ -194,10 +253,10 @@ fun SimulasiBebasScreen(
                                 text = "Biaya Listrik",
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Medium,
-                                color = Color.Gray
+                                color = Color.Black
                             )
                             Text(
-                                text = "$biayaListrik",
+                                text = NumberFormat.getCurrencyInstance(Locale("id", "ID")).format(biayaListrik),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.SemiBold,
                                 color = Color.Black
@@ -264,6 +323,41 @@ fun SimulasiBebasScreen(
         )
     }
 
+    if (showEditNameDialog) {
+        Log.d("SimulasiBebasScreen", "Showing SimulationEditNameDialog")
+        SimulationEditNameDialog(
+            simulation = editingSimulation,
+            onSave = { simulationId, newName ->
+                Log.d("SimulasiBebasScreen", "Updating simulation $simulationId to name: $newName")
+                viewModel.updateSimulationName(simulationId, newName)
+                showEditNameDialog = false
+            },
+            onDismiss = {
+                Log.d("SimulasiBebasScreen", "SimulationEditNameDialog dismissed")
+                showEditNameDialog = false
+            }
+        )
+    }
+
+    if (showDeleteDialog) {
+        Log.d("SimulasiBebasScreen", "Showing SimulationDeleteConfirmationDialog")
+        SimulationDeleteConfirmationDialog(
+            simulation = deletingSimulation,
+            onConfirm = { simulationId ->
+                Log.d("SimulasiBebasScreen", "Confirmed deletion of simulation $simulationId")
+                viewModel.deleteSimulation(simulationId)
+                showDeleteDialog = false
+                if (simulationId == simulationId) {
+                    navController.navigate(Screen.SimulasiPage.route)
+                }
+            },
+            onDismiss = {
+                Log.d("SimulasiBebasScreen", "SimulationDeleteConfirmationDialog dismissed")
+                showDeleteDialog = false
+            }
+        )
+    }
+
     if (showSimulationDialog) {
         Log.d("SimulasiBebasScreen", "Showing SimulationSelectionDialog")
         SimulationSelectionDialog(
@@ -271,6 +365,14 @@ fun SimulasiBebasScreen(
             onSimulationSelect = { simulation ->
                 viewModel.loadSimulation(simulation.id)
                 showSimulationDialog = false
+            },
+            onEditSimulation = { simulation ->
+                editingSimulation = simulation
+                showEditNameDialog = true
+            },
+            onDeleteSimulation = { simulation ->
+                deletingSimulation = simulation
+                showDeleteDialog = true
             },
             onNewSimulation = {
                 showNameDialog = true
@@ -783,9 +885,107 @@ private fun SimulationNameDialog(
 }
 
 @Composable
+private fun SimulationEditNameDialog(
+    simulation: SimulationEntity?,
+    onSave: (Int, String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var name by remember { mutableStateOf(simulation?.name ?: "") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Edit Nama Simulasi",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    color = Color(0xFF1A237E)
+                )
+            )
+        },
+        text = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Masukkan nama simulasi") },
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF3F51B5),
+                    unfocusedBorderColor = Color(0xFF424242)
+                )
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (name.isNotBlank() && simulation != null) {
+                        onSave(simulation.id, name)
+                    }
+                },
+                enabled = name.isNotBlank() && simulation != null
+            ) {
+                Text("Simpan", color = Color(0xFF3F51B5))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Batal", color = Color(0xFF3F51B5))
+            }
+        },
+        containerColor = Color.White,
+        shape = RoundedCornerShape(16.dp)
+    )
+}
+
+@Composable
+private fun SimulationDeleteConfirmationDialog(
+    simulation: SimulationEntity?,
+    onConfirm: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Hapus Simulasi",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    color = Color(0xFF1A237E)
+                )
+            )
+        },
+        text = {
+            Text(
+                text = "Apakah Anda yakin ingin menghapus simulasi '${simulation?.name}'? Tindakan ini tidak dapat dibatalkan.",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = Color(0xFF424242)
+                )
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    simulation?.let { onConfirm(it.id) }
+                },
+                enabled = simulation != null
+            ) {
+                Text("Hapus", color = Color(0xFFEF5350))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Batal", color = Color(0xFF3F51B5))
+            }
+        },
+        containerColor = Color.White,
+        shape = RoundedCornerShape(16.dp)
+    )
+}
+
+@Composable
 private fun SimulationSelectionDialog(
     simulations: List<SimulationEntity>,
     onSimulationSelect: (SimulationEntity) -> Unit,
+    onEditSimulation: (SimulationEntity) -> Unit,
+    onDeleteSimulation: (SimulationEntity) -> Unit,
     onNewSimulation: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -815,19 +1015,45 @@ private fun SimulationSelectionDialog(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 4.dp)
-                                    .clickable { onSimulationSelect(simulation) }
                                     .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(8.dp)),
                                 colors = CardDefaults.cardColors(
                                     containerColor = Color(0xFFF5F7FA)
                                 )
                             ) {
-                                Text(
-                                    text = simulation.name,
-                                    modifier = Modifier.padding(16.dp),
-                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                        color = Color(0xFF1A237E)
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = simulation.name,
+                                        style = MaterialTheme.typography.bodyLarge.copy(
+                                            color = Color(0xFF1A237E)
+                                        ),
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clickable { onSimulationSelect(simulation) }
+                                            .padding(end = 8.dp)
                                     )
-                                )
+                                    Row {
+                                        IconButton(onClick = { onEditSimulation(simulation) }) {
+                                            Icon(
+                                                imageVector = Icons.Default.Edit,
+                                                contentDescription = "Edit",
+                                                tint = Color(0xFF3F51B5)
+                                            )
+                                        }
+                                        IconButton(onClick = { onDeleteSimulation(simulation) }) {
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = "Delete",
+                                                tint = Color(0xFFEF5350)
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

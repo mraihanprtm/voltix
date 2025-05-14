@@ -50,6 +50,7 @@ import java.io.FileNotFoundException
 @Composable
 fun SearchScreen(
     navController: NavController,
+    ruanganId: Int,
     viewModel: SearchViewModel = hiltViewModel(LocalActivity.current as ComponentActivity)
 ) {
     // Collect UI State
@@ -60,8 +61,8 @@ fun SearchScreen(
     var showEmptyState by remember { mutableStateOf(uiState.imageBitmap == null && uiState.searchResults.isEmpty()) }
 
     // Update showEmptyState based on uiState
-    LaunchedEffect(uiState.imageBitmap, uiState.searchResults) {
-        showEmptyState = uiState.imageBitmap == null && uiState.searchResults.isEmpty()
+    LaunchedEffect(uiState.imageBitmap, uiState.searchResults, uiState.isLoading) {
+        showEmptyState = uiState.searchResults.isEmpty() && !uiState.isLoading && uiState.imageBitmap != null
     }
 
     // Camera launcher for taking photos
@@ -74,23 +75,8 @@ fun SearchScreen(
                 viewModel.updateIsLoading(true)
                 showEmptyState = false
                 viewModel.updateImageBitmap(it)
-                viewModel.saveBitmapToFile(context, it) { file ->
-                    Log.d("SearchScreen", "Bitmap saved, uploading file: ${file.absolutePath}")
-                    viewModel.uploadImage(file) { imageUrl ->
-                        if (imageUrl != null) {
-                            viewModel.fetchResults(context, imageUrl) { results ->
-                                viewModel.updateSearchResults(results)
-                                viewModel.updateIsLoading(false)
-                                Log.d("SearchScreen", "Search results updated: ${results.size} items")
-                            }
-                        } else {
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Gambar gagal diunggah. Silakan coba lagi")
-                            }
-                            viewModel.updateIsLoading(false)
-                        }
-                    }
-                }
+                viewModel.processImage(context, it)
+                Log.d("SearchScreen", "Process image triggered for camera capture")
             }
         }
     }
@@ -105,23 +91,8 @@ fun SearchScreen(
                 viewModel.updateIsLoading(true)
                 showEmptyState = false
                 viewModel.updateImageBitmap(bitmap)
-                viewModel.saveBitmapToFile(context, bitmap) { file ->
-                    Log.d("SearchScreen", "Bitmap saved, uploading file: ${file.absolutePath}")
-                    viewModel.uploadImage(file) { imageUrl ->
-                        if (imageUrl != null) {
-                            viewModel.fetchResults(context, imageUrl) { results ->
-                                viewModel.updateSearchResults(results)
-                                viewModel.updateIsLoading(false)
-                                Log.d("SearchScreen", "Search results updated: ${results.size} items")
-                            }
-                        } else {
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Gambar gagal diunggah. Silakan coba lagi")
-                            }
-                            viewModel.updateIsLoading(false)
-                        }
-                    }
-                }
+                viewModel.processImage(context, bitmap)
+                Log.d("SearchScreen", "Process image triggered for gallery image")
             } catch (e: FileNotFoundException) {
                 coroutineScope.launch {
                     snackbarHostState.showSnackbar("Gambar tidak ditemukan")
@@ -287,13 +258,8 @@ fun SearchScreen(
                                 uiState.imageBitmap?.let { bitmap ->
                                     viewModel.updateIsLoading(true)
                                     showEmptyState = false
-                                    viewModel.processImage(context, bitmap) { query ->
-                                        viewModel.fetchResults(context, query) { results ->
-                                            viewModel.updateSearchResults(results)
-                                            viewModel.updateIsLoading(false)
-                                            Log.d("SearchScreen", "Search results updated via processImage: ${results.size} items")
-                                        }
-                                    }
+                                    viewModel.processImage(context, bitmap)
+                                    Log.d("SearchScreen", "Process image triggered")
                                 }
                             },
                             modifier = Modifier
@@ -331,13 +297,14 @@ fun SearchScreen(
                         uiState.searchResults.forEach { result ->
                             SearchResultItem(
                                 data = result,
-                                onItemClick = { deviceName, wattage ->
-                                    // TODO: Replace ruanganId=0 with actual ruanganId from previous screen
+                                onItemClick = {
                                     navController.navigate(
                                         Screen.InputPerangkat.createRoute(
-                                            ruanganId = 0,
-                                            deviceName = deviceName,
-                                            wattage = wattage.toString()
+                                            ruanganId = ruanganId,
+                                            deviceName = result.deviceType.toString(),
+                                            wattage = result.wattage ?: "",
+                                            lumen = result.lumen ?: "",
+                                            lampType = result.lampType ?: ""
                                         )
                                     )
                                 }
@@ -345,7 +312,7 @@ fun SearchScreen(
                         }
                     }
                 }
-                !showEmptyState && uiState.searchResults.isEmpty() && !uiState.isLoading -> {
+                showEmptyState -> {
                     Text(
                         "Tidak ada hasil ditemukan.",
                         fontSize = 16.sp,

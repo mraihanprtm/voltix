@@ -5,9 +5,13 @@ import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import com.example.voltix.data.entity.LampuEntity
 import com.example.voltix.data.entity.PerangkatEntity
+import com.example.voltix.data.entity.RuanganPerangkatCrossRef
+import com.example.voltix.data.entity.RuanganWithPerangkat
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface PerangkatDAO {
@@ -44,4 +48,11 @@ interface PerangkatDAO {
 
     @Query("SELECT * FROM lampu WHERE perangkatId = :perangkatId")
     suspend fun getLampuByPerangkatId(perangkatId: Int): LampuEntity?
+
+    @Transaction
+    @Query("SELECT * FROM ruangan")
+    fun getAllRuanganWithPerangkat(): Flow<List<RuanganWithPerangkat>>
+
+    @Query("SELECT * FROM ruangan_perangkat_cross_ref WHERE ruanganId = :ruanganId AND perangkatId = :perangkatId")
+    suspend fun getCrossRef(ruanganId: Int, perangkatId: Int): RuanganPerangkatCrossRef?
 }

@@ -10,6 +10,7 @@ import com.example.voltix.ui.component.AppNavigation
 import com.example.voltix.ui.screen.SimulasiScreen
 import com.example.voltix.ui.theme.VoltixTheme
 import com.example.voltix.viewmodel.auth.LoginViewModel
+import com.example.voltix.viewmodel.dashboard.DashboardViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint

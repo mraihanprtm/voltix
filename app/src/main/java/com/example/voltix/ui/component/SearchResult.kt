@@ -2,11 +2,13 @@ package com.example.voltix.ui.component
 
 import android.util.Log
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -22,36 +24,52 @@ import com.example.voltix.data.entity.ElectronicInformationModel
 @Composable
 fun SearchResultItem(
     data: ElectronicInformationModel,
-    onItemClick: (deviceName: String, wattage: String) -> Unit
+    onItemClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        onClick = {
-            // Handle nullable values
-            val deviceName = data.title ?: "Unknown Device"
-            val wattage = data.wattage?.toString() ?: "0"
-
-            onItemClick(deviceName, wattage)
-        }
+        shape = RoundedCornerShape(8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        onClick = onItemClick
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
-                text = data.title ?: "Unknown Device",
+                text = data.title.toString(),
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium
+                color = MaterialTheme.colorScheme.onSurface
             )
-            Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Power: ${data.wattage?.toString() ?: "0"} Watt",
+                text = "Type: ${data.deviceType}",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            data.wattage?.let {
+                Text(
+                    text = "Wattage: $it",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            data.lumen?.let {
+                Text(
+                    text = "Lumen: $it",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            data.lampType?.let {
+                Text(
+                    text = "Lamp Type: $it",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

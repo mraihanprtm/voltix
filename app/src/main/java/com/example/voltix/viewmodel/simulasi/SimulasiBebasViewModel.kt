@@ -20,6 +20,10 @@ import kotlinx.coroutines.launch
 import java.time.LocalTime
 import javax.inject.Inject
 
+enum class TimeRange {
+    DAILY, MONTHLY, YEARLY
+}
+
 @HiltViewModel
 class SimulasiBebasViewModel @Inject constructor(
     private val repository: SimulationRepository,
@@ -41,7 +45,8 @@ class SimulasiBebasViewModel @Inject constructor(
 
     private val _melebihiDaya = MutableStateFlow(false)
     val melebihiDaya: StateFlow<Boolean> = _melebihiDaya.asStateFlow()
-    private var batasDayaPengguna: Int = 2200 // Fallback value
+
+    private var batasDayaPengguna: Int = 2200 // Fallback value (Watts)
 
     private val _totalDaya = MutableStateFlow(0.0)
     val totalDaya: StateFlow<Double> = _totalDaya.asStateFlow()
@@ -49,34 +54,97 @@ class SimulasiBebasViewModel @Inject constructor(
     private val _biayaListrik = MutableStateFlow(0.0)
     val biayaListrik: StateFlow<Double> = _biayaListrik.asStateFlow()
 
-    private val _jenisListrik = MutableStateFlow(0)
-    val jenisListrik: StateFlow<Int> = _jenisListrik
+    private val _timeRange = MutableStateFlow(TimeRange.DAILY)
+    val timeRange: StateFlow<TimeRange> = _timeRange.asStateFlow()
 
+    private var hargaPerKWh: Double = 1444.70 // IDR per kWh, default PLN R-1 tariff
 
     init {
         Log.d("SimulasiBebasViewModel", "ViewModel initialized")
         loadBatasDayaPengguna()
     }
 
-    private fun updateMelebihiDaya(devices: List<SimulationDeviceEntity>) {
-        val totalPower = devices.sumOf { it.daya * it.jumlah.toDouble() } // dalam watt
-        _totalDaya.value = totalPower
-
-        val totalHours = devices.sumOf {
-            val duration = java.time.Duration.between(it.waktuNyala, it.waktuMati).toMinutes().coerceAtLeast(0).toDouble() / 60.0
-            duration * it.jumlah
+    // New methods
+    fun updateSimulationName(simulationId: Int, newName: String) {
+        viewModelScope.launch {
+            try {
+                Log.d("SimulasiBebasViewModel", "Updating simulation $simulationId to name: $newName")
+                repository.updateSimulationName(simulationId, newName)
+                loadAllSimulations() // Refresh simulation list
+            } catch (e: Exception) {
+                Log.e("SimulasiBebasViewModel", "Error updating simulation name: ${e.message}")
+            }
         }
-
-        // Konversi watt ke kWh
-        val totalEnergyKWh = (totalPower / 1000.0) * totalHours
-        val hargaPerKWh = jenisListrik.value.toDouble() // Misalnya tarif listrik per kWh (PLN R-1/Tarif Dasar Listrik 2023)
-        _biayaListrik.value = totalEnergyKWh * hargaPerKWh
-
-        _melebihiDaya.value = totalPower > batasDayaPengguna
-
-        Log.d("SimulasiBebasViewModel", "Total Power: $totalPower W, Total Energy: $totalEnergyKWh kWh, Biaya: ${_biayaListrik.value}, Melebihi: ${_melebihiDaya.value}")
     }
 
+    fun deleteSimulation(simulationId: Int) {
+        viewModelScope.launch {
+            try {
+                Log.d("SimulasiBebasViewModel", "Deleting simulation $simulationId")
+                repository.deleteSimulation(simulationId)
+                loadAllSimulations() // Refresh simulation list
+                // Clear devices if the deleted simulation is active
+                if (_devices.value?.any { it.simulationId == simulationId } == true) {
+                    _devices.postValue(emptyList())
+                    _totalDaya.value = 0.0
+                    _biayaListrik.value = 0.0
+                    _melebihiDaya.value = false
+                }
+            } catch (e: Exception) {
+                Log.e("SimulasiBebasViewModel", "Error deleting simulation: ${e.message}")
+            }
+        }
+    }
+
+    fun setTimeRange(range: TimeRange) {
+        _timeRange.value = range
+        updateMelebihiDaya(_devices.value ?: emptyList())
+        Log.d("SimulasiBebasViewModel", "Time range set to: $range")
+    }
+
+    private fun updateMelebihiDaya(devices: List<SimulationDeviceEntity>) {
+        var totalPower = 0.0 // Wh for daily, kWh for monthly/yearly
+        val timeRange = _timeRange.value
+
+        devices.forEach { device ->
+            val powerPerUnit = device.daya * device.jumlah // Watts
+            val startHour = device.waktuNyala.toSecondOfDay() / 3600.0
+            val endHour = device.waktuMati.toSecondOfDay() / 3600.0
+            val hoursActive = if (endHour >= startHour) {
+                endHour - startHour
+            } else {
+                (24.0 - startHour) + endHour
+            }
+            totalPower += powerPerUnit * hoursActive // Wh per day
+        }
+
+        when (timeRange) {
+            TimeRange.DAILY -> {
+                // Already in Wh per day
+            }
+            TimeRange.MONTHLY -> {
+                totalPower = totalPower * 30.42f
+            }
+            TimeRange.YEARLY -> {
+                totalPower = totalPower * 365.25f
+            }
+        }
+
+        _totalDaya.value = totalPower / 1000f
+        _biayaListrik.value = _totalDaya.value * hargaPerKWh
+
+        // Check if power exceeds limit (batasDayaPengguna in Watts for daily comparison)
+        _melebihiDaya.value = when (timeRange) {
+            TimeRange.DAILY -> totalPower > batasDayaPengguna
+            TimeRange.MONTHLY -> (totalPower * 1000.0 / 30.42) > batasDayaPengguna
+            TimeRange.YEARLY -> (totalPower * 1000.0 / 365.25) > batasDayaPengguna
+        }
+
+        Log.d(
+            "SimulasiBebasViewModel",
+            "TimeRange: $timeRange, Total Power: $totalPower, Biaya: ${_biayaListrik.value}, Melebihi: ${_melebihiDaya.value}"
+        )
+    }
 
     private fun loadBatasDayaPengguna() {
         viewModelScope.launch {
@@ -88,20 +156,23 @@ class SimulasiBebasViewModel @Inject constructor(
                     Log.d("SimulasiBebasViewModel", "Current User Data: $currentUser")
                     if (currentUser != null) {
                         batasDayaPengguna = currentUser.jenisListrik
-                        _jenisListrik.value = currentUser.jenisListrik
-                        Log.d("SimulasiBebasViewModel", "Batas Daya set to: $batasDayaPengguna")
+                        // Assuming jenisListrik is the power limit in Watts; adjust hargaPerKWh if needed
+                        hargaPerKWh = when (currentUser.jenisListrik) {
+                            900 -> 1352.0 // Example: PLN R-1/900VA
+                            1300 -> 1444.70 // PLN R-1/1300VA
+                            2200 -> 1444.70 // PLN R-1/2200VA
+                            else -> 1444.70 // Default
+                        }
+                        Log.d("SimulasiBebasViewModel", "Batas Daya: $batasDayaPengguna, Harga/kWh: $hargaPerKWh")
                     } else {
                         Log.w("SimulasiBebasViewModel", "User data not found for ID: $userId")
-                        batasDayaPengguna = 2200 // Fallback
                     }
                 } else {
                     Log.w("SimulasiBebasViewModel", "No user is currently logged in")
-                    batasDayaPengguna = 2200 // Fallback
                 }
                 updateMelebihiDaya(_devices.value ?: emptyList())
             } catch (e: Exception) {
                 Log.e("SimulasiBebasViewModel", "Error loading user data", e)
-                batasDayaPengguna = 2200 // Fallback
                 updateMelebihiDaya(_devices.value ?: emptyList())
             }
         }

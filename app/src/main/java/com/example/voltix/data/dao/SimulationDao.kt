@@ -34,4 +34,13 @@ interface SimulationDAO {
     @Transaction
     @Query("SELECT * FROM simulation")
     suspend fun getAllSimulationsWithDevices(): List<SimulationWithDevices>
+
+    @Query("UPDATE simulation SET name = :newName WHERE id = :simulationId")
+    suspend fun updateSimulationName(simulationId: Int, newName: String)
+
+    @Query("DELETE FROM simulation WHERE id = :simulationId")
+    suspend fun deleteSimulation(simulationId: Int)
+
+    @Query("DELETE FROM simulation_device WHERE simulationId = :simulationId")
+    suspend fun deleteDevicesBySimulationId(simulationId: Int)
 }

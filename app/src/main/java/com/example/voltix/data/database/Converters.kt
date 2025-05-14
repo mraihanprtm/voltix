@@ -1,6 +1,7 @@
 package com.example.voltix.data.database
 
 import androidx.room.TypeConverter
+import com.example.voltix.data.entity.JenisRuangan
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -29,5 +30,15 @@ class Converters {
         return value?.let {
             LocalTime.parse(it, formatter)
         }
+    }
+
+    @TypeConverter
+    fun fromJenisRuangan(value: JenisRuangan): String {
+        return value.name
+    }
+
+    @TypeConverter
+    fun toJenisRuangan(value: String): JenisRuangan {
+        return JenisRuangan.valueOf(value)
     }
 }
