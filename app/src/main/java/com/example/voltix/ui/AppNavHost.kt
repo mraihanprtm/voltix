@@ -74,7 +74,7 @@ fun AppNavHost(navController: NavHostController) {
         startDestination = Screen.Onboarding.route
     ) {
         composable(Screen.Dashboard.route) {
-            DashboardScreen(viewModel = hiltViewModel())
+            DashboardScreen(viewModel = hiltViewModel(), navController = navController)
         }
         composable(Screen.DaftarRuangan.route) {
             DaftarRuanganScreen(navController = navController)
@@ -126,7 +126,8 @@ fun AppNavHost(navController: NavHostController) {
 
         composable(Screen.SimulationComparison.route) {
             SimulationComparisonScreen(
-                viewModel = hiltViewModel()
+                viewModel = hiltViewModel(),
+                navController = navController
             )
         }
 

@@ -39,8 +39,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.rememberLottieComposition
+import com.example.voltix.R
 import com.example.voltix.data.entity.ElectronicInformationModel
 import com.example.voltix.ui.Screen
+import com.example.voltix.ui.component.LoadingAnimationSection
 import com.example.voltix.ui.component.SearchResultItem
 import com.example.voltix.viewmodel.googlelens.SearchViewModel
 import kotlinx.coroutines.launch
@@ -332,7 +336,7 @@ fun SearchScreen(
                 .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator()
+            LoadingAnimationSection(uiState.isLoading)
         }
     }
 

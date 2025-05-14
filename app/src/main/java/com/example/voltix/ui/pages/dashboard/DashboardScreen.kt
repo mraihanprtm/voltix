@@ -17,15 +17,25 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.navigation.NavHostController
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.voltix.R
 import com.example.voltix.data.repository.DashboardData
+import com.example.voltix.ui.component.LoadingAnimationSection
 import com.example.voltix.viewmodel.dashboard.DashboardViewModel
 import com.example.voltix.viewmodel.dashboard.TimeRange
 import com.github.mikephil.charting.charts.LineChart
+import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
@@ -35,121 +45,197 @@ import java.text.NumberFormat
 import java.util.*
 
 @Composable
-fun DashboardScreen(viewModel: DashboardViewModel) {
+fun DashboardScreen(
+    viewModel: DashboardViewModel,
+    navController: NavHostController
+) {
     val dashboardData by viewModel.dashboardData.collectAsState()
     val timeRange by viewModel.timeRange.collectAsState()
     val numberFormat = NumberFormat.getCurrencyInstance(Locale("id", "ID"))
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        item {
-            Text(
-                text = "Dashboard",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
+    // Debug data loading
+    LaunchedEffect(dashboardData) {
+        dashboardData?.let { data ->
+            println("Dashboard: totalDevices = ${data.totalDevices}")
         }
+    }
 
-        item {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .shadow(8.dp, RoundedCornerShape(20.dp)),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background
+    ) { paddingValues ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            contentPadding = PaddingValues(bottom = 16.dp)
+        ) {
+            item {
+                Text(
+                    text = "Dashboard",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
                 )
-            ) {
+            }
+
+            dashboardData?.let { data ->
+                if (data.totalDevices == 0) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .fillMaxHeight(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            WelcomeSection(navController)
+                        }
+                    }
+                } else {
+                    item {
+                        TimeRangeCard(viewModel, timeRange)
+                    }
+
+                    item {
+                        GeneralInfoCard(data, numberFormat, timeRange)
+                    }
+
+                    item {
+                        PowerUsageGraphCard(data.hourlyPower, timeRange)
+                    }
+                }
+            } ?: item {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
+                        .fillMaxHeight(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    // Icon Watermark
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_fa_calendar),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .fillMaxWidth(0.4f)
-                            .aspectRatio(0.2f)
-                            .align(Alignment.TopEnd)
-                            .offset(x = 50.dp, y = (-5).dp)
-                            .alpha(0.07f),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-
-                    Column {
-                        // Judul Rentang Waktu
-                        Text(
-                            text = "Atur Rentang Waktu",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.SemiBold
-                            ),
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        // Dropdown atau Radio Time Range
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
-                            TimeRange.values().forEach { range ->
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .clickable { viewModel.setTimeRange(range) }
-                                        .padding(horizontal = 4.dp)
-                                ) {
-                                    RadioButton(
-                                        selected = timeRange == range,
-                                        onClick = { viewModel.setTimeRange(range) },
-                                        colors = RadioButtonDefaults.colors(
-                                            selectedColor = Color(0xFF3F51B5),
-                                            unselectedColor = Color.Gray
-                                        )
-                                    )
-                                    Text(
-                                        text = when (range) {
-                                            TimeRange.DAILY -> "Harian"
-                                            TimeRange.MONTHLY -> "Bulanan"
-                                            TimeRange.YEARLY -> "Tahunan"
-                                        },
-                                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 14.sp),
-                                        color = if (timeRange == range) Color(0xFF1A237E) else Color.Gray
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    LoadingAnimationSection(true)
                 }
             }
         }
+    }
+}
 
+@Composable
+fun WelcomeSection(navController: NavHostController) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.welcome_animation))
+        LottieAnimation(
+            composition = composition,
+            modifier = Modifier.size(200.dp),
+            iterations = LottieConstants.IterateForever
+        )
+        Text(
+            text = "Selamat datang di aplikasi VOLTIX",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center
+        )
+        Text(
+            text = "Sebelum eksplor lebih jauh, kita tambah ruangan dulu yuk! Terus jangan lupa tambah perangkat yaaa!",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+            textAlign = TextAlign.Center
+        )
+        Button(
+            onClick = { navController.navigate("daftar_ruangan") },
+            modifier = Modifier
+                .fillMaxWidth(0.8f)
+                .height(48.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary
+            )
+        ) {
+            Text(
+                text = "Tambah Ruangan",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onPrimary
+            )
+        }
+    }
+}
 
-        dashboardData?.let { data ->
-            item {
-                GeneralInfoCard(data, numberFormat, timeRange)
-            }
-
-            item {
-                PowerUsageGraphCard(data.hourlyPower, timeRange)
-            }
-        } ?: item {
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
+@Composable
+fun TimeRangeCard(viewModel: DashboardViewModel, timeRange: TimeRange) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(120.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .shadow(8.dp, RoundedCornerShape(20.dp)),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_fa_calendar),
+                contentDescription = "Ikon kalender",
+                modifier = Modifier
+                    .fillMaxWidth(0.4f)
+                    .aspectRatio(0.2f)
+                    .align(Alignment.TopEnd)
+                    .offset(x = 50.dp, y = (-5).dp)
+                    .alpha(0.07f),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Column {
+                Text(
+                    text = "Atur Rentang Waktu",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    TimeRange.values().forEach { range ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .clickable { viewModel.setTimeRange(range) }
+                                .padding(horizontal = 4.dp)
+                        ) {
+                            RadioButton(
+                                selected = timeRange == range,
+                                onClick = { viewModel.setTimeRange(range) },
+                                colors = RadioButtonDefaults.colors(
+                                    selectedColor = MaterialTheme.colorScheme.primary,
+                                    unselectedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                )
+                            )
+                            Text(
+                                text = when (range) {
+                                    TimeRange.DAILY -> "Harian"
+                                    TimeRange.MONTHLY -> "Bulanan"
+                                    TimeRange.YEARLY -> "Tahunan"
+                                },
+                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 14.sp),
+                                color = if (timeRange == range) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -168,13 +254,12 @@ fun GeneralInfoCard(data: DashboardData, numberFormat: NumberFormat, timeRange: 
             ),
             color = MaterialTheme.colorScheme.onSurface
         )
-        // Jumlah Perangkat Card
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(100.dp)
                 .clip(RoundedCornerShape(20.dp))
-                .shadow(elevation = 8.dp, shape = RoundedCornerShape(20.dp)),
+                .shadow(8.dp, RoundedCornerShape(20.dp)),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface
             )
@@ -184,10 +269,9 @@ fun GeneralInfoCard(data: DashboardData, numberFormat: NumberFormat, timeRange: 
                     .fillMaxWidth()
                     .padding(start = 16.dp, top = 16.dp, bottom = 16.dp, end = 8.dp)
             ) {
-                // Background Icon Watermark
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_fa_tag), // Replace with devices icon
-                    contentDescription = null,
+                    painter = painterResource(id = R.drawable.ic_fa_tag),
+                    contentDescription = "Ikon perangkat",
                     modifier = Modifier
                         .fillMaxWidth(0.3f)
                         .aspectRatio(0.9f)
@@ -196,7 +280,6 @@ fun GeneralInfoCard(data: DashboardData, numberFormat: NumberFormat, timeRange: 
                         .alpha(0.07f),
                     tint = MaterialTheme.colorScheme.primary
                 )
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -209,83 +292,76 @@ fun GeneralInfoCard(data: DashboardData, numberFormat: NumberFormat, timeRange: 
                 }
             }
         }
-
-        // Informasi Umum Section
-        Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            Card(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(100.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .shadow(8.dp, RoundedCornerShape(20.dp)),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             ) {
-                // Total Daya Card
-                Card(
+                Box(
                     modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(20.dp))
-                        .shadow(elevation = 8.dp, shape = RoundedCornerShape(20.dp)),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    )
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, top = 16.dp, bottom = 16.dp, end = 8.dp)
                 ) {
-                    Box(
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_fa_bolt),
+                        contentDescription = "Ikon daya",
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 16.dp, top = 16.dp, bottom = 16.dp, end = 8.dp)
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_fa_bolt),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .fillMaxWidth(0.7f)
-                                .aspectRatio(1f)
-                                .align(Alignment.TopEnd)
-                                .offset(x = 20.dp, y = (-20).dp)
-                                .alpha(0.07f),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        InfoItem(
-                            label = "Total Daya",
-                            value = when (timeRange) {
-                                TimeRange.DAILY -> String.format("%.2f kWh/hari", data.totalPower)
-                                TimeRange.MONTHLY -> String.format("%.2f kWh/bulan", data.totalPower)
-                                TimeRange.YEARLY -> String.format("%.2f kWh/tahun", data.totalPower)
-                            }
-                        )
-                    }
+                            .fillMaxWidth(0.7f)
+                            .aspectRatio(1f)
+                            .align(Alignment.TopEnd)
+                            .offset(x = 20.dp, y = (-20).dp)
+                            .alpha(0.07f),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    InfoItem(
+                        label = "Total Daya",
+                        value = when (timeRange) {
+                            TimeRange.DAILY -> String.format("%.2f kWh/hari", data.totalPower)
+                            TimeRange.MONTHLY -> String.format("%.2f kWh/bulan", data.totalPower)
+                            TimeRange.YEARLY -> String.format("%.2f kWh/tahun", data.totalPower)
+                        }
+                    )
                 }
-
-                // Total Biaya Card
-                Card(
+            }
+            Card(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(100.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .shadow(8.dp, RoundedCornerShape(20.dp)),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            ) {
+                Box(
                     modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(20.dp))
-                        .shadow(elevation = 8.dp, shape = RoundedCornerShape(20.dp)),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    )
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, top = 16.dp, bottom = 16.dp, end = 8.dp)
                 ) {
-                    Box(
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_fa_money),
+                        contentDescription = "Ikon biaya",
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 16.dp, top = 16.dp, bottom = 16.dp, end = 8.dp)
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_fa_money),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .fillMaxWidth(0.7f)
-                                .aspectRatio(1f)
-                                .align(Alignment.TopEnd)
-                                .offset(x = 20.dp, y = (-20).dp)
-                                .alpha(0.07f),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        InfoItem(
-                            label = "Total Biaya",
-                            value = numberFormat.format(data.totalCost)
-                        )
-                    }
+                            .fillMaxWidth(0.7f)
+                            .aspectRatio(1f)
+                            .align(Alignment.TopEnd)
+                            .offset(x = 20.dp, y = (-20).dp)
+                            .alpha(0.07f),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    InfoItem(
+                        label = "Total Biaya",
+                        value = numberFormat.format(data.totalCost)
+                    )
                 }
             }
         }
@@ -295,23 +371,37 @@ fun GeneralInfoCard(data: DashboardData, numberFormat: NumberFormat, timeRange: 
 @Composable
 fun PowerUsageGraphCard(hourlyPower: List<Float>, timeRange: TimeRange) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(4.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(8.dp, RoundedCornerShape(12.dp)),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
                 text = "Grafik Pemakaian Daya Per Jam",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            if (hourlyPower.all { it == 0f }) {
-                Text(
-                    text = "No data available",
-                    modifier = Modifier.padding(8.dp)
-                )
+            if (hourlyPower.isEmpty() || hourlyPower.all { it == 0f }) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Tidak ada data untuk ditampilkan",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        textAlign = TextAlign.Center
+                    )
+                }
             } else {
                 PowerUsageLineChart(hourlyPower, timeRange)
             }
@@ -338,24 +428,44 @@ fun InfoItem(label: String, value: String) {
 
 @Composable
 fun PowerUsageLineChart(hourlyPower: List<Float>, timeRange: TimeRange) {
+    // Capture colors in composable context
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+    val primaryFadedColor = primaryColor.copy(alpha = 0.2f)
+    val onSurfaceFadedColor = onSurfaceColor.copy(alpha = 0.2f)
+
     AndroidView(
         factory = { context ->
             LineChart(context).apply {
+                // Set layout params to match Compose modifier
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
-                    600
+                    ViewGroup.LayoutParams.WRAP_CONTENT
                 )
+
+                // Basic chart configuration
                 setTouchEnabled(true)
+                setPinchZoom(false)
                 setScaleEnabled(false)
                 description.isEnabled = false
-                legend.isEnabled = false
-                axisRight.isEnabled = false
+                setExtraOffsets(8f, 8f, 8f, 16f) // Add padding for labels
 
+                // Legend
+                legend.apply {
+                    isEnabled = true
+                    textColor = onSurfaceColor.toArgb()
+                    textSize = 12f
+                    form = Legend.LegendForm.LINE
+                }
+
+                // X-axis (time)
                 xAxis.apply {
                     position = XAxis.XAxisPosition.BOTTOM
                     setDrawGridLines(false)
                     granularity = 1f
                     labelRotationAngle = -45f
+                    textColor = onSurfaceColor.toArgb()
+                    textSize = 10f
                     valueFormatter = object : ValueFormatter() {
                         override fun getFormattedValue(value: Float): String {
                             return "${value.toInt()}:00"
@@ -363,9 +473,14 @@ fun PowerUsageLineChart(hourlyPower: List<Float>, timeRange: TimeRange) {
                     }
                 }
 
+                // Y-axis (power usage)
                 axisLeft.apply {
                     axisMinimum = 0f
                     granularity = 10f
+                    textColor = onSurfaceColor.toArgb()
+                    textSize = 10f
+                    setDrawGridLines(true)
+                    gridColor = onSurfaceFadedColor.toArgb()
                     valueFormatter = object : ValueFormatter() {
                         override fun getFormattedValue(value: Float): String {
                             return when (timeRange) {
@@ -376,21 +491,29 @@ fun PowerUsageLineChart(hourlyPower: List<Float>, timeRange: TimeRange) {
                         }
                     }
                 }
+                axisRight.isEnabled = false
 
+                // Data points
                 val entries = hourlyPower.mapIndexed { index, value ->
                     Entry(index.toFloat(), value)
                 }
 
-                val dataSet = LineDataSet(entries, "Power Usage").apply {
+                // Line dataset
+                val dataSet = LineDataSet(entries, "Pemakaian Daya").apply {
                     mode = LineDataSet.Mode.CUBIC_BEZIER
-                    color = Color(0xFF2196F3).toArgb()
-                    valueTextColor = android.graphics.Color.BLACK
-                    lineWidth = 2f
-                    setDrawCircles(false)
+                    color = primaryColor.toArgb()
+                    lineWidth = 2.5f
+                    setDrawCircles(true)
+                    circleRadius = 3f
+                    setCircleColor(primaryColor.toArgb())
                     setDrawFilled(true)
-                    fillColor = Color(0xFF2196F3).copy(alpha = 0.3f).toArgb()
+                    fillColor = primaryFadedColor.toArgb()
+                    setDrawValues(false) // Disable value labels above points
+                    valueTextColor = onSurfaceColor.toArgb()
+                    valueTextSize = 10f
                 }
 
+                // Set data and refresh
                 data = LineData(dataSet)
                 invalidate()
             }
@@ -398,5 +521,9 @@ fun PowerUsageLineChart(hourlyPower: List<Float>, timeRange: TimeRange) {
         modifier = Modifier
             .fillMaxWidth()
             .height(300.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(8.dp)
+            .semantics { contentDescription = "Grafik pemakaian daya per jam" }
     )
 }

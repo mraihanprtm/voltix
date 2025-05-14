@@ -19,11 +19,11 @@ import com.example.voltix.R
 fun MainScreen() {
     val navController = rememberNavController()
 
-    // pembuatan list yang berpasangan
+    // Menambahkan Screen.Rekomendasi ke dalam list bottomItems
     val bottomItems = listOf(
         Screen.Dashboard to R.drawable.ic_fa_home,
         Screen.DaftarRuangan to R.drawable.ic_fa_room,
-        Screen.SimulasiPage to R.drawable.ic_fa_tag
+        Screen.SimulasiPage to R.drawable.ic_fa_tag,
         Screen.Rekomendasi to R.drawable.ic_fa_bulb, // Tambahkan icon rekomendasi (contoh: ic_fa_bulb)
     )
 
@@ -53,8 +53,9 @@ fun MainScreen() {
                                         // mencegah penumpukan banyak instance layar
                                         popUpTo(navController.graph.startDestinationId)
 
-                                    // mencegah navigasi berulang ke layar yang sama jika klik ikon yang sedang aktif
-                                    launchSingleTop = true
+                                        // mencegah navigasi berulang ke layar yang sama jika klik ikon yang sedang aktif
+                                        launchSingleTop = true
+                                    }
                                 }
                             },
                             icon = { Icon(painter = painterResource(id = icon), contentDescription = screen.route) },

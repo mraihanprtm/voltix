@@ -19,13 +19,13 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -39,7 +39,6 @@ import com.example.voltix.ui.component.DropdownKategori
 import com.example.voltix.ui.component.TimePickerDialogButton
 import com.example.voltix.viewmodel.simulasi.PerangkatViewModel
 import com.example.voltix.viewmodel.simulasi.RuanganViewModel
-import kotlinx.coroutines.launch
 import java.time.LocalTime
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -177,7 +176,7 @@ fun DetailRuangan(
             if (isLoading) {
                 LoadingStateView()
             } else if (perangkatList.isEmpty()) {
-                EmptyStateView()
+                EmptyStateViewDetail()
             } else {
                 LazyColumn(
                     modifier = Modifier
@@ -340,6 +339,44 @@ fun DetailRuangan(
         // Show EditPerangkatDialog when showEditDialog is true
         if (showEditDialog) {
             EditPerangkatDialog(viewModel, ruanganId)
+        }
+    }
+}
+
+@Composable
+fun EmptyStateViewDetail() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            val emptyAnimation by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.no_data_animation))
+            LottieAnimation(
+                composition = emptyAnimation,
+                modifier = Modifier.size(150.dp),
+                iterations = LottieConstants.IterateForever
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Belum ada Barang",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Tambah Barang baru dengan tombol di bawah kanan!",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center
+            )
         }
     }
 }

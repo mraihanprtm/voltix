@@ -23,9 +23,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.rememberLottieComposition
+import com.example.voltix.R
 import com.example.voltix.data.entity.SimulationWithDevices
 import com.example.voltix.ui.Screen
 import com.example.voltix.ui.Screen.SavedSimulations.route
+import com.example.voltix.ui.component.LoadingAnimationSection
 import com.example.voltix.ui.viewmodel.SimulationComparisonViewModel
 
 @Composable
@@ -35,6 +39,7 @@ fun SavedSimulationsScreen(
 ) {
     val simulations by viewModel.simulations.observeAsState(initial = emptyList())
     val isLoading by viewModel.isLoading.observeAsState(initial = false)
+
 
     Scaffold(
         modifier = Modifier
@@ -51,7 +56,7 @@ fun SavedSimulationsScreen(
                 .padding(horizontal = 16.dp)
         ) {
             if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                LoadingAnimationSection(isLoading)
             } else if (simulations.isEmpty()) {
                 Text(
                     text = "Belum ada simulasi tersimpan.",

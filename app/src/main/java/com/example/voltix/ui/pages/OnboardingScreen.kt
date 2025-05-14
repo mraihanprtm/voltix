@@ -13,8 +13,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.voltix.R
 import com.example.voltix.data.entity.UserEntity
+import com.example.voltix.ui.component.LoadingAnimationSection
 import com.example.voltix.viewmodel.UserViewModel
 import com.example.voltix.viewmodel.simulasi.PerangkatViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -40,7 +45,6 @@ fun OnboardingScreen(
             R.drawable.img
         )
     )
-
     val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
     val currentUser by userViewModel.getCurrentUser().observeAsState()
     val jenisListrikList = listOf(900, 1300, 2200, 3500)
@@ -60,9 +64,7 @@ fun OnboardingScreen(
     }
 
     if (isLoading) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
+        LoadingAnimationSection(isLoading)
     } else {
         Column(
             modifier = Modifier.fillMaxSize(),

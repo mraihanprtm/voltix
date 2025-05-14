@@ -66,11 +66,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.painterResource
 import androidx.navigation.NavController
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.voltix.R
+
 import com.example.voltix.data.entity.RuanganEntity
 import com.example.voltix.data.entity.jenis
 import com.example.voltix.ui.Screen
 import com.example.voltix.ui.component.DropdownKategori
+import com.example.voltix.ui.component.LoadingAnimationSection
 import com.example.voltix.ui.component.TimePickerDialogButton
 import com.itextpdf.layout.element.Cell
 import com.itextpdf.layout.element.Table
@@ -112,7 +116,6 @@ fun SimulasiBebasScreen(
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
-
     // Permission launcher
     val requestPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -293,7 +296,7 @@ fun SimulasiBebasScreen(
 
             if (isLoading) {
                 Log.d("SimulasiBebasScreen", "Showing loading indicator")
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                LoadingAnimationSection(isLoading)
             } else if (devices.isEmpty() && simulationId != null) {
                 Log.d("SimulasiBebasScreen", "Showing EmptyStateMessage")
                 EmptyStateMessage()

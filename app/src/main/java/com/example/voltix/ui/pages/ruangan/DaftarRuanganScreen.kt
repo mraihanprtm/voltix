@@ -34,14 +34,20 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.voltix.R
 import com.example.voltix.data.entity.JenisRuangan
 import com.example.voltix.data.entity.RuanganEntity
+import com.example.voltix.ui.component.LoadingAnimationSection
 import com.example.voltix.viewmodel.simulasi.RuanganViewModel
 import kotlinx.coroutines.launch
 
@@ -99,18 +105,18 @@ fun DaftarRuanganScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
-    ) { _ -> // Ignore innerPadding
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 8.dp, vertical = 8.dp) // Manual padding
+                .padding(innerPadding) // Use Scaffold's padding
                 .background(MaterialTheme.colorScheme.background)
         ) {
             // Header
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp) // Reduced vertical padding
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 Text(
                     text = "Daftar Ruangan",
@@ -129,10 +135,17 @@ fun DaftarRuanganScreen(
             // Content
             if (isLoading) {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator()
+                    val loadingAnimation by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.loading_animation))
+                    LottieAnimation(
+                        composition = loadingAnimation,
+                        modifier = Modifier.size(100.dp),
+                        iterations = LottieConstants.IterateForever
+                    )
                 }
             } else if (daftarRuangan.isEmpty()) {
                 EmptyStateView()
@@ -140,7 +153,7 @@ fun DaftarRuanganScreen(
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp), // Removed top padding
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
@@ -219,6 +232,44 @@ fun DaftarRuanganScreen(
                 showEditDialog = null
             }
         )
+    }
+}
+
+@Composable
+fun EmptyStateView() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            val emptyAnimation by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.no_data_animation))
+            LottieAnimation(
+                composition = emptyAnimation,
+                modifier = Modifier.size(150.dp),
+                iterations = LottieConstants.IterateForever
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Belum ada ruangan",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Tambah ruangan baru dengan tombol di bawah!",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }
 
@@ -356,33 +407,6 @@ fun RuanganCard(
                 }
             }
         }
-    }
-}
-
-
-@Composable
-fun EmptyStateView() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = "Belum ada ruangan",
-            style = MaterialTheme.typography.titleLarge.copy(
-                fontWeight = FontWeight.Medium
-            ),
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Tambahkan ruangan baru dengan tombol di bawah",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-        )
     }
 }
 

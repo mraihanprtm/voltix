@@ -39,9 +39,16 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.core.app.ActivityCompat
+import androidx.navigation.NavHostController
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.voltix.R
 import com.example.voltix.data.entity.SimulationWithDevices
+import com.example.voltix.ui.component.LoadingAnimationSection
 import com.example.voltix.ui.viewmodel.ComparisonResult
 import com.example.voltix.ui.viewmodel.SimulationComparisonViewModel
 import com.itextpdf.kernel.colors.DeviceRgb
@@ -66,7 +73,8 @@ import java.io.File
 
 @Composable
 fun SimulationComparisonScreen(
-    viewModel: SimulationComparisonViewModel = hiltViewModel()
+    viewModel: SimulationComparisonViewModel = hiltViewModel(),
+    navController: NavHostController
 ) {
     val simulations by viewModel.simulations.observeAsState(initial = emptyList())
     val comparisonResults by viewModel.comparisonResults.observeAsState(initial = emptyList())
@@ -87,7 +95,7 @@ fun SimulationComparisonScreen(
     ) { isGranted ->
         if (isGranted) {
             coroutineScope.launch {
-                showFileNameDialog = true // Show file name dialog after permission granted
+                showFileNameDialog = true
             }
         } else {
             coroutineScope.launch {
@@ -109,7 +117,7 @@ fun SimulationComparisonScreen(
             ) == PackageManager.PERMISSION_GRANTED
         ) {
             coroutineScope.launch {
-                showFileNameDialog = true // Show file name dialog after settings
+                showFileNameDialog = true
             }
         } else {
             coroutineScope.launch {
@@ -193,40 +201,38 @@ fun SimulationComparisonScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 16.dp)
-                .padding(bottom = 80.dp)
-                .verticalScroll(rememberScrollState()),
         ) {
             if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                LoadingAnimationSection(isLoading)
             } else if (simulations.isEmpty()) {
-                Text(
-                    text = "Belum ada simulasi tersimpan.",
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFF424242)
-                    ),
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
+                EmptyStateView(navController)
             } else {
-                SimulationList(
-                    simulations = simulations,
-                    selectedSimulations = selectedSimulations,
-                    onToggleSelection = { simulation ->
-                        if (simulation in selectedSimulations) {
-                            selectedSimulations.remove(simulation)
-                        } else {
-                            selectedSimulations.add(simulation)
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(bottom = 80.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    SimulationList(
+                        simulations = simulations,
+                        selectedSimulations = selectedSimulations,
+                        onToggleSelection = { simulation ->
+                            if (simulation in selectedSimulations) {
+                                selectedSimulations.remove(simulation)
+                            } else {
+                                selectedSimulations.add(simulation)
+                            }
+                            showComparison = false
                         }
-                        showComparison = false
+                    )
+                    AnimatedVisibility(visible = showComparison && comparisonResults.isNotEmpty()) {
+                        ComparisonTable(comparisonResults = comparisonResults)
                     }
-                )
-                AnimatedVisibility(visible = showComparison && comparisonResults.isNotEmpty()) {
-                    ComparisonTable(comparisonResults = comparisonResults)
                 }
             }
         }
@@ -317,6 +323,64 @@ fun SimulationComparisonScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+fun EmptyStateView(
+    navController: NavHostController
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.no_data_animation))
+            LottieAnimation(
+                composition = composition,
+                modifier = Modifier.size(200.dp),
+                iterations = LottieConstants.IterateForever
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Belum ada simulasi",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Medium
+                ),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Tambahkan simulasi baru dengan tombol di bawah",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = { navController.navigate("daftar_ruangan") },
+                modifier = Modifier
+                    .fillMaxWidth(0.8f)
+                    .height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text(
+                    text = "Tambah Ruangan",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+        }
     }
 }
 
