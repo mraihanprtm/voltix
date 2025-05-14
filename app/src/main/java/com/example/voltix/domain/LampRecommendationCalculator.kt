@@ -3,27 +3,37 @@ package com.example.voltix.domain
 import javax.inject.Inject
 
 class LampRecommendationCalculator @Inject constructor() {
+
     fun calculate(input: LampRecommendationInput): LampRecommendationResult {
         val area = input.panjang * input.lebar
-        val E = RoomStandard.minLux[input.jenisRuangan]
+        val standardLux = RoomStandard.minLux[input.jenisRuangan]
             ?: error("Standar lux untuk ${input.jenisRuangan} belum diset")
-        val Ftotal = E * area / (RoomStandard.Kp * RoomStandard.Kd)
-        val N = kotlin.math.ceil(Ftotal / input.lampOutputLm).toInt()
+
+        // Total flux yang dibutuhkan
+        val totalFlux = (standardLux * area) / (RoomStandard.Kp * RoomStandard.Kd)
+
+        // Jumlah lampu (dibulatkan ke atas)
+        val N = kotlin.math.ceil(totalFlux / input.lampOutputLm).toInt()
+
+        // Total lumen & total daya
         val totalLumen = N * input.lampOutputLm
-        val wattPerLamp = input.lampOutputLm.toDouble() / input.lampEfficacy
-        val totalPower = N * wattPerLamp
+        val totalPower = N * input.lampPowerWatt
+
+        // Densitas daya
         val density = totalPower / area
-        val maxDens = RoomStandard.maxDensity[input.jenisRuangan]
+
+        val maxDensity = RoomStandard.maxDensity[input.jenisRuangan]
             ?: error("Standar densitas untuk ${input.jenisRuangan} belum diset")
-        val withinStd = density <= maxDens
+        val withinStd = density <= maxDensity
+
         return LampRecommendationResult(
-            area = area,
-            requiredLux = E,
-            totalFlux = Ftotal,
-            numberOfLamps = N,
-            totalLumen = totalLumen,
+            area           = area,
+            requiredLux    = standardLux,
+            totalFlux      = totalFlux,
+            numberOfLamps  = N,
+            totalLumen     = totalLumen,
             totalPowerWatt = totalPower,
-            densityPower = density,
+            densityPower   = density,
             withinStandard = withinStd
         )
     }

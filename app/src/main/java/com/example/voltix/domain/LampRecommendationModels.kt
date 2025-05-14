@@ -8,7 +8,10 @@ data class LampRecommendationInput(
     val lebar: Float,
     val lampOutputLm: Int,
     val lampEfficacy: Int
-)
+) {
+    // Menghitung daya lampu (dalam watt) berdasarkan output lumen dan efikasi
+    val lampPowerWatt: Double get() = lampOutputLm.toDouble() / lampEfficacy
+}
 
 data class LampRecommendationResult(
     val area: Float,
