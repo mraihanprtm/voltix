@@ -75,4 +75,10 @@ class RekomendasiViewModel @Inject constructor(
             }
         }
     }
+
+    /** Bersihkan hasil dan error */
+    fun resetResult() {
+        _result.value = null
+        _error.value = null
+    }
 }
