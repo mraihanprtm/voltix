@@ -75,7 +75,7 @@ dependencies {
     implementation ("com.google.android.material:material:1.5.0")
 
     implementation ("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
-    implementation("com.itextpdf:itext7-core:7.2.3")
+    implementation("com.itextpdf:itext7-core:7.2.5")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation ("androidx.navigation:navigation-compose:2.7.5")
