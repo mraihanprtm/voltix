@@ -1,12 +1,14 @@
 package com.example.voltix.ui.screen
 
 import android.Manifest
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.provider.MediaStore
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -50,6 +52,8 @@ import java.time.LocalTime
 import java.util.Date
 import java.util.Locale
 import android.util.Log
+import androidx.activity.ComponentActivity
+import androidx.annotation.Nullable
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -59,6 +63,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
@@ -112,6 +117,7 @@ fun SimulasiBebasScreen(
     var waktuNyala by remember { mutableStateOf(LocalTime.of(0, 0)) }
     var waktuMati by remember { mutableStateOf(LocalTime.of(23, 59)) }
     val dayaListrik by viewModel.totalDaya.collectAsState()
+    val konsumsiListrik by viewModel.totalKonsumsi.collectAsState()
     val biayaListrik by viewModel.biayaListrik.collectAsState()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -171,7 +177,8 @@ fun SimulasiBebasScreen(
             .fillMaxSize()
             .background(Color.White),
         topBar = {
-            TopBar(onRoomSelectClick = { showRoomDialog = true })
+            TopBarS(onRoomSelectClick = { showRoomDialog = true },onBackClick = { navController.popBackStack() }) // atau aksi kembali lainnya)
+
         },
         floatingActionButton = {
             Column(
@@ -244,142 +251,199 @@ fun SimulasiBebasScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 16.dp)
         ) {
-            Text(
-                text = "Atur Rentang Waktu",
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 20.sp
-                ),
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
+            item {
+                Text(
+                    text = "Atur Rentang Waktu",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 20.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                TimeRange.values().forEach { range ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .clickable { viewModel.setTimeRange(range) }
-                            .padding(horizontal = 8.dp)
-                    ) {
-                        RadioButton(
-                            selected = timeRange == range,
-                            onClick = { viewModel.setTimeRange(range) },
-                            colors = RadioButtonDefaults.colors(
-                                selectedColor = Color(0xFF3F51B5),
-                                unselectedColor = Color.Gray
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    TimeRange.values().forEach { range ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .clickable { viewModel.setTimeRange(range) }
+                                .padding(horizontal = 8.dp)
+                        ) {
+                            RadioButton(
+                                selected = timeRange == range,
+                                onClick = { viewModel.setTimeRange(range) },
+                                colors = RadioButtonDefaults.colors(
+                                    selectedColor = Color(0xFF3F51B5),
+                                    unselectedColor = Color.Gray
+                                )
                             )
-                        )
-                        Text(
-                            text = when (range) {
-                                TimeRange.DAILY -> "Harian"
-                                TimeRange.MONTHLY -> "Bulanan"
-                                TimeRange.YEARLY -> "Tahunan"
-                            },
-                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 14.sp),
-                            color = if (timeRange == range) Color(0xFF1A237E) else Color.Gray
-                        )
+                            Text(
+                                text = when (range) {
+                                    TimeRange.DAILY -> "Harian"
+                                    TimeRange.MONTHLY -> "Bulanan"
+                                    TimeRange.YEARLY -> "Tahunan"
+                                },
+                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 14.sp),
+                                color = if (timeRange == range) Color(0xFF1A237E) else Color.Gray
+                            )
+                        }
                     }
                 }
             }
 
             if (isLoading) {
-                Log.d("SimulasiBebasScreen", "Showing loading indicator")
-                LoadingAnimationSection(isLoading)
+                item {
+                    Log.d("SimulasiBebasScreen", "Showing loading indicator")
+                    LoadingAnimationSection(isLoading)
+                }
             } else if (devices.isEmpty() && simulationId != null) {
-                Log.d("SimulasiBebasScreen", "Showing EmptyStateMessage")
-                EmptyStateMessage()
+                item {
+                    Log.d("SimulasiBebasScreen", "Showing EmptyStateMessage")
+                    EmptyStateMessage()
+                }
             } else {
-                Log.d("SimulasiBebasScreen", "Showing DeviceList with ${devices.size} devices")
-                DeviceList(
-                    devices = devices,
-                    melebihiDaya = melebihiDaya,
-                    onSelect = onDeviceSelect,
-                    onEdit = { device ->
-                        Log.d("SimulasiBebasScreen", "Editing device: ${device.nama}")
-                        editingDevice = device
-                        waktuNyala = device.waktuNyala
-                        waktuMati = device.waktuMati
-                        showAddEditDialog = true
-                    },
-                    onDelete = { device ->
-                        Log.d("SimulasiBebasScreen", "Deleting device: ${device.nama}")
-                        viewModel.deleteDevice(device.deviceId)
+                // DeviceList
+                if (melebihiDaya) {
+                    item {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 16.dp, bottom = 32.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.error)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_fa_exclamation_triangle),
+                                    contentDescription = "Warning",
+                                    modifier = Modifier.size(24.dp),
+                                    tint = MaterialTheme.colorScheme.onError
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Total daya perangkat melebihi batas listrik Anda! Daya listrik saat ini $dayaListrik",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onError
+                                )
+                            }
+                        }
                     }
-                )
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color.White
-                    )
-                ) {
-                    Column(
+                }
+                items(devices) { device ->
+                    AnimatedVisibility(
+                        visible = true,
+                        enter = fadeIn() + slideInHorizontally(),
+                        exit = fadeOut() + slideOutHorizontally()
+                    ) {
+                        DeviceCard(
+                            device = device,
+                            onSelect = { onDeviceSelect(device) },
+                            onEdit = {
+                                editingDevice = device
+                                waktuNyala = device.waktuNyala
+                                waktuMati = device.waktuMati
+                                showAddEditDialog = true
+                            },
+                            onDelete = { viewModel.deleteDevice(device.deviceId) }
+                        )
+                    }
+                }
+
+                // Informasi Listrik Simulasi
+                item {
+                    Card(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        horizontalAlignment = Alignment.Start
-                    ) {
-                        Text(
-                            text = "Informasi Listrik Simulasi",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp,
-                            color = Color.Black
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color.White
                         )
-                        Spacer(modifier = Modifier.height(1.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            horizontalAlignment = Alignment.Start
                         ) {
                             Text(
-                                text = "Daya Listrik",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium,
-                                color = Color.Gray
-                            )
-                            Text(
-                                text = when (timeRange) {
-                                    TimeRange.DAILY -> String.format("%.2f kWh/hari", dayaListrik)
-                                    TimeRange.MONTHLY -> String.format("%.2f kWh/bulan", dayaListrik)
-                                    TimeRange.YEARLY -> String.format("%.2f kWh/tahun", dayaListrik)
-                                },
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.SemiBold,
+                                text = "Informasi Listrik Simulasi",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp,
                                 color = Color.Black
                             )
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = "Biaya Listrik",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium,
-                                color = Color.Black
-                            )
-                            Text(
-                                text = NumberFormat.getCurrencyInstance(Locale("id", "ID")).format(biayaListrik),
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color.Black
-                            )
+                            Spacer(modifier = Modifier.height(1.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "Daya Listrik",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color.Black
+                                )
+                                Text(
+                                    text = String.format("%.2f W", dayaListrik),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color.Black
+                                )
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "Total kWh Listrik",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color.Black
+                                )
+                                Text(
+                                    text = String.format("%.2f kWh", konsumsiListrik),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color.Black
+                                )
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "Biaya Listrik",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color.Black
+                                )
+                                Text(
+                                    text = NumberFormat.getCurrencyInstance(Locale("id", "ID")).format(biayaListrik),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color.Black
+                                )
+                            }
                         }
                     }
                 }
@@ -594,7 +658,7 @@ fun SimulasiBebasScreen(
 }
 
 private fun shouldShowRequestPermissionRationale(context: Context, permission: String): Boolean {
-    val activity = (context as? androidx.activity.ComponentActivity) ?: return false
+    val activity = (context as? ComponentActivity) ?: return false
     return ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)
 }
 
@@ -618,13 +682,13 @@ private suspend fun generateAndSavePdf(
     try {
         val writer: PdfWriter = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val contentResolver = context.contentResolver
-            val contentValues = android.content.ContentValues().apply {
-                put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-                put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "application/pdf")
-                put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+            val contentValues = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                put(MediaStore.MediaColumns.MIME_TYPE, "application/pdf")
+                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
             }
             val uri = contentResolver.insert(
-                android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                MediaStore.Downloads.EXTERNAL_CONTENT_URI,
                 contentValues
             ) ?: throw Exception("Gagal membuat file PDF")
             PdfWriter(contentResolver.openOutputStream(uri))
@@ -789,22 +853,36 @@ private suspend fun generateAndSavePdf(
 }
 
 @Composable
-private fun TopBar(onRoomSelectClick: () -> Unit) {
+private fun TopBarS(
+    onRoomSelectClick: () -> Unit,
+    onBackClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(
-            text = "Simulasi Listrik",
-            style = MaterialTheme.typography.headlineMedium.copy(
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1A237E),
-                fontSize = 28.sp
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBackClick) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Kembali",
+                    tint = Color(0xFF1A237E)
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Simulasi Listrik",
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1A237E),
+                    fontSize = 28.sp
+                )
             )
-        )
+        }
+
         Button(
             onClick = onRoomSelectClick,
             colors = ButtonDefaults.buttonColors(
@@ -812,10 +890,11 @@ private fun TopBar(onRoomSelectClick: () -> Unit) {
             ),
             shape = RoundedCornerShape(12.dp)
         ) {
-            Text("Template Ruangan", color = Color.White)
+            Text("Template", color = Color.White)
         }
     }
 }
+
 
 @Composable
 private fun EmptyStateMessage() {
@@ -845,12 +924,14 @@ private fun EmptyStateMessage() {
 
 @Composable
 private fun DeviceList(
+    viewModel: SimulasiBebasViewModel = hiltViewModel(),
     devices: List<SimulationDeviceEntity>,
     melebihiDaya: Boolean,
     onSelect: (SimulationDeviceEntity) -> Unit,
     onEdit: (SimulationDeviceEntity) -> Unit,
     onDelete: (SimulationDeviceEntity) -> Unit
 ) {
+    val dayaListrik by viewModel.totalDaya.collectAsState()
     LazyColumn {
         if (melebihiDaya) {
             item {
@@ -875,7 +956,7 @@ private fun DeviceList(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Total daya perangkat melebihi batas listrik Anda!",
+                            text = "Total daya perangkat melebihi batas listrik Anda! Daya listrik saat ini $dayaListrik",
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onError
                         )

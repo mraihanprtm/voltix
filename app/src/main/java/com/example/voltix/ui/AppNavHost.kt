@@ -11,6 +11,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.voltix.ui.pages.ruangan.DaftarRuanganScreen
 import com.example.voltix.ui.pages.OnboardingScreen
+import com.example.voltix.ui.pages.auth.LoginScreen
+import com.example.voltix.ui.pages.auth.RegisterScreen
 import com.example.voltix.ui.pages.googlelens.SearchScreen
 import com.example.voltix.ui.pages.rekomendasi.RekomendasiScreen
 import com.example.voltix.ui.pages.ruangan.DetailRuangan
@@ -23,6 +25,8 @@ import com.example.voltix.ui.screen.SimulationComparisonScreen
 import dagger.hilt.android.lifecycle.HiltViewModel
 
 sealed class Screen(val route: String, val title: String = "") {
+    object Login : Screen("login", "Login")
+    object Register : Screen("register", "Register")
     object SimulasiPage : Screen("simulasi", "Simulasi")
     object SavedSimulations {
         const val route = "saved_simulations"
@@ -40,13 +44,14 @@ sealed class Screen(val route: String, val title: String = "") {
         const val route = "simulation_comparison"
         fun createRoute(simulationIds: String) = "$route/$simulationIds"
     }
-    object DaftarRuangan : Screen("daftar_ruangan", "Daftar Ruangan")
+    object DaftarRuangan : Screen("daftar_ruangan", "Ruangan")
     object DetailRuangan : Screen("detail_ruangan/{ruanganId}", "Detail Ruangan") {
         fun createRoute(ruanganId: Int) = "detail_ruangan/$ruanganId"
     }
 
-    object Rekomendasi : Screen("rekomendasi", "Rekomendasi") {
-        fun createRoute(ruanganId: Int): String = "rekomendasi/$ruanganId"
+    object Rekomendasi : Screen("rekomendasi?ruanganId={ruanganId}", "Rekomendasi") {
+        fun createRoute(ruanganId: Int? = null): String =
+            if (ruanganId != null && ruanganId != -1) "rekomendasi?ruanganId=$ruanganId" else "rekomendasi"
     }
 
     object ImagePicker : Screen("image_picker/{ruanganId}", "Image Picker") {
@@ -73,6 +78,30 @@ fun AppNavHost(navController: NavHostController) {
         navController = navController,
         startDestination = Screen.Onboarding.route
     ) {
+        composable(Screen.Login.route) {
+            LoginScreen(
+                loginViewModel = hiltViewModel(),
+                navigateToRegister = {
+                    navController.navigate(Screen.Register.route)
+                }
+            )
+        }
+        composable(Screen.Register.route) {
+            RegisterScreen(
+                registerViewModel = hiltViewModel(),
+                onRegisterSuccess = {
+                    navController.navigate(Screen.Onboarding.route) {
+                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                navigateToLogin = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Register.route) { inclusive = true }
+                    }
+                }
+            )
+        }
         composable(Screen.Dashboard.route) {
             DashboardScreen(viewModel = hiltViewModel(), navController = navController)
         }
@@ -97,10 +126,16 @@ fun AppNavHost(navController: NavHostController) {
         }
 
         composable(
-            route = "${Screen.Rekomendasi.route}/{ruanganId}",
-            arguments = listOf(navArgument("ruanganId") { type = NavType.IntType })
+            route = "${Screen.Rekomendasi.route}",
+            arguments = listOf(
+                navArgument("ruanganId") {
+                    type = NavType.IntType
+                    defaultValue = -1 // Default ke -1
+                    nullable = false
+                }
+            )
         ) { backStack ->
-            val id = backStack.arguments?.getInt("ruanganId") ?: 0
+            val id = backStack.arguments?.getInt("ruanganId") ?: -1
             RekomendasiScreen(ruanganId = id, navController = navController)
         }
 

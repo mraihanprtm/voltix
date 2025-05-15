@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -105,19 +106,26 @@ fun DaftarRuanganScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
-    ) { innerPadding ->
+    ) { _ ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding) // Use Scaffold's padding
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            // Header
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            // Tombol back di pojok kiri atas
+            Row(
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                IconButton(
+                    onClick = { navController.popBackStack() },
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Kembali",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp)) // Jarak antara icon dan teks
                 Text(
                     text = "Daftar Ruangan",
                     style = MaterialTheme.typography.headlineSmall.copy(
@@ -126,11 +134,9 @@ fun DaftarRuanganScreen(
                     ),
                     color = MaterialTheme.colorScheme.onBackground
                 )
-                Divider(
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
-                    thickness = 1.dp
-                )
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Content
             if (isLoading) {

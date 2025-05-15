@@ -51,6 +51,9 @@ class SimulasiBebasViewModel @Inject constructor(
     private val _totalDaya = MutableStateFlow(0.0)
     val totalDaya: StateFlow<Double> = _totalDaya.asStateFlow()
 
+    private val _totalKonsumsi = MutableStateFlow(0.0)
+    val totalKonsumsi: StateFlow<Double> = _totalKonsumsi.asStateFlow()
+
     private val _biayaListrik = MutableStateFlow(0.0)
     val biayaListrik: StateFlow<Double> = _biayaListrik.asStateFlow()
 
@@ -105,6 +108,7 @@ class SimulasiBebasViewModel @Inject constructor(
     private fun updateMelebihiDaya(devices: List<SimulationDeviceEntity>) {
         var totalPower = 0.0 // Wh for daily, kWh for monthly/yearly
         val timeRange = _timeRange.value
+        var totalDaya = 0.0
 
         devices.forEach { device ->
             val powerPerUnit = device.daya * device.jumlah // Watts
@@ -116,6 +120,8 @@ class SimulasiBebasViewModel @Inject constructor(
                 (24.0 - startHour) + endHour
             }
             totalPower += powerPerUnit * hoursActive // Wh per day
+            totalDaya += powerPerUnit
+            _totalDaya.value = totalDaya
         }
 
         when (timeRange) {
@@ -129,15 +135,15 @@ class SimulasiBebasViewModel @Inject constructor(
                 totalPower = totalPower * 365.25f
             }
         }
-
-        _totalDaya.value = totalPower / 1000f
-        _biayaListrik.value = _totalDaya.value * hargaPerKWh
+        _totalDaya.value = totalDaya
+        _totalKonsumsi.value = totalPower / 1000f
+        _biayaListrik.value = _totalKonsumsi.value * hargaPerKWh
 
         // Check if power exceeds limit (batasDayaPengguna in Watts for daily comparison)
         _melebihiDaya.value = when (timeRange) {
-            TimeRange.DAILY -> totalPower > batasDayaPengguna
-            TimeRange.MONTHLY -> (totalPower * 1000.0 / 30.42) > batasDayaPengguna
-            TimeRange.YEARLY -> (totalPower * 1000.0 / 365.25) > batasDayaPengguna
+            TimeRange.DAILY -> _totalDaya.value > batasDayaPengguna
+            TimeRange.MONTHLY -> _totalDaya.value > batasDayaPengguna
+            TimeRange.YEARLY -> _totalDaya.value > batasDayaPengguna
         }
 
         Log.d(

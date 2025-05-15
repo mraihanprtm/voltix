@@ -88,12 +88,12 @@ dependencies {
     implementation ("com.github.bumptech.glide:glide:4.16.0")
     implementation ("com.squareup.okhttp3:logging-interceptor:4.9.3")
     implementation ("com.cloudinary:cloudinary-android:2.0.0")
-
+    implementation ("androidx.compose.ui:ui:1.7.4")
     implementation("com.google.dagger:hilt-android:2.51")
     implementation(libs.firebase.auth.ktx)
     ksp("com.google.dagger:hilt-android-compiler:2.51")
     implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
-
+    implementation ("androidx.datastore:datastore-preferences:1.1.1")
     implementation("io.coil-kt.coil3:coil-compose:3.1.0")
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.1.0")
     implementation ("androidx.lifecycle:lifecycle-runtime-compose:2.8.0")

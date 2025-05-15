@@ -67,15 +67,11 @@ class PerangkatViewModel @Inject constructor(
 
                 if (userId != null) {
                     val currentUser = userRepository.getUserByUid(userId)
-
-                    // Log user data
                     Log.d("PerangkatViewModel", "Current User Data: $currentUser")
 
                     if (currentUser != null) {
                         _jenisListrik.value = currentUser.jenisListrik
                         batasDayaPengguna = currentUser.jenisListrik
-
-                        // Log the values
                         Log.d("PerangkatViewModel", "Jenis Listrik set to: ${_jenisListrik.value}")
                         Log.d("PerangkatViewModel", "Batas Daya set to: $batasDayaPengguna")
                     } else {
@@ -102,17 +98,13 @@ class PerangkatViewModel @Inject constructor(
                 val perangkatWithWaktu = repository.getPerangkatWithWaktuByRuanganId(ruanganId)
 
                 // Hitung durasi untuk setiap perangkat
-                val durasiMap = mutableMapOf<Int, Int>()
+                val durasiMap = mutableMapOf<Int, Double>()
                 perangkatWithWaktu.forEach { pwt ->
                     val durasi = calculateDurasi(pwt.waktuNyala, pwt.waktuMati)
                     durasiMap[pwt.perangkatId] = durasi
-
-                    // Log untuk debugging
-                    Log.d("PerangkatViewModel",
-                        "Perangkat ${pwt.nama}: " +
-                                "waktuNyala=${pwt.waktuNyala}, " +
-                                "waktuMati=${pwt.waktuMati}, " +
-                                "durasi=$durasi"
+                    Log.d(
+                        "PerangkatViewModel",
+                        "Perangkat ${pwt.nama}: waktuNyala=${pwt.waktuNyala}, waktuMati=${pwt.waktuMati}, durasi=$durasi"
                     )
                 }
                 _durasiPenggunaan.value = durasiMap
@@ -124,8 +116,8 @@ class PerangkatViewModel @Inject constructor(
 
                 // Hitung total konsumsi (daya * durasi * jumlah)
                 val totalKonsumsiValue = list.sumOf { perangkat ->
-                    val durasi = durasiMap[perangkat.id] ?: 0
-                    (perangkat.daya * durasi * perangkat.jumlah).toDouble()
+                    val durasi = durasiMap[perangkat.id] ?: 0.0
+                    perangkat.daya * durasi * perangkat.jumlah
                 }
                 _totalKonsumsi.value = totalKonsumsiValue / 1000.0 // konversi ke kWh
 
@@ -181,8 +173,10 @@ class PerangkatViewModel @Inject constructor(
                 val durasi = calculateDurasi(waktuNyala, waktuMati)
                 _durasiPenggunaan.value = _durasiPenggunaan.value + (perangkatId to durasi)
 
-                // Log untuk debugging
-                Log.d("PerangkatViewModel", "Perangkat baru $nama: waktuNyala=$waktuNyala, waktuMati=$waktuMati, durasi=$durasi")
+                Log.d(
+                    "PerangkatViewModel",
+                    "Perangkat baru $nama: waktuNyala=$waktuNyala, waktuMati=$waktuMati, durasi=$durasi"
+                )
 
                 loadPerangkatByRuangan(ruanganId)
             } catch (e: Exception) {
@@ -224,7 +218,6 @@ class PerangkatViewModel @Inject constructor(
                         )
                         repository.updateLampu(updatedLampu)
                     } else {
-                        // Hapus LampuEntity jika kategori bukan Lampu
                         repository.deleteLampuByPerangkatId(currentPerangkat.id)
                     }
 
@@ -242,14 +235,9 @@ class PerangkatViewModel @Inject constructor(
                         val durasi = calculateDurasi(waktuNyala, waktuMati)
                         _durasiPenggunaan.value = _durasiPenggunaan.value + (currentPerangkat.id to durasi)
 
-                        // Log untuk debugging
-                        Log.d("PerangkatViewModel",
-                            "Edit perangkat ${currentPerangkat.nama}: " +
-                                    "waktuNyala=$waktuNyala, " +
-                                    "waktuMati=$waktuMati, " +
-                                    "durasi=$durasi, " +
-                                    "jenisLampu=$jenisLampu, " +
-                                    "lumen=$lumen"
+                        Log.d(
+                            "PerangkatViewModel",
+                            "Edit perangkat ${currentPerangkat.nama}: waktuNyala=$waktuNyala, waktuMati=$waktuMati, durasi=$durasi, jenisLampu=$jenisLampu, lumen=$lumen"
                         )
 
                         loadPerangkatByRuangan(ruanganId)
@@ -281,7 +269,9 @@ class PerangkatViewModel @Inject constructor(
                 }
                 repository.deletePerangkat(perangkat)
                 currentRuanganId?.let { loadPerangkatByRuangan(it) }
-            } catch (e: Exception) {}
+            } catch (e: Exception) {
+                Log.e("PerangkatViewModel", "Error deleting perangkat", e)
+            }
         }
     }
 
@@ -304,21 +294,21 @@ class PerangkatViewModel @Inject constructor(
         _melebihiDaya.value = _totalDaya.value > batasDayaPengguna
     }
 
-    private val _durasiPenggunaan = MutableStateFlow<Map<Int, Int>>(emptyMap())
-    val durasiPenggunaan: StateFlow<Map<Int, Int>> = _durasiPenggunaan.asStateFlow()
+    private val _durasiPenggunaan = MutableStateFlow<Map<Int, Double>>(emptyMap())
+    val durasiPenggunaan: StateFlow<Map<Int, Double>> = _durasiPenggunaan.asStateFlow()
 
-    fun getDurasiPenggunaan(perangkatId: Int): Int {
-        return _durasiPenggunaan.value[perangkatId] ?: 0
+    fun getDurasiPenggunaan(perangkatId: Int): Double {
+        return _durasiPenggunaan.value[perangkatId] ?: 0.0
     }
 
-    private fun calculateDurasi(start: LocalTime, end: LocalTime): Int {
+    private fun calculateDurasi(start: LocalTime, end: LocalTime): Double {
         return if (end.isAfter(start) || end == start) {
-            Duration.between(start, end).toHours().toInt()
+            Duration.between(start, end).toMinutes() / 60.0
         } else {
             // Jika waktu mati lebih awal dari waktu nyala, berarti melewati tengah malam
-            val tillMidnight = Duration.between(start, LocalTime.MAX).toHours()
-            val fromMidnight = Duration.between(LocalTime.MIN, end).toHours()
-            (tillMidnight + fromMidnight).toInt()
+            val tillMidnight = Duration.between(start, LocalTime.MAX).toMinutes() / 60.0
+            val fromMidnight = Duration.between(LocalTime.MIN, end).toMinutes() / 60.0
+            tillMidnight + fromMidnight
         }
     }
 
@@ -329,7 +319,7 @@ class PerangkatViewModel @Inject constructor(
                 batasDayaPengguna = newJenisListrik
                 checkMelebihiDaya()
             } catch (e: Exception) {
-                // Handle error
+                Log.e("PerangkatViewModel", "Error updating jenis listrik", e)
             }
         }
     }

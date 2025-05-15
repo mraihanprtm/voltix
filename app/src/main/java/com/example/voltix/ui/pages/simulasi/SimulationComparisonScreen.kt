@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.*
@@ -137,7 +138,7 @@ fun SimulationComparisonScreen(
             .fillMaxSize()
             .background(Color.White),
         topBar = {
-            TopBar()
+            TopBarS(onBackClick = { navController.popBackStack()})
         },
         floatingActionButton = {
             Column(
@@ -385,14 +386,26 @@ fun EmptyStateView(
 }
 
 @Composable
-private fun TopBar() {
+private fun TopBarS(
+    onBackClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Start // ⬅️ Fokus kiri
     ) {
+        IconButton(onClick = onBackClick) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Kembali",
+                tint = Color(0xFF1A237E)
+            )
+        }
+
+        Spacer(modifier = Modifier.width(12.dp)) // ⬅️ Spasi antara ikon dan teks
+
         Text(
             text = "Perbandingan Simulasi",
             style = MaterialTheme.typography.headlineMedium.copy(
@@ -403,6 +416,7 @@ private fun TopBar() {
         )
     }
 }
+
 
 @Composable
 private fun SimulationList(

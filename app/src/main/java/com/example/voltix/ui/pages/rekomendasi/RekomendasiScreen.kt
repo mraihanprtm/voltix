@@ -35,24 +35,22 @@ fun RekomendasiScreen(
     rekomViewModel: RekomendasiViewModel = hiltViewModel()
 ) {
     val ruanganList by ruanganViewModel.allRuangan.observeAsState(initial = emptyList())
-    var selectedRuanganId by remember { mutableIntStateOf(ruanganId) }
+    var selectedRuanganId by remember { mutableIntStateOf(-1) } // Default ke -1 (tidak ada ruangan dipilih)
     var textFieldValue by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(ruanganList) {
-        if (ruanganList.isNotEmpty() && ruanganList.none { it.id == selectedRuanganId }) {
-            selectedRuanganId = ruanganList.first().id
-            textFieldValue = ruanganList.first().namaRuangan
-            scope.launch { rekomViewModel.resetResult() }
-        }
-    }
+    // Hapus LaunchedEffect yang memilih ruangan pertama otomatis
+    // LaunchedEffect(ruanganList) { ... } // Dihapus
 
+    // Muat data hanya jika selectedRuanganId valid
     LaunchedEffect(selectedRuanganId) {
-        ruanganViewModel.loadDetail(selectedRuanganId)
-        ruanganViewModel.loadLampuFor(selectedRuanganId)
+        if (selectedRuanganId != -1) {
+            ruanganViewModel.loadDetail(selectedRuanganId)
+            ruanganViewModel.loadLampuFor(selectedRuanganId)
+        }
     }
 
     val detail by ruanganViewModel.ruanganDetail.collectAsState(initial = null)
@@ -174,6 +172,32 @@ fun RekomendasiScreen(
                         }
                     }
 
+                    // Tampilkan pesan jika belum ada ruangan dipilih
+                    if (selectedRuanganId == -1 && ruanganList.isNotEmpty()) {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .shadow(4.dp, RoundedCornerShape(12.dp)),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surface
+                            )
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    "Silakan pilih ruangan untuk melihat detail dan rekomendasi.",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+                    }
+
                     // Room Details
                     detail?.let { d ->
                         Card(
@@ -209,34 +233,10 @@ fun RekomendasiScreen(
                                 )
                             }
                         }
-                    } ?: run {
-                        if (!ruanganList.isEmpty()) {
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .shadow(4.dp, RoundedCornerShape(12.dp)),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surface
-                                )
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        "Memuat detail ruangan...",
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                                    )
-                                }
-                            }
-                        }
                     }
 
                     // Lamp Information
-                    if (lampuWithPerangkat.isNotEmpty()) {
+                    if (lampuWithPerangkat.isNotEmpty() && selectedRuanganId != -1) {
                         // Aggregate lamp data
                         val totalQty = lampuWithPerangkat.sumOf { it.jumlah }
                         val totalLumen = lampuWithPerangkat.sumOf { it.lumenTotal }
@@ -292,14 +292,12 @@ fun RekomendasiScreen(
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.SemiBold
                                 )
-                                // Display lamp details as a table
                                 LampuTable(lampuWithPerangkat = lampuWithPerangkat)
 
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Button(
                                     onClick = {
                                         detail?.let { d ->
-                                            // Use the first lamp's properties for recommendation
                                             val firstLamp = lampuWithPerangkat.first()
                                             val input = LampRecommendationInput(
                                                 jenisRuangan = d.ruangan.jenisRuangan,
@@ -344,7 +342,6 @@ fun RekomendasiScreen(
                                     )
                                 }
 
-                                // Warning if area is 0
                                 if (area == 0f) {
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
@@ -356,7 +353,7 @@ fun RekomendasiScreen(
                                 }
                             }
                         }
-                    } else if (detail != null) {
+                    } else if (detail != null && selectedRuanganId != -1) {
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()

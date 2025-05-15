@@ -168,8 +168,9 @@ class SearchRepository @Inject constructor(private val savedStateHandle: SavedSt
                 snippet = "Lampu dengan ${lampInfo["lumen"] ?: "Unknown"} lumen, ${lampInfo["watt"] ?: "Unknown"} watt",
                 deviceType = lampInfo["lampType"] ?: "Lampu",
                 wattage = lampInfo["watt"] ?: "Unknown Wattage",
-                lumen = lampInfo["lumen"] ?: "Unknown", // Fallback to avoid null
-                lampType = lampInfo["lampType"] ?: "Unknown" // Fallback to avoid null
+                lumen = lampInfo["lumen"] ?: "Unknown",
+                lampType = lampInfo["lampType"] ?: "Unknown",
+                thumbnailUrl = query // Gunakan URL Cloudinary dari query (jika tersedia)
             )
             Log.d("SearchRepository", "Created lamp model: $model")
             callback(listOf(model))
@@ -191,6 +192,7 @@ class SearchRepository @Inject constructor(private val savedStateHandle: SavedSt
                         val item = visualMatches.getJSONObject(i)
                         val title = item.optString("title", "No Title")
                         val snippet = item.optString("snippet", "No description available")
+                        val thumbnailUrl = item.optString("thumbnail", "") // Ambil thumbnail
 
                         val wattRegex = Regex("""\b(\d+)\s*[-]?\s*(W|w|Watt|watt|Watts|watts)\b""")
                         val wattMatch = wattRegex.find(title) ?: wattRegex.find(snippet)
@@ -205,7 +207,8 @@ class SearchRepository @Inject constructor(private val savedStateHandle: SavedSt
                                     displayedLink = item.optString("displayed_link", ""),
                                     snippet = snippet,
                                     deviceType = deviceType,
-                                    wattage = wattInfo
+                                    wattage = wattInfo,
+                                    thumbnailUrl = if (thumbnailUrl.isNotEmpty()) thumbnailUrl else null
                                 )
                             )
                         }

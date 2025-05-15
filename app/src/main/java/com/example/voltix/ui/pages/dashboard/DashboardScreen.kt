@@ -1,5 +1,6 @@
 package com.example.voltix.ui.screen
 
+import android.annotation.SuppressLint
 import android.view.ViewGroup
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -44,6 +45,7 @@ import com.github.mikephil.charting.formatter.ValueFormatter
 import java.text.NumberFormat
 import java.util.*
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel,
@@ -62,11 +64,10 @@ fun DashboardScreen(
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background
-    ) { paddingValues ->
+    ) { _ ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,

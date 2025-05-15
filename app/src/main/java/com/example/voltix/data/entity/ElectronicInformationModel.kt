@@ -8,5 +8,6 @@ data class ElectronicInformationModel(
     val deviceType: String?, // Menambahkan field untuk jenis perangkat
     val wattage: String?,     // Menambahkan field untuk daya
     val lumen: String? = null, // Tambahan untuk lampu
-    val lampType: String? = null // Tambahan untuk jenis lampu (LED, CFL, dll.)
+    val lampType: String? = null, // Tambahan untuk jenis lampu (LED, CFL, dll.)
+    val thumbnailUrl: String? = null // Properti untuk URL gambar
 )

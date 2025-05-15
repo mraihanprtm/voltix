@@ -9,8 +9,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
@@ -56,6 +58,7 @@ fun DetailRuangan(
     var isLoading by remember { mutableStateOf(true) }
     val namaRuangan by ruanganViewModel.namaRuangan.collectAsState()
     val dayaListrik by viewModel.totalDaya.collectAsState()
+    val konsumsiListrik by viewModel.totalKonsumsi.collectAsState()
     val biayaListrik by viewModel.totalBiaya.collectAsState()
 
     // Update when ruanganId changes
@@ -300,13 +303,30 @@ fun DetailRuangan(
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Text(
-                                        text = "Daya Listrik",
+                                        text = "Total Daya Listrik",
                                         style = MaterialTheme.typography.bodyLarge,
                                         fontWeight = FontWeight.Medium,
                                         color = Color.Black
                                     )
                                     Text(
                                         text = "$dayaListrik Watt",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color.Black
+                                    )
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = "Total kWh Listrik",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color.Black
+                                    )
+                                    Text(
+                                        text = String.format("%.2f kWh", konsumsiListrik),
                                         style = MaterialTheme.typography.bodyLarge,
                                         fontWeight = FontWeight.SemiBold,
                                         color = Color.Black
@@ -664,7 +684,12 @@ fun EditPerangkatDialog(viewModel: PerangkatViewModel, ruanganId: Int) {
             }
         },
         text = {
-            Column {
+            Column (
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(bottom = 16.dp)
+            ){
                 OutlinedTextField(
                     value = nama,
                     onValueChange = { nama = it },
