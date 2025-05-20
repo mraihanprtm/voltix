@@ -1,0 +1,570 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "e7e0a3cc58d57ed42cf5349cfd2a1646",
+    "entities": [
+      {
+        "tableName": "users",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `uid` TEXT NOT NULL, `name` TEXT NOT NULL, `email` TEXT NOT NULL, `jenisListrik` INTEGER NOT NULL, `isPrabayar` INTEGER NOT NULL, FOREIGN KEY(`jenisListrik`) REFERENCES `golonganListrik`(`idGolonganListrik`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "uid",
+            "columnName": "uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "email",
+            "columnName": "email",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "jenisListrik",
+            "columnName": "jenisListrik",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isPrabayar",
+            "columnName": "isPrabayar",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": [
+          {
+            "table": "golonganListrik",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "jenisListrik"
+            ],
+            "referencedColumns": [
+              "idGolonganListrik"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "perangkat",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `nama` TEXT NOT NULL, `jumlah` INTEGER NOT NULL, `daya` INTEGER NOT NULL, `jenis` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nama",
+            "columnName": "nama",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "jumlah",
+            "columnName": "jumlah",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "daya",
+            "columnName": "daya",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "jenis",
+            "columnName": "jenis",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "ruangan",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `namaRuangan` TEXT NOT NULL, `panjangRuangan` REAL NOT NULL, `lebarRuangan` REAL NOT NULL, `jenisRuangan` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "namaRuangan",
+            "columnName": "namaRuangan",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "panjangRuangan",
+            "columnName": "panjangRuangan",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lebarRuangan",
+            "columnName": "lebarRuangan",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "jenisRuangan",
+            "columnName": "jenisRuangan",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "lampu",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `perangkatId` INTEGER NOT NULL, `jenis` TEXT NOT NULL, `lumen` INTEGER NOT NULL, FOREIGN KEY(`perangkatId`) REFERENCES `perangkat`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "perangkatId",
+            "columnName": "perangkatId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "jenis",
+            "columnName": "jenis",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lumen",
+            "columnName": "lumen",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": [
+          {
+            "table": "perangkat",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "perangkatId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "ruangan_perangkat_cross_ref",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`ruanganId` INTEGER NOT NULL, `perangkatId` INTEGER NOT NULL, `waktuNyala` TEXT NOT NULL, `waktuMati` TEXT NOT NULL, PRIMARY KEY(`ruanganId`, `perangkatId`), FOREIGN KEY(`ruanganId`) REFERENCES `ruangan`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`perangkatId`) REFERENCES `perangkat`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "ruanganId",
+            "columnName": "ruanganId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "perangkatId",
+            "columnName": "perangkatId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "waktuNyala",
+            "columnName": "waktuNyala",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "waktuMati",
+            "columnName": "waktuMati",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "ruanganId",
+            "perangkatId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_ruangan_perangkat_cross_ref_ruanganId",
+            "unique": false,
+            "columnNames": [
+              "ruanganId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ruangan_perangkat_cross_ref_ruanganId` ON `${TABLE_NAME}` (`ruanganId`)"
+          },
+          {
+            "name": "index_ruangan_perangkat_cross_ref_perangkatId",
+            "unique": false,
+            "columnNames": [
+              "perangkatId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ruangan_perangkat_cross_ref_perangkatId` ON `${TABLE_NAME}` (`perangkatId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "ruangan",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "ruanganId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "perangkat",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "perangkatId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "user_perangkat_cross_ref",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`userId` INTEGER NOT NULL, `perangkatId` INTEGER NOT NULL, PRIMARY KEY(`userId`, `perangkatId`), FOREIGN KEY(`userId`) REFERENCES `users`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`perangkatId`) REFERENCES `perangkat`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "perangkatId",
+            "columnName": "perangkatId",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "userId",
+            "perangkatId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_user_perangkat_cross_ref_userId",
+            "unique": false,
+            "columnNames": [
+              "userId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_user_perangkat_cross_ref_userId` ON `${TABLE_NAME}` (`userId`)"
+          },
+          {
+            "name": "index_user_perangkat_cross_ref_perangkatId",
+            "unique": false,
+            "columnNames": [
+              "perangkatId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_user_perangkat_cross_ref_perangkatId` ON `${TABLE_NAME}` (`perangkatId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "users",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "userId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "perangkat",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "perangkatId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "simulation",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `ruanganId` INTEGER, `createdAt` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ruanganId",
+            "columnName": "ruanganId",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "simulation_device",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`deviceId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `simulationId` INTEGER NOT NULL, `nama` TEXT NOT NULL, `daya` INTEGER NOT NULL, `jumlah` INTEGER NOT NULL, `jenis` TEXT NOT NULL, `waktuNyala` TEXT NOT NULL, `waktuMati` TEXT NOT NULL, FOREIGN KEY(`simulationId`) REFERENCES `simulation`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "deviceId",
+            "columnName": "deviceId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "simulationId",
+            "columnName": "simulationId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nama",
+            "columnName": "nama",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "daya",
+            "columnName": "daya",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "jumlah",
+            "columnName": "jumlah",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "jenis",
+            "columnName": "jenis",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "waktuNyala",
+            "columnName": "waktuNyala",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "waktuMati",
+            "columnName": "waktuMati",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "deviceId"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": [
+          {
+            "table": "simulation",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "simulationId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "golonganListrik",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`idGolonganListrik` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `golonganTarif` TEXT NOT NULL, `batasDaya` INTEGER NOT NULL, `biayaBeban` INTEGER NOT NULL, `isRTM` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "idGolonganListrik",
+            "columnName": "idGolonganListrik",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "golonganTarif",
+            "columnName": "golonganTarif",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "batasDaya",
+            "columnName": "batasDaya",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "biayaBeban",
+            "columnName": "biayaBeban",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isRTM",
+            "columnName": "isRTM",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "idGolonganListrik"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "BiayaPemakaian",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`idGolonganListrik` INTEGER NOT NULL, `minKWH` INTEGER NOT NULL, `biayaReguler` INTEGER NOT NULL, `biayaPrabayar` INTEGER NOT NULL, PRIMARY KEY(`idGolonganListrik`), FOREIGN KEY(`idGolonganListrik`) REFERENCES `golonganListrik`(`idGolonganListrik`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "idGolonganListrik",
+            "columnName": "idGolonganListrik",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "minKWH",
+            "columnName": "minKWH",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "biayaReguler",
+            "columnName": "biayaReguler",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "biayaPrabayar",
+            "columnName": "biayaPrabayar",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "idGolonganListrik"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": [
+          {
+            "table": "golonganListrik",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "idGolonganListrik"
+            ],
+            "referencedColumns": [
+              "idGolonganListrik"
+            ]
+          }
+        ]
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'e7e0a3cc58d57ed42cf5349cfd2a1646')"
+    ]
+  }
+}

@@ -64,8 +64,9 @@ object AppModule {
     fun provideUserRepository(
         userDao: UserDao,
         userPerangkatCrossRefDao: UserPerangkatCrossRefDao,
-        auth: FirebaseAuth
-    ): UserRepository = UserRepository(userDao, userPerangkatCrossRefDao, auth)
+        auth: FirebaseAuth,
+        golonganListrikDao: GolonganListrikDao
+    ): UserRepository = UserRepository(userDao, userPerangkatCrossRefDao, auth, golonganListrikDao)
 
     @Provides @Singleton
     fun providePerangkatRepository(
@@ -100,4 +101,9 @@ object AppModule {
         @ApplicationContext context: Context,
         userRepository: UserRepository
     ): AuthManager = AuthManager(context, userRepository)
+
+    @Provides
+    fun provideGolonganListrikDao(database: AppDatabase): GolonganListrikDao{
+        return database.golonganListrikDao()
+    }
 }

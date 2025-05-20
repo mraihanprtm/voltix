@@ -1,8 +1,10 @@
 package com.example.voltix.data.repository
 
 import android.util.Log
+import com.example.voltix.data.dao.GolonganListrikDao
 import com.example.voltix.data.dao.UserDao
 import com.example.voltix.data.dao.UserPerangkatCrossRefDao
+import com.example.voltix.data.entity.GolonganListrikDenganBiaya
 import com.example.voltix.data.entity.UserEntity
 import com.example.voltix.data.entity.UserPerangkatCrossRef
 import com.example.voltix.data.relations.UserWithPerangkat
@@ -16,9 +18,10 @@ private const val TAG = "UserRepository"
 class UserRepository @Inject constructor(
     private val userDao: UserDao,
     private val userPerangkatCrossRefDao: UserPerangkatCrossRefDao,
-    val auth: FirebaseAuth
+    val auth: FirebaseAuth,
+    private val golonganListrikDao: GolonganListrikDao
 ) {
-    suspend fun createUser(name: String, email: String, jenisListrik: Int = 2200, fotoProfil: String = ""): Result<Int> {
+    suspend fun createUser(name: String, email: String, jenisListrik: Int = 0, isPrabayar: Boolean = false): Result<Int> {
         return try {
             val firebaseUser = auth.currentUser ?: return Result.failure(Exception("User not authenticated"))
 
@@ -34,7 +37,7 @@ class UserRepository @Inject constructor(
                 name = name,
                 email = email,
                 jenisListrik = jenisListrik,
-                foto_profil = fotoProfil
+                isPrabayar = false
             )
 
             Log.d(TAG, "Creating new user: $userEntity")
@@ -174,5 +177,18 @@ class UserRepository @Inject constructor(
             Log.e(TAG, "Error deleting user", e)
             Result.failure(e)
         }
+    }
+
+    fun getUserGolonganListrik(id: Int): Int {
+        return userDao.getUserGolonganListrik(id)
+    }
+
+    fun getUserisPrabayar(id: Int): Int{
+        return userDao.getUserisPrabayar(id)
+    }
+
+    fun getUserBiayaListrik(id: Int): List<GolonganListrikDenganBiaya> {
+        var userGolonganListrik = getUserGolonganListrik(id)
+        return golonganListrikDao.getBiayaTarifListrik(id)
     }
 }

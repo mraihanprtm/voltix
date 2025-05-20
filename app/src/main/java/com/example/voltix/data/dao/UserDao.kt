@@ -41,4 +41,10 @@ interface UserDao {
 
     @Query("SELECT * FROM users WHERE id = :userId LIMIT 1")
     suspend fun getUserById(userId: Int): UserEntity?
+
+    @Query("SELECT jenisListrik FROM users WHERE id = :id")
+    fun getUserGolonganListrik(id: Int): Int
+
+    @Query("SELECT isPrabayar FROM users WHERE id = :id")
+    fun getUserisPrabayar(id: Int): Int
 }

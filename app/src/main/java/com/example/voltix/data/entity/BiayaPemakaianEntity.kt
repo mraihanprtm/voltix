@@ -5,21 +5,20 @@ import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
 
 @Entity(
-    tableName = "users",
+    tableName = "BiayaPemakaian",
+    primaryKeys = ["idGolonganListrik", "minKWH"],
     foreignKeys = [
         ForeignKey(
             entity = GolonganListrikEntity::class,
             parentColumns = ["idGolonganListrik"],
-            childColumns = ["jenisListrik"],
+            childColumns = ["idGolonganListrik"],
             onDelete = ForeignKey.CASCADE
         )
     ]
 )
-data class UserEntity(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val uid: String,
-    val name: String,
-    val email: String,
-    val jenisListrik: Int,
-    val isPrabayar: Boolean,
+data class BiayaPemakaianEntity(
+    val idGolonganListrik: Int,
+    val minKWH: Int,
+    val biayaReguler: Int,
+    val biayaPrabayar: Int
 )

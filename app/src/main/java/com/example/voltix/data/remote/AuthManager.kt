@@ -34,12 +34,12 @@ class AuthManager @Inject constructor(
         // Ambil nama dari profile jika tersedia
         val displayName = name.ifEmpty { auth.currentUser?.displayName ?: email.substringBefore('@') }
         // Ambil foto profil jika tersedia
-        val photoUrl = auth.currentUser?.photoUrl?.toString() ?: ""
+//        val photoUrl = auth.currentUser?.photoUrl?.toString() ?: ""
 
         return userRepository.createUser(
             name = displayName,
             email = email,
-            fotoProfil = photoUrl,
+//            fotoProfil = photoUrl,
         )
     }
 

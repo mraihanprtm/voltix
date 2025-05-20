@@ -239,15 +239,15 @@ fun OnboardingScreen(
                                         val firebaseUser = FirebaseAuth.getInstance().currentUser
                                         val existingUser = userViewModel.getUserByUid(userId)
 
-                                        val updatedUser = existingUser?.copy(
-                                            jenisListrik = selectedJenisListrik
-                                        ) ?: UserEntity(
-                                            name = firebaseUser?.displayName ?: "Guest User",
-                                            email = firebaseUser?.email ?: "guest@example.com",
-                                            jenisListrik = selectedJenisListrik,
-                                            foto_profil = firebaseUser?.photoUrl?.toString() ?: "",
-                                            uid = userId
-                                        )
+                                    val updatedUser = existingUser?.copy(
+                                        jenisListrik = selectedJenisListrik
+                                    ) ?: UserEntity(
+                                        name = firebaseUser?.displayName ?: "Guest User",
+                                        email = firebaseUser?.email ?: "guest@example.com",
+                                        jenisListrik = selectedJenisListrik,
+                                        isPrabayar = false,
+                                        uid = userId
+                                    )
 
                                         if (existingUser != null) {
                                             userViewModel.updateUser(updatedUser)
