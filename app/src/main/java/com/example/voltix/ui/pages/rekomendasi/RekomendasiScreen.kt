@@ -1,5 +1,9 @@
 package com.example.voltix.ui.pages.rekomendasi
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,14 +15,16 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.voltix.ui.component.LoadingAnimationSection
 import com.example.voltix.data.entity.LampWithPerangkat
 import com.example.voltix.domain.LampRecommendationInput
 import com.example.voltix.domain.LampRecommendationResult
@@ -42,9 +48,6 @@ fun RekomendasiScreen(
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Hapus LaunchedEffect yang memilih ruangan pertama otomatis
-    // LaunchedEffect(ruanganList) { ... } // Dihapus
-
     // Muat data hanya jika selectedRuanganId valid
     LaunchedEffect(selectedRuanganId) {
         if (selectedRuanganId != -1) {
@@ -59,14 +62,24 @@ fun RekomendasiScreen(
     val error by rekomViewModel.error.observeAsState(initial = null)
     val result by rekomViewModel.result.observeAsState(initial = null)
 
+    // State untuk animasi tombol
+    var buttonClicked by remember { mutableStateOf(false) }
+    val buttonScale by animateFloatAsState(
+        targetValue = if (buttonClicked) 0.95f else 1f,
+        animationSpec = tween(durationMillis = 150),
+        label = "Button Scale Animation"
+    )
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
                         "Rekomendasi Lampu",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.5.sp
+                        )
                     )
                 },
                 navigationIcon = {
@@ -99,7 +112,7 @@ fun RekomendasiScreen(
                         .padding(16.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    LoadingAnimationSection(true)
+                    CustomLoadingAnimation()
                 }
             } else {
                 Column(
@@ -113,8 +126,10 @@ fun RekomendasiScreen(
                     Column {
                         Text(
                             "Pilih Ruangan",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                letterSpacing = 0.3.sp
+                            ),
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -134,30 +149,45 @@ fun RekomendasiScreen(
                                     .fillMaxWidth()
                                     .menuAnchor(),
                                 label = { Text("Pilih Ruangan") },
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                                 colors = TextFieldDefaults.outlinedTextFieldColors(
                                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                                     unfocusedBorderColor = MaterialTheme.colorScheme.outline,
                                 ),
                                 singleLine = true,
                                 isError = ruanganList.isEmpty(),
-                                readOnly = false
+                                readOnly = true // Mengubah menjadi readOnly untuk mencegah input manual
                             )
                             ExposedDropdownMenu(
                                 expanded = expanded,
-                                onDismissRequest = { expanded = false }
+                                onDismissRequest = { expanded = false },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(MaterialTheme.colorScheme.surface)
+                                    .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
+                                    .padding(vertical = 4.dp)
                             ) {
                                 ruanganList.filter {
                                     textFieldValue.isEmpty() || it.namaRuangan.contains(textFieldValue, ignoreCase = true)
                                 }.forEach { ruangan ->
                                     DropdownMenuItem(
-                                        text = { Text(ruangan.namaRuangan) },
+                                        text = {
+                                            Text(
+                                                ruangan.namaRuangan,
+                                                style = MaterialTheme.typography.bodyLarge.copy(
+                                                    letterSpacing = 0.2.sp
+                                                )
+                                            )
+                                        },
                                         onClick = {
                                             selectedRuanganId = ruangan.id
                                             textFieldValue = ruangan.namaRuangan
                                             expanded = false
                                             scope.launch { rekomViewModel.resetResult() }
-                                        }
+                                        },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp, vertical = 8.dp)
                                     )
                                 }
                             }
@@ -165,7 +195,9 @@ fun RekomendasiScreen(
                         if (ruanganList.isEmpty()) {
                             Text(
                                 "Belum ada ruangan. Tambahkan terlebih dahulu.",
-                                style = MaterialTheme.typography.bodyMedium,
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    letterSpacing = 0.2.sp
+                                ),
                                 color = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.padding(top = 4.dp)
                             )
@@ -190,7 +222,9 @@ fun RekomendasiScreen(
                             ) {
                                 Text(
                                     "Silakan pilih ruangan untuk melihat detail dan rekomendasi.",
-                                    style = MaterialTheme.typography.bodyLarge,
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        letterSpacing = 0.2.sp
+                                    ),
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                                     textAlign = TextAlign.Center
                                 )
@@ -214,22 +248,30 @@ fun RekomendasiScreen(
                             ) {
                                 Text(
                                     "Detail Ruangan",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.SemiBold,
+                                        letterSpacing = 0.3.sp
+                                    )
                                 )
                                 Text(
                                     "Nama: ${d.ruangan.namaRuangan}",
-                                    style = MaterialTheme.typography.bodyLarge,
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        letterSpacing = 0.2.sp
+                                    ),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
                                     "Jenis: ${d.ruangan.jenisRuangan.label}",
-                                    style = MaterialTheme.typography.bodyLarge
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        letterSpacing = 0.2.sp
+                                    )
                                 )
                                 Text(
                                     "Luas: ${d.ruangan.panjangRuangan} x ${d.ruangan.lebarRuangan} m²",
-                                    style = MaterialTheme.typography.bodyLarge
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        letterSpacing = 0.2.sp
+                                    )
                                 )
                             }
                         }
@@ -258,30 +300,42 @@ fun RekomendasiScreen(
                             ) {
                                 Text(
                                     "Informasi Lampu Saat Ini",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.SemiBold,
+                                        letterSpacing = 0.3.sp
+                                    )
                                 )
                                 Text(
                                     "Jumlah: $totalQty lampu",
-                                    style = MaterialTheme.typography.bodyLarge
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        letterSpacing = 0.2.sp
+                                    )
                                 )
                                 Text(
                                     "Total Lumen: $totalLumen lm",
-                                    style = MaterialTheme.typography.bodyLarge
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        letterSpacing = 0.2.sp
+                                    )
                                 )
                                 Text(
                                     "Total Daya: ${"%.2f".format(totalPower)} W",
-                                    style = MaterialTheme.typography.bodyLarge
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        letterSpacing = 0.2.sp
+                                    )
                                 )
                                 if (area > 0) {
                                     Text(
                                         "Densitas: ${"%.2f".format(currentDensity)} W/m²",
-                                        style = MaterialTheme.typography.bodyLarge
+                                        style = MaterialTheme.typography.bodyLarge.copy(
+                                            letterSpacing = 0.2.sp
+                                        )
                                     )
                                 } else {
                                     Text(
                                         "Densitas: Tidak dapat dihitung (dimensi ruangan belum diatur)",
-                                        style = MaterialTheme.typography.bodyLarge,
+                                        style = MaterialTheme.typography.bodyLarge.copy(
+                                            letterSpacing = 0.2.sp
+                                        ),
                                         color = MaterialTheme.colorScheme.error
                                     )
                                 }
@@ -289,14 +343,17 @@ fun RekomendasiScreen(
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Text(
                                     "Detail Lampu",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.SemiBold,
+                                        letterSpacing = 0.3.sp
+                                    )
                                 )
                                 LampuTable(lampuWithPerangkat = lampuWithPerangkat)
 
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Button(
                                     onClick = {
+                                        buttonClicked = true
                                         detail?.let { d ->
                                             val firstLamp = lampuWithPerangkat.first()
                                             val input = LampRecommendationInput(
@@ -311,7 +368,8 @@ fun RekomendasiScreen(
                                     },
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(48.dp),
+                                        .height(48.dp)
+                                        .scale(buttonScale),
                                     shape = RoundedCornerShape(12.dp),
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = MaterialTheme.colorScheme.primary
@@ -320,7 +378,9 @@ fun RekomendasiScreen(
                                 ) {
                                     Text(
                                         "Hitung Rekomendasi",
-                                        style = MaterialTheme.typography.labelLarge,
+                                        style = MaterialTheme.typography.labelLarge.copy(
+                                            letterSpacing = 0.3.sp
+                                        ),
                                         color = MaterialTheme.colorScheme.onPrimary
                                     )
                                 }
@@ -329,24 +389,34 @@ fun RekomendasiScreen(
                                     Spacer(modifier = Modifier.height(12.dp))
                                     Text(
                                         "Perbandingan Saat Ini vs Rekomendasi",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.SemiBold
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            fontWeight = FontWeight.SemiBold,
+                                            letterSpacing = 0.3.sp
+                                        )
                                     )
                                     Spacer(modifier = Modifier.height(8.dp))
-                                    ComparisonTable(
-                                        currentQty = totalQty,
-                                        currentTotalLumen = totalLumen,
-                                        currentTotalPower = totalPower,
-                                        currentDensity = currentDensity,
-                                        recommendedResult = r
-                                    )
+                                    AnimatedVisibility(
+                                        visible = true,
+                                        enter = fadeIn() + slideInVertically(),
+                                        exit = fadeOut()
+                                    ) {
+                                        ComparisonTable(
+                                            currentQty = totalQty,
+                                            currentTotalLumen = totalLumen,
+                                            currentTotalPower = totalPower,
+                                            currentDensity = currentDensity,
+                                            recommendedResult = r
+                                        )
+                                    }
                                 }
 
                                 if (area == 0f) {
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
                                         "Dimensi ruangan (panjang/lebar) belum diatur. Silakan perbarui di pengaturan ruangan.",
-                                        style = MaterialTheme.typography.bodyMedium,
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            letterSpacing = 0.2.sp
+                                        ),
                                         color = MaterialTheme.colorScheme.error,
                                         textAlign = TextAlign.Center
                                     )
@@ -369,7 +439,9 @@ fun RekomendasiScreen(
                             ) {
                                 Text(
                                     "Belum ada lampu di ruangan ini.",
-                                    style = MaterialTheme.typography.bodyLarge,
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        letterSpacing = 0.2.sp
+                                    ),
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                                     textAlign = TextAlign.Center
                                 )
@@ -385,7 +457,9 @@ fun RekomendasiScreen(
                                 ) {
                                     Text(
                                         "Tambah Lampu",
-                                        style = MaterialTheme.typography.labelLarge,
+                                        style = MaterialTheme.typography.labelLarge.copy(
+                                            letterSpacing = 0.3.sp
+                                        ),
                                         color = MaterialTheme.colorScheme.onPrimary
                                     )
                                 }
@@ -410,7 +484,9 @@ fun RekomendasiScreen(
                             ) {
                                 Text(
                                     errorMsg,
-                                    style = MaterialTheme.typography.bodyLarge,
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        letterSpacing = 0.2.sp
+                                    ),
                                     color = MaterialTheme.colorScheme.error,
                                     textAlign = TextAlign.Center
                                 )
@@ -442,6 +518,9 @@ fun RekomendasiScreen(
                                 ) {
                                     Text(
                                         "Coba Lagi",
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            letterSpacing = 0.3.sp
+                                        ),
                                         color = MaterialTheme.colorScheme.error
                                     )
                                 }
@@ -466,8 +545,10 @@ fun RekomendasiScreen(
                             ) {
                                 Text(
                                     "Hasil Rekomendasi",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.SemiBold,
+                                        letterSpacing = 0.3.sp
+                                    )
                                 )
                                 RecommendationResult(result = r)
                             }
@@ -478,6 +559,61 @@ fun RekomendasiScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun CustomLoadingAnimation() {
+    val infiniteTransition = rememberInfiniteTransition(label = "Loading Animation")
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "Rotation Animation"
+    )
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .graphicsLayer { rotationZ = rotation }
+        ) {
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(12.dp)
+                        .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(50))
+                )
+                Box(
+                    modifier = Modifier
+                        .size(12.dp)
+                        .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(50))
+                )
+                Box(
+                    modifier = Modifier
+                        .size(12.dp)
+                        .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(50))
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            "Menghitung...",
+            style = MaterialTheme.typography.bodyLarge.copy(
+                letterSpacing = 0.2.sp
+            ),
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 
@@ -504,36 +640,46 @@ private fun LampuTable(lampuWithPerangkat: List<LampWithPerangkat>) {
                 Text(
                     text = "Jenis",
                     modifier = Modifier.weight(1.5f),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.2.sp
+                    ),
                     textAlign = TextAlign.Start
                 )
                 Text(
                     text = "Jumlah",
                     modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.2.sp
+                    ),
                     textAlign = TextAlign.Center
                 )
                 Text(
                     text = "Total Lumen",
                     modifier = Modifier.weight(1.5f),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.2.sp
+                    ),
                     textAlign = TextAlign.Center
                 )
                 Text(
                     text = "Lumen/Lampu",
                     modifier = Modifier.weight(1.5f),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.2.sp
+                    ),
                     textAlign = TextAlign.Center
                 )
                 Text(
                     text = "Daya/Lampu",
                     modifier = Modifier.weight(1.5f),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.2.sp
+                    ),
                     textAlign = TextAlign.Center
                 )
             }
@@ -556,7 +702,9 @@ private fun LampuTable(lampuWithPerangkat: List<LampWithPerangkat>) {
                         modifier = Modifier
                             .weight(1.5f)
                             .padding(end = 8.dp),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            letterSpacing = 0.2.sp
+                        ),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         textAlign = TextAlign.Start
@@ -564,25 +712,33 @@ private fun LampuTable(lampuWithPerangkat: List<LampWithPerangkat>) {
                     Text(
                         text = item.jumlah.toString(),
                         modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            letterSpacing = 0.2.sp
+                        ),
                         textAlign = TextAlign.Center
                     )
                     Text(
                         text = "${item.lumenTotal} lm",
                         modifier = Modifier.weight(1.5f),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            letterSpacing = 0.2.sp
+                        ),
                         textAlign = TextAlign.Center
                     )
                     Text(
                         text = "${item.lumenPerLamp} lm",
                         modifier = Modifier.weight(1.5f),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            letterSpacing = 0.2.sp
+                        ),
                         textAlign = TextAlign.Center
                     )
                     Text(
                         text = "${item.dayaPerLamp.toInt()} W",
                         modifier = Modifier.weight(1.5f),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            letterSpacing = 0.2.sp
+                        ),
                         textAlign = TextAlign.Center
                     )
                 }
@@ -604,23 +760,33 @@ private fun RecommendationResult(result: LampRecommendationResult) {
     ) {
         Text(
             "Jumlah Lampu: ${result.numberOfLamps}",
-            style = MaterialTheme.typography.bodyLarge
+            style = MaterialTheme.typography.bodyLarge.copy(
+                letterSpacing = 0.2.sp
+            )
         )
         Text(
             "Total Lumen: ${result.totalLumen} lm",
-            style = MaterialTheme.typography.bodyLarge
+            style = MaterialTheme.typography.bodyLarge.copy(
+                letterSpacing = 0.2.sp
+            )
         )
         Text(
             "Total Daya: ${"%.2f".format(result.totalPowerWatt)} W",
-            style = MaterialTheme.typography.bodyLarge
+            style = MaterialTheme.typography.bodyLarge.copy(
+                letterSpacing = 0.2.sp
+            )
         )
         Text(
             "Densitas Daya: ${"%.2f".format(result.densityPower)} W/m²",
-            style = MaterialTheme.typography.bodyLarge
+            style = MaterialTheme.typography.bodyLarge.copy(
+                letterSpacing = 0.2.sp
+            )
         )
         Text(
             if (result.withinStandard) "✅ Sesuai SNI" else "❌ Melebihi SNI",
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.bodyLarge.copy(
+                letterSpacing = 0.2.sp
+            ),
             color = if (result.withinStandard) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
         )
     }
@@ -654,22 +820,28 @@ fun ComparisonTable(
                 Text(
                     "Kategori",
                     modifier = Modifier.weight(1.5f),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.2.sp
+                    )
                 )
                 Text(
                     "Saat Ini",
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.2.sp
+                    )
                 )
                 Text(
                     "Rekomendasi",
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.2.sp
+                    )
                 )
             }
 
@@ -720,7 +892,9 @@ fun ComparisonTableRow(
         Text(
             text = label,
             modifier = Modifier.weight(1.5f),
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                letterSpacing = 0.2.sp
+            ),
             overflow = TextOverflow.Ellipsis,
             maxLines = 1
         )
@@ -728,7 +902,9 @@ fun ComparisonTableRow(
             text = current,
             modifier = Modifier.weight(1f),
             textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                letterSpacing = 0.2.sp
+            ),
             overflow = TextOverflow.Ellipsis,
             maxLines = 1
         )
@@ -736,7 +912,9 @@ fun ComparisonTableRow(
             text = recommended,
             modifier = Modifier.weight(1f),
             textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                letterSpacing = 0.2.sp
+            ),
             overflow = TextOverflow.Ellipsis,
             maxLines = 1
         )
