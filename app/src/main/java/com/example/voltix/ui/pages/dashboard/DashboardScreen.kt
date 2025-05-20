@@ -326,9 +326,9 @@ fun GeneralInfoCard(data: DashboardData, numberFormat: NumberFormat, timeRange: 
                     InfoItem(
                         label = "Total Daya",
                         value = when (timeRange) {
-                            TimeRange.DAILY -> String.format("%.2f kWh/hari", data.totalPower)
-                            TimeRange.MONTHLY -> String.format("%.2f kWh/bulan", data.totalPower)
-                            TimeRange.YEARLY -> String.format("%.2f kWh/tahun", data.totalPower)
+                            TimeRange.DAILY -> String.format("%.2f kWh", data.totalPower)
+                            TimeRange.MONTHLY -> String.format("%.2f kWh", data.totalPower)
+                            TimeRange.YEARLY -> String.format("%.2f kWh", data.totalPower)
                         }
                     )
                 }

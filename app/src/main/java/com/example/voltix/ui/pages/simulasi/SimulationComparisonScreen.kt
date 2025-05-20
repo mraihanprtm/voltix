@@ -366,7 +366,7 @@ fun EmptyStateView(
             )
             Spacer(modifier = Modifier.height(16.dp))
             Button(
-                onClick = { navController.navigate("daftar_ruangan") },
+                onClick = { navController.navigate("simulasi_bebas") },
                 modifier = Modifier
                     .fillMaxWidth(0.8f)
                     .height(48.dp),
@@ -376,7 +376,7 @@ fun EmptyStateView(
                 )
             ) {
                 Text(
-                    text = "Tambah Ruangan",
+                    text = "Tambah Simulasi",
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onPrimary
                 )
