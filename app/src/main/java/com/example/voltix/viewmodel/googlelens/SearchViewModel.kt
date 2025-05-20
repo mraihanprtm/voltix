@@ -28,7 +28,6 @@ class SearchViewModel @Inject constructor(
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
 
     init {
-
         // Restore imageBitmap from saved file path
         savedStateHandle.get<String>("imageFilePath")?.let { path ->
             try {
@@ -108,14 +107,62 @@ class SearchViewModel @Inject constructor(
         }
     }
 
-    fun processImage(context: Context, bitmap: Bitmap, callback: (String) -> Unit) {
-        viewModelScope.launch {
-            try {
-                repository.processImage(context, bitmap, callback)
-                Log.d("SearchViewModel", "Processed image")
-            } catch (e: Exception) {
-                setError("Gagal memproses gambar: ${e.message}")
-                Log.e("SearchViewModel", "Failed to process image: ${e.stackTraceToString()}")
+    fun processImage(context: Context, bitmap: Bitmap) {
+        updateIsLoading(true)
+        repository.processImage(context, bitmap) { label, lampInfo ->
+            if (lampInfo != null && lampInfo.isNotEmpty()) {
+                // Lampu terdeteksi, fetch hasil langsung dari lampInfo
+                repository.fetchSearchResults(context, "", lampInfo) { results ->
+                    updateSearchResults(results)
+                    updateIsLoading(false)
+                    // Simpan ke SavedStateHandle untuk input screen lampu
+                    if (results.isNotEmpty()) {
+                        val result = results[0]
+                        // Safely convert wattage to Int, default to 0 if null or invalid
+                        val wattageValue = result.wattage?.toIntOrNull() ?: 0
+                        repository.saveSelectedDevice(
+                            deviceName = result.deviceType.toString(),
+                            wattage = wattageValue,
+                            ruanganId = repository.selectedRuanganId ?: 0,
+                            lumen = result.lumen?.toIntOrNull(),
+                            lampType = result.lampType
+                        )
+                    }
+                }
+            } else if (!label.isNullOrEmpty()) {
+                // Non-lampu, upload gambar dan cari hasil
+                viewModelScope.launch {
+                    try {
+                        val file = repository.saveBitmapToFile(context, bitmap)
+                        val imageUrl = repository.uploadImageToCloudinary(file)
+                        if (imageUrl != null) {
+                            repository.fetchSearchResults(context, imageUrl, null) { results ->
+                                updateSearchResults(results)
+                                updateIsLoading(false)
+                                // Simpan ke SavedStateHandle untuk input screen umum
+                                if (results.isNotEmpty()) {
+                                    val result = results[0]
+                                    // Safely convert wattage to Int, default to 0 if null or invalid
+                                    val wattageValue = result.wattage?.toIntOrNull() ?: 0
+                                    repository.saveSelectedDevice(
+                                        deviceName = result.deviceType.toString(),
+                                        wattage = wattageValue,
+                                        ruanganId = repository.selectedRuanganId ?: 0
+                                    )
+                                }
+                            }
+                        } else {
+                            setError("Gagal mengunggah gambar")
+                            updateIsLoading(false)
+                        }
+                    } catch (e: Exception) {
+                        setError("Gagal memproses gambar: ${e.message}")
+                        updateIsLoading(false)
+                    }
+                }
+            } else {
+                setError("Gagal mendeteksi objek")
+                updateIsLoading(false)
             }
         }
     }
@@ -123,7 +170,7 @@ class SearchViewModel @Inject constructor(
     fun fetchResults(context: Context, query: String, callback: (List<ElectronicInformationModel>) -> Unit) {
         viewModelScope.launch {
             try {
-                repository.fetchSearchResults(context, query, callback)
+                repository.fetchSearchResults(context, query, null, callback)
                 Log.d("SearchViewModel", "Fetched results for query: $query")
             } catch (e: Exception) {
                 setError("Gagal mengambil hasil: ${e.message}")

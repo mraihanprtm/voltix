@@ -2,6 +2,7 @@ package com.example.voltix.ui
 
 import android.net.Uri
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.internal.composableLambda
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -10,16 +11,22 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.voltix.ui.pages.ruangan.DaftarRuanganScreen
 import com.example.voltix.ui.pages.OnboardingScreen
+import com.example.voltix.ui.pages.auth.LoginScreen
+import com.example.voltix.ui.pages.auth.RegisterScreen
 import com.example.voltix.ui.pages.googlelens.SearchScreen
 import com.example.voltix.ui.pages.rekomendasi.RekomendasiScreen
 import com.example.voltix.ui.pages.ruangan.DetailRuangan
 import com.example.voltix.ui.pages.ruangan.InputPerangkatScreen
+import com.example.voltix.ui.screen.DashboardScreen
 import com.example.voltix.ui.screen.SavedSimulationsScreen
 import com.example.voltix.ui.screen.SimulasiBebasScreen
 import com.example.voltix.ui.screen.SimulasiScreen
 import com.example.voltix.ui.screen.SimulationComparisonScreen
+import dagger.hilt.android.lifecycle.HiltViewModel
 
 sealed class Screen(val route: String, val title: String = "") {
+    object Login : Screen("login", "Login")
+    object Register : Screen("register", "Register")
     object SimulasiPage : Screen("simulasi", "Simulasi")
 
     object SavedSimulations {
@@ -39,34 +46,33 @@ sealed class Screen(val route: String, val title: String = "") {
         const val route = "simulation_comparison"
         fun createRoute(simulationIds: String) = "$route/$simulationIds"
     }
-
-    object DaftarRuangan : Screen("daftar_ruangan", "Daftar Ruangan")
-
+    object DaftarRuangan : Screen("daftar_ruangan", "Ruangan")
     object DetailRuangan : Screen("detail_ruangan/{ruanganId}", "Detail Ruangan") {
         fun createRoute(ruanganId: Int) = "detail_ruangan/$ruanganId"
     }
 
-    object Rekomendasi : Screen("rekomendasi", "Rekomendasi") {
-        fun createRoute(ruanganId: Int): String = "rekomendasi/$ruanganId"
+    object Rekomendasi : Screen("rekomendasi?ruanganId={ruanganId}", "Rekomendasi") {
+        fun createRoute(ruanganId: Int? = null): String =
+            if (ruanganId != null && ruanganId != -1) "rekomendasi?ruanganId=$ruanganId" else "rekomendasi"
     }
 
-    object ImagePicker : Screen("image_picker", "Image Picker")
-
+    object ImagePicker : Screen("image_picker/{ruanganId}", "Image Picker") {
+        fun createRoute(ruanganId: Int) = "image_picker/$ruanganId"
+    }
     object Dashboard : Screen("dashboard", "Dashboard")
 
     object Onboarding : Screen("onboarding", "Onboarding")
 
     object InputPerangkat : Screen(
-        "input_perangkat?ruanganId={ruanganId}&deviceName={deviceName}&wattage={wattage}",
-        "Input Perangkat"
+        "input_perangkat/{ruanganId}?deviceName={deviceName}&wattage={wattage}&lumen={lumen}&lampType={lampType}"
     ) {
         fun createRoute(
             ruanganId: Int,
             deviceName: String = "",
-            wattage: String = ""
-        ): String {
-            return "input_perangkat?ruanganId=$ruanganId&deviceName=${Uri.encode(deviceName)}&wattage=${Uri.encode(wattage)}"
-        }
+            wattage: String = "",
+            lumen: String = "",
+            lampType: String = ""
+        ) = "input_perangkat/$ruanganId?deviceName=$deviceName&wattage=$wattage&lumen=$lumen&lampType=$lampType"
     }
 }
 
@@ -76,6 +82,33 @@ fun AppNavHost(navController: NavHostController) {
         navController = navController,
         startDestination = Screen.Onboarding.route
     ) {
+        composable(Screen.Login.route) {
+            LoginScreen(
+                loginViewModel = hiltViewModel(),
+                navigateToRegister = {
+                    navController.navigate(Screen.Register.route)
+                }
+            )
+        }
+        composable(Screen.Register.route) {
+            RegisterScreen(
+                registerViewModel = hiltViewModel(),
+                onRegisterSuccess = {
+                    navController.navigate(Screen.Onboarding.route) {
+                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                navigateToLogin = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Register.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+        composable(Screen.Dashboard.route) {
+            DashboardScreen(viewModel = hiltViewModel(), navController = navController)
+        }
         composable(Screen.DaftarRuangan.route) {
             DaftarRuanganScreen(navController = navController)
         }
@@ -97,10 +130,16 @@ fun AppNavHost(navController: NavHostController) {
         }
 
         composable(
-            route = "${Screen.Rekomendasi.route}/{ruanganId}",
-            arguments = listOf(navArgument("ruanganId") { type = NavType.IntType })
+            route = "${Screen.Rekomendasi.route}",
+            arguments = listOf(
+                navArgument("ruanganId") {
+                    type = NavType.IntType
+                    defaultValue = -1 // Default ke -1
+                    nullable = false
+                }
+            )
         ) { backStack ->
-            val id = backStack.arguments?.getInt("ruanganId") ?: 0
+            val id = backStack.arguments?.getInt("ruanganId") ?: -1
             RekomendasiScreen(ruanganId = id, navController = navController)
         }
 
@@ -126,12 +165,17 @@ fun AppNavHost(navController: NavHostController) {
 
         composable(Screen.SimulationComparison.route) {
             SimulationComparisonScreen(
-                viewModel = hiltViewModel()
+                viewModel = hiltViewModel(),
+                navController = navController
             )
         }
 
-        composable(Screen.ImagePicker.route) {
-            SearchScreen(navController = navController)
+        composable(
+            route = Screen.ImagePicker.route,
+            arguments = listOf(navArgument("ruanganId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val ruanganId = backStackEntry.arguments?.getInt("ruanganId") ?: 0
+            SearchScreen(navController = navController, ruanganId = ruanganId)
         }
 
         composable(
@@ -150,24 +194,38 @@ fun AppNavHost(navController: NavHostController) {
                     type = NavType.StringType
                     defaultValue = ""
                     nullable = true
+                },
+                navArgument("lumen") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                    nullable = true
+                },
+                navArgument("lampType") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                    nullable = true
                 }
             )
         ) { backStackEntry ->
             val ruanganId = backStackEntry.arguments?.getInt("ruanganId") ?: 0
             val deviceName = backStackEntry.arguments?.getString("deviceName") ?: ""
             val wattage = backStackEntry.arguments?.getString("wattage") ?: ""
+            val lumen = backStackEntry.arguments?.getString("lumen") ?: ""
+            val lampType = backStackEntry.arguments?.getString("lampType") ?: ""
             InputPerangkatScreen(
                 navController = navController,
                 ruanganId = ruanganId,
                 initialDeviceName = deviceName,
-                initialWattage = wattage
+                initialWattage = wattage,
+                initialLumen = lumen,
+                initialLampType = lampType
             )
         }
 
         composable(Screen.Onboarding.route) {
             OnboardingScreen(
                 onFinish = {
-                    navController.navigate(Screen.DaftarRuangan.route) {
+                    navController.navigate(Screen.Dashboard.route) {
                         popUpTo(Screen.Onboarding.route) { inclusive = true }
                     }
                 }

@@ -1,5 +1,6 @@
 package com.example.voltix.ui.pages.ruangan
 
+import android.annotation.SuppressLint
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
@@ -8,8 +9,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
@@ -18,13 +21,13 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -38,9 +41,9 @@ import com.example.voltix.ui.component.DropdownKategori
 import com.example.voltix.ui.component.TimePickerDialogButton
 import com.example.voltix.viewmodel.simulasi.PerangkatViewModel
 import com.example.voltix.viewmodel.simulasi.RuanganViewModel
-import kotlinx.coroutines.launch
 import java.time.LocalTime
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun DetailRuangan(
     navController: NavHostController,
@@ -55,9 +58,10 @@ fun DetailRuangan(
     var isLoading by remember { mutableStateOf(true) }
     val namaRuangan by ruanganViewModel.namaRuangan.collectAsState()
     val dayaListrik by viewModel.totalDaya.collectAsState()
+    val konsumsiListrik by viewModel.totalKonsumsi.collectAsState()
     val biayaListrik by viewModel.totalBiaya.collectAsState()
 
-    // Update ketika ruanganId berubah
+    // Update when ruanganId changes
     LaunchedEffect(ruanganId) {
         viewModel.loadPerangkatByRuangan(ruanganId)
         ruanganViewModel.loadNamaRuangan(ruanganId)
@@ -67,37 +71,68 @@ fun DetailRuangan(
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { navController.navigate(Screen.InputPerangkat.createRoute(ruanganId = ruanganId)) },
-                shape = CircleShape,
-                modifier = Modifier
-                    .shadow(12.dp, CircleShape)
-                    .size(72.dp)
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                MaterialTheme.colorScheme.primary,
-                                MaterialTheme.colorScheme.secondary
-                            )
-                        ),
-                        shape = CircleShape
-                    ),
-                containerColor = Color.Transparent
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Icon(
-                    Icons.Default.Add,
-                    contentDescription = "Tambah Perangkat",
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(36.dp)
-                )
+                // New button to navigate to ImagePicker
+                FloatingActionButton(
+                    onClick = { navController.navigate(Screen.ImagePicker.createRoute(ruanganId)) },
+                    shape = CircleShape,
+                    modifier = Modifier
+                        .shadow(12.dp, CircleShape)
+                        .size(72.dp)
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.secondary,
+                                    MaterialTheme.colorScheme.secondary.copy(alpha = 0.8f)
+                                )
+                            ),
+                            shape = CircleShape
+                        ),
+                    containerColor = Color.Transparent
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_fa_camera),
+                        contentDescription = "Cari Perangkat",
+                        tint = MaterialTheme.colorScheme.onSecondary,
+                        modifier = Modifier.size(36.dp)
+                    )
+                }
+                // Existing button for adding device manually
+                FloatingActionButton(
+                    onClick = { navController.navigate(Screen.InputPerangkat.createRoute(ruanganId = ruanganId)) },
+                    shape = CircleShape,
+                    modifier = Modifier
+                        .shadow(12.dp, CircleShape)
+                        .size(72.dp)
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.colorScheme.secondary
+                                )
+                            ),
+                            shape = CircleShape
+                        ),
+                    containerColor = Color.Transparent
+                ) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = "Tambah Perangkat",
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(36.dp)
+                    )
+                }
             }
         },
         containerColor = MaterialTheme.colorScheme.background
-    ) { padding ->
+    ) { _ ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
+                .padding(horizontal = 8.dp, vertical = 8.dp) // Remove top padding
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
@@ -111,12 +146,9 @@ fun DetailRuangan(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp) // Reduced vertical padding
                     .shadow(6.dp, RoundedCornerShape(16.dp)),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color.Transparent
-                )
             ) {
                 Box(
                     modifier = Modifier
@@ -129,20 +161,17 @@ fun DetailRuangan(
                                 )
                             )
                         )
-                        .padding(16.dp)
+                        .padding(horizontal = 16.dp, vertical = 8.dp) // Reduced vertical padding
                 ) {
-                    Column {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Detail Ruangan ${namaRuangan ?: ruanganId}",
-                            style = MaterialTheme.typography.headlineSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 28.sp
-                            ),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.align(Alignment.CenterHorizontally)
-                        )
-                    }
+                    Text(
+                        text = "Detail Ruangan ${namaRuangan ?: ruanganId}",
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 28.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
                 }
             }
 
@@ -150,7 +179,7 @@ fun DetailRuangan(
             if (isLoading) {
                 LoadingStateView()
             } else if (perangkatList.isEmpty()) {
-                com.example.voltix.ui.component.EmptyStateView()
+                EmptyStateViewDetail()
             } else {
                 LazyColumn(
                     modifier = Modifier
@@ -262,7 +291,7 @@ fun DetailRuangan(
                                 horizontalAlignment = Alignment.Start
                             ) {
                                 Text(
-                                    text = "Informasi Listrik",
+                                    text = "Informasi Listrik Ruangan",
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 18.sp,
@@ -274,13 +303,30 @@ fun DetailRuangan(
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Text(
-                                        text = "Daya Listrik",
+                                        text = "Total Daya Listrik",
                                         style = MaterialTheme.typography.bodyLarge,
                                         fontWeight = FontWeight.Medium,
-                                        color = Color.Gray
+                                        color = Color.Black
                                     )
                                     Text(
-                                        text = "$dayaListrik",
+                                        text = "$dayaListrik Watt",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color.Black
+                                    )
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = "Total kWh Listrik",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color.Black
+                                    )
+                                    Text(
+                                        text = String.format("%.2f kWh", konsumsiListrik),
                                         style = MaterialTheme.typography.bodyLarge,
                                         fontWeight = FontWeight.SemiBold,
                                         color = Color.Black
@@ -294,10 +340,10 @@ fun DetailRuangan(
                                         text = "Biaya Listrik",
                                         style = MaterialTheme.typography.bodyLarge,
                                         fontWeight = FontWeight.Medium,
-                                        color = Color.Gray
+                                        color = Color.Black
                                     )
                                     Text(
-                                        text = "$biayaListrik",
+                                        text = String.format("Rp %.2f", biayaListrik),
                                         style = MaterialTheme.typography.bodyLarge,
                                         fontWeight = FontWeight.SemiBold,
                                         color = Color.Black
@@ -313,6 +359,44 @@ fun DetailRuangan(
         // Show EditPerangkatDialog when showEditDialog is true
         if (showEditDialog) {
             EditPerangkatDialog(viewModel, ruanganId)
+        }
+    }
+}
+
+@Composable
+fun EmptyStateViewDetail() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            val emptyAnimation by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.no_data_animation))
+            LottieAnimation(
+                composition = emptyAnimation,
+                modifier = Modifier.size(150.dp),
+                iterations = LottieConstants.IterateForever
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Belum ada Barang",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Tambah Barang baru dengan tombol di bawah kanan!",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center
+            )
         }
     }
 }
@@ -600,7 +684,12 @@ fun EditPerangkatDialog(viewModel: PerangkatViewModel, ruanganId: Int) {
             }
         },
         text = {
-            Column {
+            Column (
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(bottom = 16.dp)
+            ){
                 OutlinedTextField(
                     value = nama,
                     onValueChange = { nama = it },

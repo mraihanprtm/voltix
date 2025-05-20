@@ -120,4 +120,13 @@ class SimulationRepository @Inject constructor(
     suspend fun getAllSimulations(): List<SimulationEntity> {
         return simulationDAO.getAllSimulations()
     }
+
+    suspend fun updateSimulationName(simulationId: Int, newName: String) {
+        simulationDAO.updateSimulationName(simulationId, newName)
+    }
+
+    suspend fun deleteSimulation(simulationId: Int) {
+        simulationDAO.deleteSimulation(simulationId)
+        simulationDAO.deleteDevicesBySimulationId(simulationId)
+    }
 }

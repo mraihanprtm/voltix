@@ -1,42 +1,58 @@
 package com.example.voltix.ui.pages.ruangan
 
+import android.annotation.SuppressLint
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.rememberLottieComposition
+import com.example.voltix.R
 import com.example.voltix.data.entity.JenisRuangan
 import com.example.voltix.data.entity.RuanganEntity
+import com.example.voltix.ui.component.LoadingAnimationSection
 import com.example.voltix.viewmodel.simulasi.RuanganViewModel
 import kotlinx.coroutines.launch
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun DaftarRuanganScreen(
     navController: NavHostController,
@@ -90,19 +106,26 @@ fun DaftarRuanganScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
-    ) { padding ->
+    ) { _ ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            // Header
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            // Tombol back di pojok kiri atas
+            Row(
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                IconButton(
+                    onClick = { navController.popBackStack() },
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Kembali",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp)) // Jarak antara icon dan teks
                 Text(
                     text = "Daftar Ruangan",
                     style = MaterialTheme.typography.headlineSmall.copy(
@@ -111,39 +134,46 @@ fun DaftarRuanganScreen(
                     ),
                     color = MaterialTheme.colorScheme.onBackground
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                Divider(
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
-                    thickness = 1.dp
-                )
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Content
             if (isLoading) {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator()
+                    val loadingAnimation by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.loading_animation))
+                    LottieAnimation(
+                        composition = loadingAnimation,
+                        modifier = Modifier.size(100.dp),
+                        iterations = LottieConstants.IterateForever
+                    )
                 }
             } else if (daftarRuangan.isEmpty()) {
                 EmptyStateView()
             } else {
-                LazyColumn(
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(daftarRuangan) { ruangan ->
+                    items(daftarRuangan.size) { index ->
                         RuanganCard(
-                            ruangan = ruangan,
+                            ruangan = daftarRuangan[index],
                             onClick = {
-                                navController.navigate("detail_ruangan/${ruangan.id}")
+                                navController.navigate("detail_ruangan/${daftarRuangan[index].id}")
                             },
                             onDelete = {
-                                showDeleteDialog = ruangan
+                                showDeleteDialog = daftarRuangan[index]
                             },
                             onEdit = {
-                                showEditDialog = ruangan
+                                showEditDialog = daftarRuangan[index]
                             }
                         )
                     }
@@ -212,111 +242,177 @@ fun DaftarRuanganScreen(
 }
 
 @Composable
+fun EmptyStateView() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            val emptyAnimation by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.no_data_animation))
+            LottieAnimation(
+                composition = emptyAnimation,
+                modifier = Modifier.size(150.dp),
+                iterations = LottieConstants.IterateForever
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Belum ada ruangan",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Tambah ruangan baru dengan tombol di bawah!",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
 fun RuanganCard(
     ruangan: RuanganEntity,
     onClick: () -> Unit,
     onDelete: () -> Unit,
     onEdit: () -> Unit
 ) {
-    var showMenu by remember { mutableStateOf(false) }
+    var scale by remember { mutableStateOf(1f) }
+    val animatedScale by animateFloatAsState(
+        targetValue = scale,
+        animationSpec = tween(durationMillis = 120)
+    )
+
+    val roomIconRes = when (ruangan.jenisRuangan) {
+        JenisRuangan.KamarTidur -> R.drawable.ic_fa_bed
+        JenisRuangan.RuangTamu -> R.drawable.ic_fa_chair
+        JenisRuangan.Dapur -> R.drawable.ic_fa_kitchen
+        JenisRuangan.KamarMandi -> R.drawable.ic_fa_bathtub
+        JenisRuangan.Lainnya -> R.drawable.ic_fa_room
+    }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .clickable { onClick() }
-            .animateContentSize(animationSpec = tween(200))
-            .shadow(4.dp, RoundedCornerShape(16.dp)),
+            .aspectRatio(1f)
+            .graphicsLayer(scaleX = animatedScale, scaleY = animatedScale)
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color.Transparent)
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onPress = {
+                        scale = 0.96f
+                        tryAwaitRelease()
+                        scale = 1f
+                        onClick()
+                    }
+                )
+            }
+            .shadow(elevation = 8.dp, shape = RoundedCornerShape(20.dp)),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
-        Row(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .fillMaxSize()
+                .padding(start = 16.dp, top = 16.dp, bottom = 16.dp, end = 8.dp)
         ) {
-            Column {
-                Text(
-                    text = ruangan.namaRuangan,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 18.sp
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = "${ruangan.panjangRuangan}m x ${ruangan.lebarRuangan}m, ${ruangan.jenisRuangan}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
-            }
+            // Background Icon Watermark
+            Image(
+                painter = painterResource(id = roomIconRes),
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxWidth(0.7f) // Covers ~2/3 to 3/4 of card width
+                    .aspectRatio(1f)
+                    .align(Alignment.TopEnd)
+                    .offset(x = 20.dp, y = (-20).dp)
+                    .alpha(0.07f)
+            )
 
-            Box {
-                IconButton(onClick = { showMenu = true }) {
-                    Icon(
-                        Icons.Default.MoreVert,
-                        contentDescription = "Menu",
-                        tint = MaterialTheme.colorScheme.onSurface
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .animateContentSize(animationSpec = tween(200)),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    val namaPendek = if (ruangan.namaRuangan.length > 14) {
+                        ruangan.namaRuangan.take(14) + "..."
+                    } else ruangan.namaRuangan
+
+                    Text(
+                        text = namaPendek,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 20.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "${ruangan.panjangRuangan}m x ${ruangan.lebarRuangan}m",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+                    )
+                    Text(
+                        text = ruangan.jenisRuangan.label,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
+                        fontWeight = FontWeight.Medium
                     )
                 }
 
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false }
+                Row(
+                    modifier = Modifier.align(Alignment.End),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    DropdownMenuItem(
-                        text = { Text("Edit") },
-                        onClick = {
-                            showMenu = false
-                            onEdit()
-                        },
-                        leadingIcon = {
-                            Icon(Icons.Default.Edit, contentDescription = "Edit")
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Hapus") },
-                        onClick = {
-                            showMenu = false
-                            onDelete()
-                        },
-                        leadingIcon = {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete")
-                        }
-                    )
+                    IconButton(
+                        onClick = onEdit,
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(
+                                MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f),
+                                CircleShape
+                            )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit",
+                            tint = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    IconButton(
+                        onClick = onDelete,
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(
+                                MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
+                                CircleShape
+                            )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete",
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun EmptyStateView() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = "Belum ada ruangan",
-            style = MaterialTheme.typography.titleLarge.copy(
-                fontWeight = FontWeight.Medium
-            ),
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Tambahkan ruangan baru dengan tombol di bawah",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-        )
     }
 }
 
@@ -433,7 +529,7 @@ fun AddRuanganDialog(
                     ) {
                         JenisRuangan.values().forEach { jenis ->
                             DropdownMenuItem(
-                                text = { Text(jenis.name) },
+                                text = { Text(jenis.label) }, // ✅ gunakan label, bukan name
                                 onClick = {
                                     selectedJenis = jenis
                                     isDropdownExpanded = false

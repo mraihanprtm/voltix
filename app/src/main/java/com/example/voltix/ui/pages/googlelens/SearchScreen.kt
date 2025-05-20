@@ -19,9 +19,9 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
@@ -39,8 +39,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.voltix.data.entity.ElectronicInformationModel
+import com.example.voltix.R
 import com.example.voltix.ui.Screen
+import com.example.voltix.ui.component.LoadingAnimationSection
 import com.example.voltix.ui.component.SearchResultItem
 import com.example.voltix.viewmodel.googlelens.SearchViewModel
 import kotlinx.coroutines.launch
@@ -50,6 +51,7 @@ import java.io.FileNotFoundException
 @Composable
 fun SearchScreen(
     navController: NavController,
+    ruanganId: Int,
     viewModel: SearchViewModel = hiltViewModel(LocalActivity.current as ComponentActivity)
 ) {
     // Collect UI State
@@ -60,8 +62,8 @@ fun SearchScreen(
     var showEmptyState by remember { mutableStateOf(uiState.imageBitmap == null && uiState.searchResults.isEmpty()) }
 
     // Update showEmptyState based on uiState
-    LaunchedEffect(uiState.imageBitmap, uiState.searchResults) {
-        showEmptyState = uiState.imageBitmap == null && uiState.searchResults.isEmpty()
+    LaunchedEffect(uiState.imageBitmap, uiState.searchResults, uiState.isLoading) {
+        showEmptyState = uiState.searchResults.isEmpty() && !uiState.isLoading && uiState.imageBitmap != null
     }
 
     // Camera launcher for taking photos
@@ -74,23 +76,8 @@ fun SearchScreen(
                 viewModel.updateIsLoading(true)
                 showEmptyState = false
                 viewModel.updateImageBitmap(it)
-                viewModel.saveBitmapToFile(context, it) { file ->
-                    Log.d("SearchScreen", "Bitmap saved, uploading file: ${file.absolutePath}")
-                    viewModel.uploadImage(file) { imageUrl ->
-                        if (imageUrl != null) {
-                            viewModel.fetchResults(context, imageUrl) { results ->
-                                viewModel.updateSearchResults(results)
-                                viewModel.updateIsLoading(false)
-                                Log.d("SearchScreen", "Search results updated: ${results.size} items")
-                            }
-                        } else {
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Gambar gagal diunggah. Silakan coba lagi")
-                            }
-                            viewModel.updateIsLoading(false)
-                        }
-                    }
-                }
+                viewModel.processImage(context, it)
+                Log.d("SearchScreen", "Process image triggered for camera capture")
             }
         }
     }
@@ -105,23 +92,8 @@ fun SearchScreen(
                 viewModel.updateIsLoading(true)
                 showEmptyState = false
                 viewModel.updateImageBitmap(bitmap)
-                viewModel.saveBitmapToFile(context, bitmap) { file ->
-                    Log.d("SearchScreen", "Bitmap saved, uploading file: ${file.absolutePath}")
-                    viewModel.uploadImage(file) { imageUrl ->
-                        if (imageUrl != null) {
-                            viewModel.fetchResults(context, imageUrl) { results ->
-                                viewModel.updateSearchResults(results)
-                                viewModel.updateIsLoading(false)
-                                Log.d("SearchScreen", "Search results updated: ${results.size} items")
-                            }
-                        } else {
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Gambar gagal diunggah. Silakan coba lagi")
-                            }
-                            viewModel.updateIsLoading(false)
-                        }
-                    }
-                }
+                viewModel.processImage(context, bitmap)
+                Log.d("SearchScreen", "Process image triggered for gallery image")
             } catch (e: FileNotFoundException) {
                 coroutineScope.launch {
                     snackbarHostState.showSnackbar("Gambar tidak ditemukan")
@@ -189,134 +161,133 @@ fun SearchScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .background(MaterialTheme.colorScheme.background)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(bottom = 16.dp)
         ) {
             // Image preview
-            AnimatedVisibility(
-                visible = uiState.imageBitmap != null,
-                enter = fadeIn(tween(300)) + slideInVertically(tween(300)) { it / 2 },
-                exit = fadeOut()
-            ) {
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(4.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
+            item {
+                AnimatedVisibility(
+                    visible = uiState.imageBitmap != null,
+                    enter = fadeIn(tween(300)) + slideInVertically(tween(300)) { it / 2 },
+                    exit = fadeOut()
                 ) {
-                    uiState.imageBitmap?.let { bitmap ->
-                        Image(
-                            bitmap = bitmap.asImageBitmap(),
-                            contentDescription = "Tangkapan Gambar",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = CardDefaults.cardElevation(4.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                    ) {
+                        uiState.imageBitmap?.let { bitmap ->
+                            Image(
+                                bitmap = bitmap.asImageBitmap(),
+                                contentDescription = "Tangkapan Gambar",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
                     }
                 }
             }
 
             // Instruction card
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(2.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+            item {
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(2.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(
-                        "Ingin tahu perangkat apa ini?",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        "Ambil foto atau pilih dari galeri untuk mengidentifikasi.",
-                        fontSize = 14.sp,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Button(
-                            onClick = {
-                                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp),
-                            shape = RoundedCornerShape(24.dp)
+                        Text(
+                            "Ingin tahu perangkat apa ini?",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            "Ambil foto atau pilih dari galeri untuk mengidentifikasi.",
+                            fontSize = 14.sp,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Text("📷 Ambil Foto", fontSize = 16.sp)
+                            Button(
+                                onClick = {
+                                    cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp),
+                                shape = RoundedCornerShape(24.dp)
+                            ) {
+                                Text("📷 Ambil Foto", fontSize = 16.sp)
+                            }
+                            Button(
+                                onClick = {
+                                    galleryPermissionLauncher.launch(Manifest.permission.READ_MEDIA_IMAGES)
+                                },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp),
+                                shape = RoundedCornerShape(24.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.secondary
+                                )
+                            ) {
+                                Text(
+                                    "🖼️ Dari Galeri",
+                                    fontSize = 16.sp,
+                                    color = MaterialTheme.colorScheme.onSecondary
+                                )
+                            }
                         }
-                        Button(
-                            onClick = {
-                                galleryPermissionLauncher.launch(Manifest.permission.READ_MEDIA_IMAGES)
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.secondary
-                            )
-                        ) {
-                            Text(
-                                "🖼️ Dari Galeri",
-                                fontSize = 16.sp,
-                                color = MaterialTheme.colorScheme.onSecondary
-                            )
-                        }
-                    }
-                    if (uiState.imageBitmap != null) {
-                        Button(
-                            onClick = {
-                                uiState.imageBitmap?.let { bitmap ->
-                                    viewModel.updateIsLoading(true)
-                                    showEmptyState = false
-                                    viewModel.processImage(context, bitmap) { query ->
-                                        viewModel.fetchResults(context, query) { results ->
-                                            viewModel.updateSearchResults(results)
-                                            viewModel.updateIsLoading(false)
-                                            Log.d("SearchScreen", "Search results updated via processImage: ${results.size} items")
-                                        }
+                        if (uiState.imageBitmap != null) {
+                            Button(
+                                onClick = {
+                                    uiState.imageBitmap?.let { bitmap ->
+                                        viewModel.updateIsLoading(true)
+                                        showEmptyState = false
+                                        viewModel.processImage(context, bitmap)
+                                        Log.d("SearchScreen", "Process image triggered")
                                     }
-                                }
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(48.dp),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            )
-                        ) {
-                            Text(
-                                "🔍 Identifikasi",
-                                fontSize = 16.sp,
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp),
+                                shape = RoundedCornerShape(24.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary
+                                )
+                            ) {
+                                Text(
+                                    "🔍 Identifikasi",
+                                    fontSize = 16.sp,
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                            }
                         }
                     }
                 }
             }
 
             // Results
-            when {
-                uiState.searchResults.isNotEmpty() -> {
+            if (uiState.searchResults.isNotEmpty()) {
+                item {
                     Text(
                         "Hasil (${uiState.searchResults.size})",
                         fontSize = 20.sp,
@@ -324,33 +295,33 @@ fun SearchScreen(
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Divider(color = MaterialTheme.colorScheme.outlineVariant)
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        uiState.searchResults.forEach { result ->
-                            SearchResultItem(
-                                data = result,
-                                onItemClick = { deviceName, wattage ->
-                                    // TODO: Replace ruanganId=0 with actual ruanganId from previous screen
-                                    navController.navigate(
-                                        Screen.InputPerangkat.createRoute(
-                                            ruanganId = 0,
-                                            deviceName = deviceName,
-                                            wattage = wattage.toString()
-                                        )
-                                    )
-                                }
+                }
+                items(uiState.searchResults) { result ->
+                    SearchResultItem(
+                        data = result,
+                        onItemClick = {
+                            navController.navigate(
+                                Screen.InputPerangkat.createRoute(
+                                    ruanganId = ruanganId,
+                                    deviceName = result.deviceType.toString(),
+                                    wattage = result.wattage ?: "",
+                                    lumen = result.lumen ?: "",
+                                    lampType = result.lampType ?: ""
+                                )
                             )
                         }
-                    }
+                    )
                 }
-                !showEmptyState && uiState.searchResults.isEmpty() && !uiState.isLoading -> {
+            } else if (showEmptyState) {
+                item {
                     Text(
                         "Tidak ada hasil ditemukan.",
                         fontSize = 16.sp,
                         color = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
+                        textAlign = TextAlign.Center
                     )
                 }
             }
@@ -365,7 +336,7 @@ fun SearchScreen(
                 .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator()
+            LoadingAnimationSection(uiState.isLoading)
         }
     }
 
