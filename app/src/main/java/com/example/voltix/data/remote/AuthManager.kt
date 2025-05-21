@@ -31,7 +31,6 @@ class AuthManager @Inject constructor(
 
     // Fungsi untuk menyimpan user ke Room setelah autentikasi berhasil
     private suspend fun saveUserToRoom(email: String, name: String = ""): Result<Int> {
-        // Ambil nama dari profile jika tersedia
         val displayName = name.ifEmpty { auth.currentUser?.displayName ?: email.substringBefore('@') }
         // Ambil foto profil jika tersedia
 //        val photoUrl = auth.currentUser?.photoUrl?.toString() ?: ""
@@ -47,13 +46,11 @@ class AuthManager @Inject constructor(
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    // Launch coroutine untuk menyimpan ke Room
                     CoroutineScope(Dispatchers.IO).launch {
                         val result = saveUserToRoom(email, name)
                         if (result.isSuccess) {
                             trySend(AuthResponse.Success)
                         } else {
-                            // Jika gagal menyimpan ke Room, tetap sukses tapi dengan warning
                             trySend(AuthResponse.Success) // atau bisa juga dengan pesan warning
                         }
                     }
@@ -65,17 +62,13 @@ class AuthManager @Inject constructor(
     }
 
     fun loginWithEmail(email: String, password: String): Flow<AuthResponse> = callbackFlow {
-        // Cek dulu ke Room apakah user sudah terdaftar
         CoroutineScope(Dispatchers.IO).launch {
             val localUser = userRepository.getUserByEmail(email)
 
             if (localUser == null) {
-                // Jika tidak ada di Room, mungkin user belum terdaftar atau data local hilang
                 auth.signInWithEmailAndPassword(email, password)
                     .addOnCompleteListener { task ->
                         if (task.isSuccessful) {
-                            // User berhasil login di Firebase tapi tidak ada di Room
-                            // Simpan ke Room
                             CoroutineScope(Dispatchers.IO).launch {
                                 saveUserToRoom(email)
                                 trySend(AuthResponse.Success)
@@ -85,7 +78,6 @@ class AuthManager @Inject constructor(
                         }
                     }
             } else {
-                // User ada di Room, lanjutkan dengan autentikasi Firebase
                 auth.signInWithEmailAndPassword(email, password)
                     .addOnCompleteListener { task ->
                         if (task.isSuccessful) {
@@ -99,7 +91,18 @@ class AuthManager @Inject constructor(
         awaitClose()
     }
 
-    // Fungsi lainnya tetap sama
+    fun sendPasswordResetEmail(email: String): Flow<AuthResponse> = callbackFlow {
+        auth.sendPasswordResetEmail(email)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    trySend(AuthResponse.Success)
+                } else {
+                    trySend(AuthResponse.Error(message = task.exception?.message ?: "Failed to send reset email"))
+                }
+            }
+        awaitClose()
+    }
+
     private fun createNonce(): String {
         val rawNonce = UUID.randomUUID().toString()
         val bytes = rawNonce.toByteArray()
@@ -146,20 +149,15 @@ class AuthManager @Inject constructor(
                         auth.signInWithCredential(firebaseCredential)
                             .addOnCompleteListener {
                                 if (it.isSuccessful) {
-                                    // Simpan user ke Room setelah berhasil login dengan Google
                                     CoroutineScope(Dispatchers.IO).launch {
                                         val email = auth.currentUser?.email ?: ""
                                         val displayName = auth.currentUser?.displayName ?: ""
 
                                         if (email.isNotEmpty()) {
-                                            // Cek apakah user sudah ada di Room
                                             val localUser = userRepository.getUserByEmail(email)
-
                                             if (localUser == null) {
-                                                // Simpan ke Room jika belum ada
                                                 saveUserToRoom(email, displayName)
                                             }
-
                                             trySend(AuthResponse.Success)
                                         } else {
                                             trySend(AuthResponse.Error(message = "No email found from Google account"))
@@ -177,7 +175,6 @@ class AuthManager @Inject constructor(
         } catch (e: Exception) {
             trySend(AuthResponse.Error(message = e.message ?: ""))
         }
-
         awaitClose()
     }
 }

@@ -36,4 +36,13 @@ class LoginViewModel @Inject constructor(
                 }
         }
     }
+
+    fun sendPasswordResetEmail(email: String) {
+        viewModelScope.launch {
+            authManager.sendPasswordResetEmail(email)
+                .collectLatest {
+                    _loginState.value = it
+                }
+        }
+    }
 }

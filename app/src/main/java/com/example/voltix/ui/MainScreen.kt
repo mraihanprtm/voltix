@@ -56,6 +56,7 @@ fun MainScreen() {
         Screen.DaftarRuangan to R.drawable.ic_fa_room,
         Screen.SimulasiPage to R.drawable.ic_fa_tag,
         Screen.Rekomendasi to R.drawable.ic_fa_bulb,
+        Screen.Setting to R.drawable.ic_fa_setting,
     )
 
     Scaffold(

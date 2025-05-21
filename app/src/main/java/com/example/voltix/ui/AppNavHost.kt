@@ -1,6 +1,7 @@
 package com.example.voltix.ui
 
 import android.net.Uri
+import android.provider.Contacts.SettingsColumns
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.internal.composableLambda
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -17,20 +18,21 @@ import com.example.voltix.ui.pages.googlelens.SearchScreen
 import com.example.voltix.ui.pages.rekomendasi.RekomendasiScreen
 import com.example.voltix.ui.pages.ruangan.DetailRuangan
 import com.example.voltix.ui.pages.ruangan.InputPerangkatScreen
+import com.example.voltix.ui.pages.setting.SettingScreen
 import com.example.voltix.ui.screen.DashboardScreen
-import com.example.voltix.ui.screen.SavedSimulationsScreen
 import com.example.voltix.ui.screen.SimulasiBebasScreen
 import com.example.voltix.ui.screen.SimulasiScreen
 import com.example.voltix.ui.screen.SimulationComparisonScreen
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import dagger.hilt.android.lifecycle.HiltViewModel
 
 sealed class Screen(val route: String, val title: String = "") {
     object Login : Screen("login", "Login")
+    object Setting : Screen("setting", "Setting")
     object Register : Screen("register", "Register")
     object SimulasiPage : Screen("simulasi", "Simulasi")
-    object SavedSimulations {
-        const val route = "saved_simulations"
-    }
     object SimulasiBebas {
         const val route = "simulasi_bebas"
         fun createRoute(simulationId: Int? = null) = if (simulationId != null) {
@@ -118,10 +120,15 @@ fun AppNavHost(navController: NavHostController) {
             )
         }
 
-        composable(Screen.SavedSimulations.route) {
-            SavedSimulationsScreen(
+        composable(Screen.Setting.route) {
+            SettingScreen(
                 navController = navController,
-                viewModel = hiltViewModel()
+                onLogOutClick = {
+                    Firebase.auth.signOut()
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Register.route) { inclusive = true }
+                    }
+                }
             )
         }
 
