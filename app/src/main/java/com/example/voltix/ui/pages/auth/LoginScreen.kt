@@ -27,6 +27,8 @@ fun LoginScreen(
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var resetEmail by remember { mutableStateOf("") }
+    var showResetDialog by remember { mutableStateOf(false) }
 
     val loginState by loginViewModel.loginState.collectAsState()
 
@@ -61,6 +63,15 @@ fun LoginScreen(
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier.fillMaxWidth()
         )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        TextButton(
+            onClick = { showResetDialog = true },
+            modifier = Modifier.align(Alignment.End)
+        ) {
+            Text("Forgot Password?", color = MaterialTheme.colorScheme.primary)
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -101,5 +112,41 @@ fun LoginScreen(
         if (loginState is AuthResponse.Error) {
             Text((loginState as AuthResponse.Error).message, color = MaterialTheme.colorScheme.error)
         }
+    }
+
+    if (showResetDialog) {
+        AlertDialog(
+            onDismissRequest = { showResetDialog = false },
+            title = { Text("Reset Password") },
+            text = {
+                Column {
+                    Text("Enter your email to receive a password reset link.")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = resetEmail,
+                        onValueChange = { resetEmail = it },
+                        placeholder = { Text("Email") },
+                        leadingIcon = { Icon(Icons.Rounded.Email, contentDescription = null) },
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        loginViewModel.sendPasswordResetEmail(resetEmail)
+                        showResetDialog = false
+                    }
+                ) {
+                    Text("Send")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
