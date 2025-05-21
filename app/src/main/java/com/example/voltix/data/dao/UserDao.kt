@@ -43,8 +43,8 @@ interface UserDao {
     suspend fun getUserById(userId: Int): UserEntity?
 
     @Query("SELECT jenisListrik FROM users WHERE id = :id")
-    fun getUserGolonganListrik(id: Int): Int
+    suspend fun getUserGolonganListrik(id: Int): Int
 
     @Query("SELECT isPrabayar FROM users WHERE id = :id")
-    fun getUserisPrabayar(id: Int): Int
+    suspend fun getUserisPrabayar(id: Int): Boolean
 }

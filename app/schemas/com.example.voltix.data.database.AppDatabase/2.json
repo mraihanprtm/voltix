@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 2,
-    "identityHash": "81afebd6feca094757c14841725de722",
+    "identityHash": "eea7f8a7f6d218d33f7d8c1e183528dd",
     "entities": [
       {
         "tableName": "users",
@@ -189,7 +189,17 @@
             "id"
           ]
         },
-        "indices": [],
+        "indices": [
+          {
+            "name": "index_lampu_perangkatId",
+            "unique": false,
+            "columnNames": [
+              "perangkatId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_lampu_perangkatId` ON `${TABLE_NAME}` (`perangkatId`)"
+          }
+        ],
         "foreignKeys": [
           {
             "table": "perangkat",
@@ -451,7 +461,17 @@
             "deviceId"
           ]
         },
-        "indices": [],
+        "indices": [
+          {
+            "name": "index_simulation_device_simulationId",
+            "unique": false,
+            "columnNames": [
+              "simulationId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_simulation_device_simulationId` ON `${TABLE_NAME}` (`simulationId`)"
+          }
+        ],
         "foreignKeys": [
           {
             "table": "simulation",
@@ -560,12 +580,118 @@
             ]
           }
         ]
+      },
+      {
+        "tableName": "rekomendasi_penghematan_lampu",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `userId` INTEGER, `ruanganId` INTEGER NOT NULL, `lampuId` INTEGER NOT NULL, `tanggal` INTEGER NOT NULL, FOREIGN KEY(`userId`) REFERENCES `users`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`ruanganId`) REFERENCES `ruangan`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`lampuId`) REFERENCES `lampu`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "userId",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "ruanganId",
+            "columnName": "ruanganId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lampuId",
+            "columnName": "lampuId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tanggal",
+            "columnName": "tanggal",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_rekomendasi_penghematan_lampu_userId",
+            "unique": false,
+            "columnNames": [
+              "userId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_rekomendasi_penghematan_lampu_userId` ON `${TABLE_NAME}` (`userId`)"
+          },
+          {
+            "name": "index_rekomendasi_penghematan_lampu_ruanganId",
+            "unique": false,
+            "columnNames": [
+              "ruanganId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_rekomendasi_penghematan_lampu_ruanganId` ON `${TABLE_NAME}` (`ruanganId`)"
+          },
+          {
+            "name": "index_rekomendasi_penghematan_lampu_lampuId",
+            "unique": false,
+            "columnNames": [
+              "lampuId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_rekomendasi_penghematan_lampu_lampuId` ON `${TABLE_NAME}` (`lampuId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "users",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "userId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "ruangan",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "ruanganId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "lampu",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "lampuId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
       }
     ],
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '81afebd6feca094757c14841725de722')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'eea7f8a7f6d218d33f7d8c1e183528dd')"
     ]
   }
 }

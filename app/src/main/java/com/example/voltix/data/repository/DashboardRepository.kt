@@ -23,7 +23,7 @@ data class DashboardData(
 )
 
 class DashboardRepository @Inject constructor(
-    private val perangkatDao: PerangkatDAO
+    private val perangkatDao: PerangkatDAO,
 ) {
     fun getDashboardData(): Flow<DashboardData> = flow {
         val ruanganWithPerangkat = perangkatDao.getAllRuanganWithPerangkat()

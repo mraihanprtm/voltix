@@ -41,7 +41,9 @@ import java.util.concurrent.Executors
         SimulationEntity::class,
         SimulationDeviceEntity::class,
         GolonganListrikEntity::class,
-        BiayaPemakaianEntity::class],
+        BiayaPemakaianEntity::class,
+        RekomendasiPenghematanLampuEntity::class
+    ],
     version = 2,
     exportSchema = true
 )

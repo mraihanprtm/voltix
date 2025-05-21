@@ -11,6 +11,9 @@ import javax.inject.Inject
 @HiltAndroidApp
 class VoltixApplication : Application(){
     @Inject lateinit var seederRepository: SeederRepository
+    companion object {
+        var globalTarif = 0
+    }
 
     override fun onCreate() {
         super.onCreate()

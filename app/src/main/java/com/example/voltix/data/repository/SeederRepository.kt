@@ -46,6 +46,7 @@ class SeederRepository @Inject constructor(
                 BiayaPemakaianEntity(8, 0, 1352, 1352),
             )
         }
+//        println(golonganListrikDao.getAllGolonganListrik())
         println("Seeding completed.")
     }
 }

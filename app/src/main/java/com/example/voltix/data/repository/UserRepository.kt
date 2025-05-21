@@ -21,7 +21,7 @@ class UserRepository @Inject constructor(
     val auth: FirebaseAuth,
     private val golonganListrikDao: GolonganListrikDao
 ) {
-    suspend fun createUser(name: String, email: String, jenisListrik: Int = 0, isPrabayar: Boolean = false): Result<Int> {
+    suspend fun createUser(name: String, email: String, jenisListrik: Int = 1, isPrabayar: Boolean = false): Result<Int> {
         return try {
             val firebaseUser = auth.currentUser ?: return Result.failure(Exception("User not authenticated"))
 
@@ -75,6 +75,8 @@ class UserRepository @Inject constructor(
             null
         }
     }
+
+
 
     suspend fun insertUser(user: UserEntity): Long {
         return try {
@@ -179,16 +181,16 @@ class UserRepository @Inject constructor(
         }
     }
 
-    fun getUserGolonganListrik(id: Int): Int {
+    suspend fun getUserGolonganListrik(id: Int): Int {
         return userDao.getUserGolonganListrik(id)
     }
 
-    fun getUserisPrabayar(id: Int): Int{
+    suspend fun getUserisPrabayar(id: Int): Boolean{
         return userDao.getUserisPrabayar(id)
     }
 
-    fun getUserBiayaListrik(id: Int): List<GolonganListrikDenganBiaya> {
-        var userGolonganListrik = getUserGolonganListrik(id)
-        return golonganListrikDao.getBiayaTarifListrik(id)
+    suspend fun getUserBiayaListrik(id: Int): List<GolonganListrikDenganBiaya> {
+        val userGolonganListrik = getUserGolonganListrik(id)
+        return golonganListrikDao.getBiayaTarifListrik(userGolonganListrik)
     }
 }

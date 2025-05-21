@@ -21,7 +21,7 @@ interface GolonganListrikDao {
     suspend fun deleteGolonganListrik(golongan: GolonganListrikEntity)
 
     @Query("SELECT * FROM golonganListrik")
-    fun getAllGolonganListrik(): List<GolonganListrikEntity>
+    suspend fun getAllGolonganListrik(): List<GolonganListrikEntity>
 
     @Insert
     suspend fun insertBiayaPemakaian(biayaPemakaian: BiayaPemakaianEntity)
@@ -33,10 +33,10 @@ interface GolonganListrikDao {
     suspend fun deleteBiayaPemakaian(biayaPemakaian: BiayaPemakaianEntity)
 
     @Query("SELECT * FROM biayapemakaian")
-    fun getAllBiayaPemakaian(): List<BiayaPemakaianEntity>
+    suspend fun getAllBiayaPemakaian(): List<BiayaPemakaianEntity>
 
     @Query("SELECT * FROM biayapemakaian WHERE idGolonganListrik = :idGolonganListrik")
-    fun getBiayaPemakaianbyGolonganID(idGolonganListrik: Int): List<BiayaPemakaianEntity>
+    suspend fun getBiayaPemakaianbyGolonganID(idGolonganListrik: Int): List<BiayaPemakaianEntity>
 
     @Query("""
         SELECT g.idGolonganListrik,
@@ -52,7 +52,7 @@ interface GolonganListrikDao {
         ON g.idGolonganListrik = b.idGolonganListrik
         WHERE g.idGolonganListrik = :userGolonganListrik
     """)
-    fun getBiayaTarifListrik(userGolonganListrik: Int): List<GolonganListrikDenganBiaya>
+    suspend fun getBiayaTarifListrik(userGolonganListrik: Int): List<GolonganListrikDenganBiaya>
 
 
     @Insert
@@ -60,5 +60,20 @@ interface GolonganListrikDao {
 
     @Insert
     suspend fun insertAllBiayaPemakaian(vararg biayaPemakaian: BiayaPemakaianEntity)
+
+    @Query("""
+        SELECT DISTINCT g.idGolonganListrik,
+        g.golonganTarif,
+        g.batasDaya,
+        g.isRTM,
+        g.biayaBeban,
+        b.minKWH,
+        b.biayaReguler,
+        b.biayaPrabayar
+        FROM golonganListrik g
+        INNER JOIN BiayaPemakaian b
+        ON g.idGolonganListrik = b.idGolonganListrik
+    """)
+    suspend fun getAllGolonganListrikwithBiaya(): List<GolonganListrikDenganBiaya>
 }
 

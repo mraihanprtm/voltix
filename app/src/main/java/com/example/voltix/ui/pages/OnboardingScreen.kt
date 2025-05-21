@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -15,6 +16,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -25,10 +27,13 @@ import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.voltix.R
+import com.example.voltix.data.entity.GolonganListrikDenganBiaya
+import com.example.voltix.data.entity.GolonganListrikEntity
 import com.example.voltix.data.entity.UserEntity
 import com.example.voltix.ui.component.LoadingAnimationSection
 import com.example.voltix.util.DataStoreUtil
 import com.example.voltix.viewmodel.UserViewModel
+import com.example.voltix.viewmodel.simulasi.GolonganListrikViewModel
 import com.example.voltix.viewmodel.simulasi.PerangkatViewModel
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
@@ -44,7 +49,8 @@ data class OnboardingPage(
 fun OnboardingScreen(
     onFinish: () -> Unit,
     viewModel: PerangkatViewModel = hiltViewModel(),
-    userViewModel: UserViewModel = hiltViewModel()
+    userViewModel: UserViewModel = hiltViewModel(),
+    golonganListrikViewModel: GolonganListrikViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -67,8 +73,31 @@ fun OnboardingScreen(
     )
     val pagerState = rememberPagerState(pageCount = { pages.size })
     val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
-    val jenisListrikList = listOf(900, 1300, 2200, 3500)
-    var selectedJenisListrik by remember { mutableStateOf(jenisListrikList[0]) }
+    var user by remember { mutableStateOf<UserEntity?>(null) }
+    var jenisListrikList by remember { mutableStateOf<List<GolonganListrikEntity>>(emptyList()) }
+
+    LaunchedEffect(Unit) {
+        user = userViewModel.getCurrentUser()
+        jenisListrikList = golonganListrikViewModel.getAllGolonganListrik()
+        println("jenisListrikList = " + jenisListrikList)
+    }
+
+    var selectedJenisListrik by remember {
+        mutableStateOf<GolonganListrikEntity?>(null)
+    }
+
+// update selected after data is loaded
+    LaunchedEffect(jenisListrikList) {
+        if (jenisListrikList.isNotEmpty()) {
+            selectedJenisListrik = jenisListrikList[0]
+        }
+    }
+
+    val jenisPembayaran = listOf("Prabayar", "Pascabayar")
+    val (selectedOption, onOptionSelected) = remember { mutableStateOf(jenisPembayaran[0]) }
+
+
+
     var expanded by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -144,13 +173,38 @@ fun OnboardingScreen(
 
                         // Jenis Listrik Dropdown (hanya di halaman terakhir)
                         if (page == pages.size - 1) {
+                            jenisPembayaran.forEach{jenis ->
+                                Row(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(56.dp)
+                                        .selectable(
+                                            selected = (jenis == selectedOption),
+                                            onClick = { onOptionSelected(jenis) },
+                                            role = Role.RadioButton
+                                        )
+                                        .padding(horizontal = 16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    RadioButton(
+                                        selected = (jenis == selectedOption),
+                                        onClick = null // null recommended for accessibility with screen readers
+                                    )
+                                    Text(
+                                        text = jenis,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        modifier = Modifier.padding(start = 16.dp)
+                                    )
+                                }
+                            }
+
                             Spacer(modifier = Modifier.height(24.dp))
                             ExposedDropdownMenuBox(
                                 expanded = expanded,
                                 onExpandedChange = { expanded = !expanded }
                             ) {
                                 OutlinedTextField(
-                                    value = "$selectedJenisListrik VA",
+                                    value = "${selectedJenisListrik!!.golonganTarif} ${selectedJenisListrik!!.batasDaya} VA",
                                     onValueChange = {},
                                     readOnly = true,
                                     label = { Text("Jenis Listrik") },
@@ -171,13 +225,24 @@ fun OnboardingScreen(
                                     onDismissRequest = { expanded = false }
                                 ) {
                                     jenisListrikList.forEach { option ->
-                                        DropdownMenuItem(
-                                            text = { Text("$option VA") },
-                                            onClick = {
-                                                selectedJenisListrik = option
-                                                expanded = false
-                                            }
-                                        )
+                                        if (option.isRTM) {
+                                            DropdownMenuItem(
+                                                text = {Text(option.golonganTarif + " " + option.batasDaya + "VA-RTM")},
+                                                onClick = {
+                                                    selectedJenisListrik = option
+                                                    expanded = false
+                                                }
+                                            )
+                                        } else {
+                                            DropdownMenuItem(
+                                                text = { Text(option.golonganTarif + " " + option.batasDaya + "VA") },
+                                                onClick = {
+                                                    selectedJenisListrik = option
+                                                    expanded = false
+                                                }
+                                            )
+                                        }
+
                                     }
                                 }
                             }
@@ -239,13 +304,14 @@ fun OnboardingScreen(
                                         val firebaseUser = FirebaseAuth.getInstance().currentUser
                                         val existingUser = userViewModel.getUserByUid(userId)
 
-                                    val updatedUser = existingUser?.copy(
-                                        jenisListrik = selectedJenisListrik
+                                        val updatedUser = existingUser?.copy(
+                                        jenisListrik = selectedJenisListrik!!.idGolonganListrik,
+                                        isPrabayar = selectedOption == "Prabayar"
                                     ) ?: UserEntity(
                                         name = firebaseUser?.displayName ?: "Guest User",
                                         email = firebaseUser?.email ?: "guest@example.com",
-                                        jenisListrik = selectedJenisListrik,
-                                        isPrabayar = false,
+                                        jenisListrik = selectedJenisListrik!!.idGolonganListrik,
+                                        isPrabayar = selectedOption == "Prabayar",
                                         uid = userId
                                     )
 
@@ -255,7 +321,12 @@ fun OnboardingScreen(
                                             userViewModel.insertUser(updatedUser)
                                         }
 
-                                        viewModel.updateJenisListrik(selectedJenisListrik)
+                                        viewModel.updateJenisListrik(selectedJenisListrik!!.idGolonganListrik)
+                                        var currentuserId = userViewModel.getCurrentUser()!!.id
+                                        var biayaListrikuser = userViewModel.getUserBiayaListrik(currentuserId)
+                                        println("Biaya Listrik User= $biayaListrikuser")
+                                        var tarifUser = userViewModel.getUserTarif(currentuserId, 35.0)
+                                        println("TARIF USER = $tarifUser")
                                         DataStoreUtil.setOnboardingCompleted(context, true)
                                         onFinish()
                                     } catch (e: Exception) {
