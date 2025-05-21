@@ -97,17 +97,7 @@ class UserViewModel @Inject constructor(
     }
 
     suspend fun getUserTarif(userid: Int, usedKWH: Double): Int{
-        var isPrabayar = getUserisPrabayar(userid)
-        var biayaListrik = repository.getUserBiayaListrik(userid)
-        biayaListrik = biayaListrik.reversed()
-        val golonganTarif = biayaListrik.firstOrNull { usedKWH > it.minKWH }
-        if (isPrabayar){
-            Log.d("DEBUG", "Biaya Tarif Listrik = ${golonganTarif!!.biayaPrabayar}")
-            return golonganTarif.biayaPrabayar
-        } else {
-            Log.d("DEBUG", "Biaya Tarif Listrik = ${golonganTarif!!.biayaPrabayar}")
-            return golonganTarif.biayaReguler
-        }
+        return repository.getUserTarif(userid, usedKWH)
     }
 
 

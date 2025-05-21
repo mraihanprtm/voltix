@@ -193,4 +193,18 @@ class UserRepository @Inject constructor(
         val userGolonganListrik = getUserGolonganListrik(id)
         return golonganListrikDao.getBiayaTarifListrik(userGolonganListrik)
     }
+
+    suspend fun getUserTarif(id: Int, usedKWH: Double): Int {
+        var isPrabayar = getUserisPrabayar(id)
+        var biayaListrik = getUserBiayaListrik(id)
+        biayaListrik = biayaListrik.reversed()
+        val golonganTarif = biayaListrik.firstOrNull { usedKWH > it.minKWH }
+        if (isPrabayar){
+            Log.d("DEBUG", "Biaya Tarif Listrik = ${golonganTarif!!.biayaPrabayar}")
+            return golonganTarif.biayaPrabayar
+        } else {
+            Log.d("DEBUG", "Biaya Tarif Listrik = ${golonganTarif!!.biayaPrabayar}")
+            return golonganTarif.biayaReguler
+        }
+    }
 }
