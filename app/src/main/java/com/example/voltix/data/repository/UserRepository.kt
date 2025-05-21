@@ -5,6 +5,7 @@ import com.example.voltix.data.dao.GolonganListrikDao
 import com.example.voltix.data.dao.UserDao
 import com.example.voltix.data.dao.UserPerangkatCrossRefDao
 import com.example.voltix.data.entity.GolonganListrikDenganBiaya
+import com.example.voltix.data.entity.GolonganListrikEntity
 import com.example.voltix.data.entity.UserEntity
 import com.example.voltix.data.entity.UserPerangkatCrossRef
 import com.example.voltix.data.relations.UserWithPerangkat
@@ -218,5 +219,16 @@ class UserRepository @Inject constructor(
         val userGolonganListrik = getUserBiayaListrik(id)
         var batasDaya = userGolonganListrik.firstOrNull()!!.batasDaya
         return batasDaya
+    }
+
+    suspend fun getAllGolonganListrik(): Result<List<GolonganListrikDenganBiaya>> {
+        return try {
+            val allGolongan = golonganListrikDao.getAllGolonganListrikwithBiaya()
+            Log.d(TAG, "Retrieved all golongan listrik: $allGolongan")
+            Result.success(allGolongan)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting all golongan listrik", e)
+            Result.failure(e)
+        }
     }
 }

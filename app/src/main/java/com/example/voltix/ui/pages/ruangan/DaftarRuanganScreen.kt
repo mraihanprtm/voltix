@@ -56,7 +56,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun DaftarRuanganScreen(
     navController: NavHostController,
-    viewModel: RuanganViewModel = hiltViewModel()
+    viewModel: RuanganViewModel = hiltViewModel(),
+    openDialog: Boolean = false, // Navigation argument
 ) {
     val daftarRuangan by viewModel.allRuangan.observeAsState(initial = emptyList())
     var showAddDialog by remember { mutableStateOf(false) }
@@ -69,7 +70,11 @@ fun DaftarRuanganScreen(
     LaunchedEffect(Unit) {
         kotlinx.coroutines.delay(1000)
         isLoading = false
+        if (openDialog) {
+            showAddDialog = true
+        }
     }
+
 
     val fabScale by animateFloatAsState(
         targetValue = if (isLoading) 1f else 1.1f,

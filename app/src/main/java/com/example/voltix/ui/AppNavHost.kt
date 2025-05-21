@@ -1,21 +1,24 @@
 package com.example.voltix.ui
 
-import android.net.Uri
-import android.provider.Contacts.SettingsColumns
+import android.annotation.SuppressLint
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.internal.composableLambda
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.example.voltix.ui.pages.ruangan.DaftarRuanganScreen
 import com.example.voltix.ui.pages.OnboardingScreen
 import com.example.voltix.ui.pages.auth.LoginScreen
 import com.example.voltix.ui.pages.auth.RegisterScreen
 import com.example.voltix.ui.pages.googlelens.SearchScreen
 import com.example.voltix.ui.pages.rekomendasi.RekomendasiScreen
+import com.example.voltix.ui.pages.ruangan.DaftarRuanganScreen
 import com.example.voltix.ui.pages.ruangan.DetailRuangan
 import com.example.voltix.ui.pages.ruangan.InputPerangkatScreen
 import com.example.voltix.ui.pages.setting.SettingScreen
@@ -23,10 +26,11 @@ import com.example.voltix.ui.screen.DashboardScreen
 import com.example.voltix.ui.screen.SimulasiBebasScreen
 import com.example.voltix.ui.screen.SimulasiScreen
 import com.example.voltix.ui.screen.SimulationComparisonScreen
+import com.example.voltix.util.DataStoreUtil
+import com.example.voltix.viewmodel.UserViewModel
+import com.example.voltix.viewmodel.auth.LoginViewModel
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
-import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.launch
 
 sealed class Screen(val route: String, val title: String = "") {
     object Login : Screen("login", "Login")
@@ -41,21 +45,15 @@ sealed class Screen(val route: String, val title: String = "") {
             route
         }
     }
-
-    object SimulationComparison {
-        const val route = "simulation_comparison"
-        fun createRoute(simulationIds: String) = "$route/$simulationIds"
-    }
+    object SimulationComparison : Screen("simulation_comparison", "Simulation Comparison")
     object DaftarRuangan : Screen("daftar_ruangan", "Ruangan")
     object DetailRuangan : Screen("detail_ruangan/{ruanganId}", "Detail Ruangan") {
         fun createRoute(ruanganId: Int) = "detail_ruangan/$ruanganId"
     }
-
     object Rekomendasi : Screen("rekomendasi?ruanganId={ruanganId}", "Rekomendasi") {
         fun createRoute(ruanganId: Int? = null): String =
             if (ruanganId != null && ruanganId != -1) "rekomendasi?ruanganId=$ruanganId" else "rekomendasi"
     }
-
     object ImagePicker : Screen("image_picker/{ruanganId}", "Image Picker") {
         fun createRoute(ruanganId: Int) = "image_picker/$ruanganId"
     }
@@ -74,15 +72,45 @@ sealed class Screen(val route: String, val title: String = "") {
     }
 }
 
+@SuppressLint("CoroutineCreationDuringComposition")
 @Composable
-fun AppNavHost(navController: NavHostController) {
-    NavHost(
-        navController = navController,
-        startDestination = Screen.Onboarding.route
-    ) {
+fun AppNavHost(navController: NavHostController, loginViewModel: LoginViewModel = hiltViewModel()) {
+    val loginState by loginViewModel.loginState.collectAsState()
+
+    LaunchedEffect(loginState) {
+        when (loginState) {
+            is LoginViewModel.LoginState.Success -> {
+                navController.navigate(Screen.Dashboard.route) {
+                    popUpTo(Screen.Login.route) { inclusive = true }
+                    launchSingleTop = true
+                }
+            }
+            is LoginViewModel.LoginState.Error -> {
+                // Handled in LoginScreen
+            }
+            else -> {}
+        }
+    }
+
+    NavHost(navController = navController, startDestination = Screen.Login.route) {
+        composable(Screen.Onboarding.route) {
+            val context = LocalContext.current
+            val coroutineScope = rememberCoroutineScope()
+            OnboardingScreen(
+                onFinish = {
+                    coroutineScope.launch {
+                        DataStoreUtil.saveOnboardingCompleted(context, true)
+                        navController.navigate(if (FirebaseAuth.getInstance().currentUser != null) Screen.Dashboard.route else Screen.Login.route) {
+                            popUpTo(Screen.Onboarding.route) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                }
+            )
+        }
         composable(Screen.Login.route) {
             LoginScreen(
-                loginViewModel = hiltViewModel(),
+                loginViewModel = loginViewModel,
                 navigateToRegister = {
                     navController.navigate(Screen.Register.route)
                 }
@@ -92,8 +120,8 @@ fun AppNavHost(navController: NavHostController) {
             RegisterScreen(
                 registerViewModel = hiltViewModel(),
                 onRegisterSuccess = {
-                    navController.navigate(Screen.Onboarding.route) {
-                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                    navController.navigate(Screen.Dashboard.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
                         launchSingleTop = true
                     }
                 },
@@ -107,10 +135,21 @@ fun AppNavHost(navController: NavHostController) {
         composable(Screen.Dashboard.route) {
             DashboardScreen(viewModel = hiltViewModel(), navController = navController)
         }
-        composable(Screen.DaftarRuangan.route) {
-            DaftarRuanganScreen(navController = navController)
+        composable(
+            route = "daftar_ruangan?openDialog={openDialog}",
+            arguments = listOf(
+                navArgument("openDialog") {
+                    type = NavType.BoolType
+                    defaultValue = false
+                }
+            )
+        ) { backStackEntry ->
+            val openDialog = backStackEntry.arguments?.getBoolean("openDialog") ?: false
+            DaftarRuanganScreen(
+                navController = navController,
+                openDialog = openDialog
+            )
         }
-
         composable(Screen.SimulasiPage.route) {
             SimulasiScreen(
                 navController = navController,
@@ -119,25 +158,27 @@ fun AppNavHost(navController: NavHostController) {
                 }
             )
         }
-
         composable(Screen.Setting.route) {
+            val userViewModel: UserViewModel = hiltViewModel() // Inject UserViewModel
             SettingScreen(
                 navController = navController,
+                userViewModel = userViewModel, // Pass the injected ViewModel
                 onLogOutClick = {
-                    Firebase.auth.signOut()
+                    FirebaseAuth.getInstance().signOut()
+                    loginViewModel.resetLoginState()
                     navController.navigate(Screen.Login.route) {
-                        popUpTo(Screen.Register.route) { inclusive = true }
+                        popUpTo(0) { inclusive = true }
+                        launchSingleTop = true
                     }
                 }
             )
         }
-
         composable(
-            route = "${Screen.Rekomendasi.route}",
+            route = Screen.Rekomendasi.route,
             arguments = listOf(
                 navArgument("ruanganId") {
                     type = NavType.IntType
-                    defaultValue = -1 // Default ke -1
+                    defaultValue = -1
                     nullable = false
                 }
             )
@@ -145,9 +186,8 @@ fun AppNavHost(navController: NavHostController) {
             val id = backStack.arguments?.getInt("ruanganId") ?: -1
             RekomendasiScreen(ruanganId = id, navController = navController)
         }
-
         composable(
-            route = Screen.SimulasiBebas.route + "?simulationId={simulationId}",
+            route = "${Screen.SimulasiBebas.route}?simulationId={simulationId}",
             arguments = listOf(
                 navArgument("simulationId") {
                     type = NavType.IntType
@@ -157,22 +197,18 @@ fun AppNavHost(navController: NavHostController) {
             )
         ) { backStackEntry ->
             SimulasiBebasScreen(
-                onDeviceSelect = { device ->
-                    println("Selected device: ${device.nama}")
-                },
+                onDeviceSelect = { device -> println("Selected device: ${device.nama}") },
                 navController = navController,
                 simulationId = backStackEntry.arguments?.getInt("simulationId")?.takeIf { it != -1 },
                 viewModel = hiltViewModel()
             )
         }
-
         composable(Screen.SimulationComparison.route) {
             SimulationComparisonScreen(
                 viewModel = hiltViewModel(),
                 navController = navController
             )
         }
-
         composable(
             route = Screen.ImagePicker.route,
             arguments = listOf(navArgument("ruanganId") { type = NavType.IntType })
@@ -180,34 +216,14 @@ fun AppNavHost(navController: NavHostController) {
             val ruanganId = backStackEntry.arguments?.getInt("ruanganId") ?: 0
             SearchScreen(navController = navController, ruanganId = ruanganId)
         }
-
         composable(
             route = Screen.InputPerangkat.route,
             arguments = listOf(
-                navArgument("ruanganId") {
-                    type = NavType.IntType
-                    defaultValue = 0
-                },
-                navArgument("deviceName") {
-                    type = NavType.StringType
-                    defaultValue = ""
-                    nullable = true
-                },
-                navArgument("wattage") {
-                    type = NavType.StringType
-                    defaultValue = ""
-                    nullable = true
-                },
-                navArgument("lumen") {
-                    type = NavType.StringType
-                    defaultValue = ""
-                    nullable = true
-                },
-                navArgument("lampType") {
-                    type = NavType.StringType
-                    defaultValue = ""
-                    nullable = true
-                }
+                navArgument("ruanganId") { type = NavType.IntType; defaultValue = 0 },
+                navArgument("deviceName") { type = NavType.StringType; defaultValue = ""; nullable = true },
+                navArgument("wattage") { type = NavType.StringType; defaultValue = ""; nullable = true },
+                navArgument("lumen") { type = NavType.StringType; defaultValue = ""; nullable = true },
+                navArgument("lampType") { type = NavType.StringType; defaultValue = ""; nullable = true }
             )
         ) { backStackEntry ->
             val ruanganId = backStackEntry.arguments?.getInt("ruanganId") ?: 0
@@ -224,23 +240,10 @@ fun AppNavHost(navController: NavHostController) {
                 initialLampType = lampType
             )
         }
-
-        composable(Screen.Onboarding.route) {
-            OnboardingScreen(
-                onFinish = {
-                    navController.navigate(Screen.Dashboard.route) {
-                        popUpTo(Screen.Onboarding.route) { inclusive = true }
-                    }
-                }
-            )
-        }
-
         composable(
             route = Screen.DetailRuangan.route,
             arguments = listOf(
-                navArgument("ruanganId") {
-                    type = NavType.IntType
-                }
+                navArgument("ruanganId") { type = NavType.IntType }
             )
         ) { backStackEntry ->
             val ruanganId = backStackEntry.arguments?.getInt("ruanganId") ?: 0

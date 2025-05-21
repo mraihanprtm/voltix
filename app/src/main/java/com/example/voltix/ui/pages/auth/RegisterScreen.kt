@@ -38,7 +38,7 @@ fun RegisterScreen(
     LaunchedEffect(registerState) {
         if (registerState is AuthResponse.Success) {
             scope.launch {
-                DataStoreUtil.setOnboardingCompleted(context, false)
+                DataStoreUtil.saveOnboardingCompleted(context, false) // Fixed function name
                 onRegisterSuccess()
             }
         } else if (registerState is AuthResponse.Error) {

@@ -7,6 +7,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.voltix.data.entity.SimulationWithDevices
 import com.example.voltix.data.repository.SimulationRepository
+import com.example.voltix.data.repository.UserRepository
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import java.time.Duration
@@ -23,7 +25,8 @@ data class ComparisonResult(
 
 @HiltViewModel
 class SimulationComparisonViewModel @Inject constructor(
-    private val repository: SimulationRepository
+    private val repository: SimulationRepository,
+    private val userRepository: UserRepository
 ) : ViewModel() {
     private val _simulations = MutableLiveData<List<SimulationWithDevices>>(emptyList())
     val simulations: LiveData<List<SimulationWithDevices>> = _simulations
@@ -33,6 +36,43 @@ class SimulationComparisonViewModel @Inject constructor(
 
     private val _isLoading = MutableLiveData(false)
     val isLoading: LiveData<Boolean> = _isLoading
+
+    private var hargaPerKWh: Double = 1444.70 // Default fallback value (IDR per kWh)
+
+    init {
+        viewModelScope.launch {
+            try {
+                val userId = FirebaseAuth.getInstance().currentUser?.uid
+                Log.d("SimulationComparisonViewModel", "Current User ID: $userId")
+
+                if (userId != null) {
+                    val currentUser = userRepository.getUserByUid(userId)
+                    Log.d("SimulationComparisonViewModel", "Current User Data: $currentUser")
+
+                    if (currentUser != null) {
+                        updateHargaPerKWh(currentUser.id, 0.0) // Initial total power is 0
+                        Log.d("SimulationComparisonViewModel", "Harga per kWh set to: $hargaPerKWh")
+                    } else {
+                        Log.w("SimulationComparisonViewModel", "User data not found for ID: $userId")
+                    }
+                } else {
+                    Log.w("SimulationComparisonViewModel", "No user is currently logged in")
+                }
+            } catch (e: Exception) {
+                Log.e("SimulationComparisonViewModel", "Error loading user data", e)
+            }
+        }
+    }
+
+    private suspend fun updateHargaPerKWh(userId: Int, besaranDaya: Double) {
+        try {
+            hargaPerKWh = userRepository.getUserTarif(userId, besaranDaya).toDouble()
+            Log.d("SimulationComparisonViewModel", "Updated harga per kWh: $hargaPerKWh for besaranDaya: $besaranDaya")
+        } catch (e: Exception) {
+            Log.e("SimulationComparisonViewModel", "Error updating harga per kWh", e)
+            hargaPerKWh = 1444.70 // Fallback to default
+        }
+    }
 
     fun loadAllSimulations() {
         viewModelScope.launch {
@@ -52,6 +92,22 @@ class SimulationComparisonViewModel @Inject constructor(
     fun compareSimulations(selectedSimulations: List<SimulationWithDevices>) {
         viewModelScope.launch {
             try {
+                // Calculate total power for tariff determination
+                val totalPower = selectedSimulations.sumOf { simulation ->
+                    simulation.devices.sumOf { device ->
+                        (device.daya * device.jumlah).toDouble()
+                    }
+                }
+
+                // Update hargaPerKWh based on total power
+                val userId = FirebaseAuth.getInstance().currentUser?.uid
+                if (userId != null) {
+                    val currentUser = userRepository.getUserByUid(userId)
+                    if (currentUser != null) {
+                        updateHargaPerKWh(currentUser.id, totalPower)
+                    }
+                }
+
                 val results = selectedSimulations.map { simulation ->
                     val powerUsage = simulation.calculatePowerUsage()
                     val cost = simulation.calculateCost()
@@ -77,7 +133,7 @@ class SimulationComparisonViewModel @Inject constructor(
                 }
 
                 _comparisonResults.value = updatedResults
-                Log.d("SimulationComparisonViewModel", "Compared ${selectedSimulations.size} simulations")
+                Log.d("SimulationComparisonViewModel", "Compared ${selectedSimulations.size} simulations with hargaPerKWh: $hargaPerKWh")
             } catch (e: Exception) {
                 Log.e("SimulationComparisonViewModel", "Error comparing simulations: ${e.message}")
                 _comparisonResults.value = emptyList()
@@ -99,7 +155,6 @@ class SimulationComparisonViewModel @Inject constructor(
     }
 
     private fun SimulationWithDevices.calculateCost(): Double {
-        val costPerKWh = 1444.70 // Rp/kWh
-        return calculatePowerUsage() * costPerKWh
+        return calculatePowerUsage() * hargaPerKWh
     }
 }

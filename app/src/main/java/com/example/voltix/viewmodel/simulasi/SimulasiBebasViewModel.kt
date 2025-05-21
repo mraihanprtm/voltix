@@ -60,7 +60,7 @@ class SimulasiBebasViewModel @Inject constructor(
     private val _timeRange = MutableStateFlow(TimeRange.DAILY)
     val timeRange: StateFlow<TimeRange> = _timeRange.asStateFlow()
 
-    private var hargaPerKWh: Double = 1444.70 // IDR per kWh, default PLN R-1 tariff
+    private var hargaPerKWh: Double = 0.0 // IDR per kWh, default PLN R-1 tariff
 
     init {
         Log.d("SimulasiBebasViewModel", "ViewModel initialized")
@@ -112,7 +112,7 @@ class SimulasiBebasViewModel @Inject constructor(
                 if (firebaseUid != null) {
                     val currentUser = userRepository.getUserByUid(firebaseUid)
                     if (currentUser != null) {
-                        batasDayaPengguna = currentUser.jenisListrik
+                        batasDayaPengguna = userRepository.getUserBatasDaya(currentUser.id)
                         val besaranDaya = repository.getTotalPower().toDouble()
                         val tarifFromUser = userRepository.getUserTarif(currentUser.id, besaranDaya)
                         hargaPerKWh = tarifFromUser.toDouble()

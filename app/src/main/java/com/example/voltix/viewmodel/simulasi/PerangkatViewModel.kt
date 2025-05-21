@@ -54,9 +54,9 @@ class PerangkatViewModel @Inject constructor(
     val melebihiDaya: StateFlow<Boolean> = _melebihiDaya.asStateFlow()
 
     private var batasDayaPengguna: Int = 0
+    private var hargaPerKWh: Double = 1445.0 // Default fallback value (IDR per kWh)
 
     var perangkatDiedit by mutableStateOf<PerangkatEntity?>(null)
-
     var showEditDialog by mutableStateOf(false)
 
     init {
@@ -71,9 +71,11 @@ class PerangkatViewModel @Inject constructor(
 
                     if (currentUser != null) {
                         _jenisListrik.value = currentUser.jenisListrik
-                        batasDayaPengguna = currentUser.jenisListrik
+                        batasDayaPengguna = userRepository.getUserBatasDaya(currentUser.id)
+                        updateHargaPerKWh(currentUser.id)
                         Log.d("PerangkatViewModel", "Jenis Listrik set to: ${_jenisListrik.value}")
                         Log.d("PerangkatViewModel", "Batas Daya set to: $batasDayaPengguna")
+                        Log.d("PerangkatViewModel", "Harga per kWh set to: $hargaPerKWh")
                     } else {
                         Log.w("PerangkatViewModel", "User data not found for ID: $userId")
                     }
@@ -83,6 +85,19 @@ class PerangkatViewModel @Inject constructor(
             } catch (e: Exception) {
                 Log.e("PerangkatViewModel", "Error loading user data", e)
             }
+        }
+    }
+
+    private suspend fun updateHargaPerKWh(userId: Int) {
+        try {
+            val besaranDaya = _totalDaya.value.toDouble()
+            hargaPerKWh = userRepository.getUserTarif(userId, besaranDaya).toDouble()
+            Log.d("PerangkatViewModel", "Updated harga per kWh: $hargaPerKWh for besaranDaya: $besaranDaya")
+            // Recalculate totalBiaya with updated hargaPerKWh
+            _totalBiaya.value = _totalKonsumsi.value * hargaPerKWh
+        } catch (e: Exception) {
+            Log.e("PerangkatViewModel", "Error updating harga per kWh", e)
+            hargaPerKWh = 1445.0 // Fallback to default
         }
     }
 
@@ -112,7 +127,10 @@ class PerangkatViewModel @Inject constructor(
                 // Update total daya dan flag melebihi
                 val total = list.sumOf { it.daya * it.jumlah }
                 _totalDaya.value = total
+                Log.d("CEK TOTAL DAYA", "$total")
+                Log.d("CEK TOTAL DAYA", "$batasDayaPengguna")
                 _melebihiDaya.value = total > batasDayaPengguna
+                Log.d("CEK TOTAL DAYA", "${_melebihiDaya.value}")
 
                 // Hitung total konsumsi (daya * durasi * jumlah)
                 val totalKonsumsiValue = list.sumOf { perangkat ->
@@ -121,9 +139,17 @@ class PerangkatViewModel @Inject constructor(
                 }
                 _totalKonsumsi.value = totalKonsumsiValue / 1000.0 // konversi ke kWh
 
-                // Hitung total biaya (asumsi Rp 1.445 per kWh)
-                _totalBiaya.value = _totalKonsumsi.value * 1445.0
+                // Hitung total biaya menggunakan hargaPerKWh dinamis
+                _totalBiaya.value = _totalKonsumsi.value * hargaPerKWh
 
+                // Update hargaPerKWh as totalDaya may have changed
+                val userId = FirebaseAuth.getInstance().currentUser?.uid
+                if (userId != null) {
+                    val currentUser = userRepository.getUserByUid(userId)
+                    if (currentUser != null) {
+                        updateHargaPerKWh(currentUser.id)
+                    }
+                }
             } catch (e: Exception) {
                 Log.e("PerangkatViewModel", "Error loading perangkat", e)
             }
@@ -317,7 +343,15 @@ class PerangkatViewModel @Inject constructor(
             try {
                 _jenisListrik.value = newJenisListrik
                 batasDayaPengguna = newJenisListrik
+                val userId = FirebaseAuth.getInstance().currentUser?.uid
+                if (userId != null) {
+                    val currentUser = userRepository.getUserByUid(userId)
+                    if (currentUser != null) {
+                        updateHargaPerKWh(currentUser.id)
+                    }
+                }
                 checkMelebihiDaya()
+                Log.d("PerangkatViewModel", "Updated jenis listrik to: $newJenisListrik")
             } catch (e: Exception) {
                 Log.e("PerangkatViewModel", "Error updating jenis listrik", e)
             }

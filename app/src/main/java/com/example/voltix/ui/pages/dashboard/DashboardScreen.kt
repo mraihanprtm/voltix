@@ -151,7 +151,7 @@ fun WelcomeSection(navController: NavHostController) {
             textAlign = TextAlign.Center
         )
         Button(
-            onClick = { navController.navigate("daftar_ruangan") },
+            onClick = { navController.navigate("daftar_ruangan?openDialog=true") },
             modifier = Modifier
                 .fillMaxWidth(0.8f)
                 .height(48.dp),

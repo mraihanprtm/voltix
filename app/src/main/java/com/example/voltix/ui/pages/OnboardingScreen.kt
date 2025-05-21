@@ -27,7 +27,6 @@ import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.voltix.R
-import com.example.voltix.data.entity.GolonganListrikDenganBiaya
 import com.example.voltix.data.entity.GolonganListrikEntity
 import com.example.voltix.data.entity.UserEntity
 import com.example.voltix.ui.component.LoadingAnimationSection
@@ -47,7 +46,7 @@ data class OnboardingPage(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OnboardingScreen(
-    onFinish: () -> Unit,
+    onFinish: () -> Unit, // Changed to a non-composable callback
     viewModel: PerangkatViewModel = hiltViewModel(),
     userViewModel: UserViewModel = hiltViewModel(),
     golonganListrikViewModel: GolonganListrikViewModel = hiltViewModel()
@@ -79,14 +78,12 @@ fun OnboardingScreen(
     LaunchedEffect(Unit) {
         user = userViewModel.getCurrentUser()
         jenisListrikList = golonganListrikViewModel.getAllGolonganListrik()
-        println("jenisListrikList = " + jenisListrikList)
+        println("jenisListrikList = $jenisListrikList")
     }
 
-    var selectedJenisListrik by remember {
-        mutableStateOf<GolonganListrikEntity?>(null)
-    }
+    var selectedJenisListrik by remember { mutableStateOf<GolonganListrikEntity?>(null) }
 
-// update selected after data is loaded
+    // Update selected after data is loaded
     LaunchedEffect(jenisListrikList) {
         if (jenisListrikList.isNotEmpty()) {
             selectedJenisListrik = jenisListrikList[0]
@@ -95,8 +92,6 @@ fun OnboardingScreen(
 
     val jenisPembayaran = listOf("Prabayar", "Pascabayar")
     val (selectedOption, onOptionSelected) = remember { mutableStateOf(jenisPembayaran[0]) }
-
-
 
     var expanded by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
@@ -145,7 +140,7 @@ fun OnboardingScreen(
                             composition = composition,
                             iterations = LottieConstants.IterateForever,
                             modifier = Modifier
-                                .size(width = screenWidth * 0.8f, height = screenWidth * 0.8f) // Ukuran 80% lebar layar
+                                .size(width = screenWidth * 0.8f, height = screenWidth * 0.8f)
                                 .padding(bottom = 24.dp),
                         )
 
@@ -173,7 +168,7 @@ fun OnboardingScreen(
 
                         // Jenis Listrik Dropdown (hanya di halaman terakhir)
                         if (page == pages.size - 1) {
-                            jenisPembayaran.forEach{jenis ->
+                            jenisPembayaran.forEach { jenis ->
                                 Row(
                                     Modifier
                                         .fillMaxWidth()
@@ -188,7 +183,7 @@ fun OnboardingScreen(
                                 ) {
                                     RadioButton(
                                         selected = (jenis == selectedOption),
-                                        onClick = null // null recommended for accessibility with screen readers
+                                        onClick = null
                                     )
                                     Text(
                                         text = jenis,
@@ -204,7 +199,7 @@ fun OnboardingScreen(
                                 onExpandedChange = { expanded = !expanded }
                             ) {
                                 OutlinedTextField(
-                                    value = "${selectedJenisListrik!!.golonganTarif} ${selectedJenisListrik!!.batasDaya} VA",
+                                    value = "${selectedJenisListrik?.golonganTarif} ${selectedJenisListrik?.batasDaya} VA",
                                     onValueChange = {},
                                     readOnly = true,
                                     label = { Text("Jenis Listrik") },
@@ -225,24 +220,18 @@ fun OnboardingScreen(
                                     onDismissRequest = { expanded = false }
                                 ) {
                                     jenisListrikList.forEach { option ->
-                                        if (option.isRTM) {
-                                            DropdownMenuItem(
-                                                text = {Text(option.golonganTarif + " " + option.batasDaya + "VA-RTM")},
-                                                onClick = {
-                                                    selectedJenisListrik = option
-                                                    expanded = false
-                                                }
-                                            )
-                                        } else {
-                                            DropdownMenuItem(
-                                                text = { Text(option.golonganTarif + " " + option.batasDaya + "VA") },
-                                                onClick = {
-                                                    selectedJenisListrik = option
-                                                    expanded = false
-                                                }
-                                            )
-                                        }
-
+                                        DropdownMenuItem(
+                                            text = {
+                                                Text(
+                                                    if (option.isRTM) "${option.golonganTarif} ${option.batasDaya} VA-RTM"
+                                                    else "${option.golonganTarif} ${option.batasDaya} VA"
+                                                )
+                                            },
+                                            onClick = {
+                                                selectedJenisListrik = option
+                                                expanded = false
+                                            }
+                                        )
                                     }
                                 }
                             }
@@ -283,7 +272,7 @@ fun OnboardingScreen(
                     TextButton(
                         onClick = {
                             scope.launch {
-                                DataStoreUtil.setOnboardingCompleted(context, true)
+                                DataStoreUtil.saveOnboardingCompleted(context, true) // Fixed function name
                                 onFinish()
                             }
                         }
@@ -305,15 +294,15 @@ fun OnboardingScreen(
                                         val existingUser = userViewModel.getUserByUid(userId)
 
                                         val updatedUser = existingUser?.copy(
-                                        jenisListrik = selectedJenisListrik!!.idGolonganListrik,
-                                        isPrabayar = selectedOption == "Prabayar"
-                                    ) ?: UserEntity(
-                                        name = firebaseUser?.displayName ?: "Guest User",
-                                        email = firebaseUser?.email ?: "guest@example.com",
-                                        jenisListrik = selectedJenisListrik!!.idGolonganListrik,
-                                        isPrabayar = selectedOption == "Prabayar",
-                                        uid = userId
-                                    )
+                                            jenisListrik = selectedJenisListrik!!.idGolonganListrik,
+                                            isPrabayar = selectedOption == "Prabayar"
+                                        ) ?: UserEntity(
+                                            name = firebaseUser?.displayName ?: "Guest User",
+                                            email = firebaseUser?.email ?: "guest@example.com",
+                                            jenisListrik = selectedJenisListrik!!.idGolonganListrik,
+                                            isPrabayar = selectedOption == "Prabayar",
+                                            uid = userId
+                                        )
 
                                         if (existingUser != null) {
                                             userViewModel.updateUser(updatedUser)
@@ -322,17 +311,17 @@ fun OnboardingScreen(
                                         }
 
                                         viewModel.updateJenisListrik(selectedJenisListrik!!.idGolonganListrik)
-                                        var currentuserId = userViewModel.getCurrentUser()!!.id
-                                        var biayaListrikuser = userViewModel.getUserBiayaListrik(currentuserId)
-                                        println("Biaya Listrik User= $biayaListrikuser")
-                                        var tarifUser = userViewModel.getUserTarif(currentuserId, 35.0)
-                                        println("TARIF USER = $tarifUser")
-                                        DataStoreUtil.setOnboardingCompleted(context, true)
+                                        val currentUserId = userViewModel.getCurrentUser()?.id
+                                        if (currentUserId != null) {
+                                            val biayaListrikUser = userViewModel.getUserBiayaListrik(currentUserId)
+                                            println("Biaya Listrik User= $biayaListrikUser")
+                                            val tarifUser = userViewModel.getUserTarif(currentUserId, 35.0)
+                                            println("TARIF USER = $tarifUser")
+                                        }
+                                        DataStoreUtil.saveOnboardingCompleted(context, true) // Fixed function name
                                         onFinish()
                                     } catch (e: Exception) {
-                                        scope.launch {
-                                            snackbarHostState.showSnackbar("Gagal menyimpan data: ${e.message}")
-                                        }
+                                        snackbarHostState.showSnackbar("Gagal menyimpan data: ${e.message}")
                                     } finally {
                                         isLoading = false
                                     }

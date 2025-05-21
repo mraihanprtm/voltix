@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -19,35 +20,30 @@ import androidx.navigation.compose.rememberNavController
 import com.example.voltix.R
 import com.example.voltix.util.DataStoreUtil
 import com.google.firebase.auth.FirebaseAuth
-import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
     val context = LocalContext.current
     val isOnboardingCompleted by DataStoreUtil.isOnboardingCompleted(context).collectAsState(initial = false)
-    val firebaseUser = FirebaseAuth.getInstance().currentUser
+    val authState by produceState(initialValue = FirebaseAuth.getInstance().currentUser) {
+        val authListener = FirebaseAuth.AuthStateListener { auth ->
+            value = auth.currentUser
+        }
+        FirebaseAuth.getInstance().addAuthStateListener(authListener)
+        awaitDispose { FirebaseAuth.getInstance().removeAuthStateListener(authListener) }
+    }
 
-    // Navigate based on onboarding status and Firebase auth
-    LaunchedEffect(isOnboardingCompleted, firebaseUser) {
-        if (firebaseUser == null) {
-            // Pengguna belum login, arahkan ke LoginScreen
-            navController.navigate(Screen.Login.route) {
-                popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                launchSingleTop = true
-            }
-        } else if (!isOnboardingCompleted) {
-            // Onboarding belum selesai, arahkan ke OnboardingScreen
-            navController.navigate(Screen.Onboarding.route) {
-                popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                launchSingleTop = true
-            }
-        } else {
-            // Onboarding selesai, arahkan ke Dashboard
-            navController.navigate(Screen.Dashboard.route) {
-                popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                launchSingleTop = true
-            }
+    // Navigate based on auth state and onboarding status
+    LaunchedEffect(authState, isOnboardingCompleted) {
+        val targetRoute = when {
+            authState == null -> Screen.Login.route
+            !isOnboardingCompleted -> Screen.Onboarding.route
+            else -> Screen.Dashboard.route
+        }
+        navController.navigate(targetRoute) {
+            popUpTo(0) { inclusive = true }
+            launchSingleTop = true
         }
     }
 
@@ -68,19 +64,19 @@ fun MainScreen() {
                     bottomItems.forEach { (screen, icon) ->
                         NavigationBarItem(
                             selected = currentRoute == screen.route ||
-                                    (currentRoute?.startsWith("${screen.route}/") == true),
+                                    (currentRoute?.startsWith("${screen.route}/") == true) ||
+                                    (screen == Screen.Rekomendasi && currentRoute?.startsWith("rekomendasi") == true),
                             onClick = {
-                                val targetRoute = if (screen == Screen.Rekomendasi) {
-                                    "rekomendasi"
-                                } else {
-                                    screen.route
+                                val targetRoute = when (screen) {
+                                    Screen.Rekomendasi -> Screen.Rekomendasi.createRoute()
+                                    else -> screen.route
                                 }
                                 navController.navigate(targetRoute) {
-                                    popUpTo(navController.graph.startDestinationId)
+                                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
                                     launchSingleTop = true
                                 }
                             },
-                            icon = { Icon(painter = painterResource(id = icon), contentDescription = screen.route) },
+                            icon = { Icon(painter = painterResource(id = icon), contentDescription = screen.title) },
                             label = { Text(screen.title.replaceFirstChar { it.uppercase() }) }
                         )
                     }
@@ -89,7 +85,7 @@ fun MainScreen() {
         }
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
-            AppNavHost(navController)
+            AppNavHost(navController = navController)
         }
     }
 }

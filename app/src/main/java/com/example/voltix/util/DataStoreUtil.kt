@@ -9,20 +9,21 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
-
 object DataStoreUtil {
-    private val ONBOARDING_COMPLETED_KEY = booleanPreferencesKey("onboarding_completed")
+    private const val PREFS_NAME = "voltix_prefs"
+    private const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
 
-    suspend fun setOnboardingCompleted(context: Context, completed: Boolean) {
-        context.dataStore.edit { preferences ->
-            preferences[ONBOARDING_COMPLETED_KEY] = completed
+    private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = PREFS_NAME)
+
+    fun isOnboardingCompleted(context: Context): Flow<Boolean> {
+        return context.dataStore.data.map { prefs ->
+            prefs[booleanPreferencesKey(KEY_ONBOARDING_COMPLETED)] ?: false
         }
     }
 
-    fun isOnboardingCompleted(context: Context): Flow<Boolean> {
-        return context.dataStore.data.map { preferences ->
-            preferences[ONBOARDING_COMPLETED_KEY] ?: false
+    suspend fun saveOnboardingCompleted(context: Context, completed: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[booleanPreferencesKey(KEY_ONBOARDING_COMPLETED)] = completed
         }
     }
 }

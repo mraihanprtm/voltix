@@ -2,21 +2,15 @@ package com.example.voltix.viewmodel
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.liveData
 import androidx.lifecycle.viewModelScope
 import com.example.voltix.data.entity.GolonganListrikDenganBiaya
+import com.example.voltix.data.entity.GolonganListrikEntity
 import com.example.voltix.data.entity.UserEntity
-import com.example.voltix.data.entity.UserPerangkatCrossRef
-import com.example.voltix.data.relations.UserWithPerangkat
 import com.example.voltix.data.repository.UserRepository
-import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-// UserViewModel.kt
 @HiltViewModel
 class UserViewModel @Inject constructor(
     private val repository: UserRepository
@@ -44,9 +38,6 @@ class UserViewModel @Inject constructor(
         }
     }
 
-
-
-
     suspend fun getUserByUid(uid: String): UserEntity? {
         return try {
             repository.getUserByUid(uid)
@@ -59,7 +50,7 @@ class UserViewModel @Inject constructor(
         try {
             repository.insertUser(user)
         } catch (e: Exception) {
-            // Handle error
+            Log.e("UserViewModel", "Error inserting user: ${e.message}")
         }
     }
 
@@ -67,11 +58,11 @@ class UserViewModel @Inject constructor(
         try {
             repository.updateUser(user)
         } catch (e: Exception) {
-            // Handle error
+            Log.e("UserViewModel", "Error updating user: ${e.message}")
         }
     }
 
-    suspend fun getUserGolonganListrik(userid: Int): Int{
+    suspend fun getUserGolonganListrik(userid: Int): Int {
         try {
             return repository.getUserGolonganListrik(userid)
         } catch (e: Exception) {
@@ -80,25 +71,40 @@ class UserViewModel @Inject constructor(
         }
     }
 
-    suspend fun getUserisPrabayar(userid: Int): Boolean{
+    suspend fun getUserisPrabayar(userid: Int): Boolean {
         try {
             return repository.getUserisPrabayar(userid)
-        } catch (e: Exception){
+        } catch (e: Exception) {
             return false
         }
     }
 
-    suspend fun getUserBiayaListrik(userid: Int): List<GolonganListrikDenganBiaya>{
+    suspend fun getUserBiayaListrik(userid: Int): List<GolonganListrikDenganBiaya> {
         return try {
             repository.getUserBiayaListrik(getUserGolonganListrik(userid))
-        } catch (e: Exception){
+        } catch (e: Exception) {
             emptyList()
         }
     }
 
-    suspend fun getUserTarif(userid: Int, usedKWH: Double): Int{
+    suspend fun getUserTarif(userid: Int, usedKWH: Double): Int {
         return repository.getUserTarif(userid, usedKWH)
     }
 
-
+    suspend fun getAllGolonganListrik(): List<GolonganListrikDenganBiaya> {
+        return try {
+            val result = repository.getAllGolonganListrik()
+            if (result.isSuccess) {
+                val list = result.getOrNull() ?: emptyList()
+                Log.d("UserViewModel", "Fetched all golongan listrik: $list")
+                list
+            } else {
+                Log.e("UserViewModel", "Error fetching all golongan listrik: ${result.exceptionOrNull()?.message}")
+                emptyList()
+            }
+        } catch (e: Exception) {
+            Log.e("UserViewModel", "Error fetching all golongan listrik: ${e.message}")
+            emptyList()
+        }
+    }
 }

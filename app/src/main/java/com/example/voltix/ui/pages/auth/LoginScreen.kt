@@ -17,100 +17,142 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.voltix.R
-import com.example.voltix.data.remote.response.AuthResponse
+import com.example.voltix.util.DataStoreUtil
 import com.example.voltix.viewmodel.auth.LoginViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
     loginViewModel: LoginViewModel = hiltViewModel(),
-    navigateToRegister: () -> Unit = {}
+    navigateToRegister: () -> Unit = {},
+    onLoginSuccess: () -> Unit = {} // Callback for successful login
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var resetEmail by remember { mutableStateOf("") }
     var showResetDialog by remember { mutableStateOf(false) }
 
     val loginState by loginViewModel.loginState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(20.dp),
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text("Sign-in", style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Bold)
-        Text("Please fill the form to continue", style = MaterialTheme.typography.titleMedium)
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            placeholder = { Text("Email") },
-            leadingIcon = { Icon(Icons.Rounded.Email, contentDescription = null) },
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            placeholder = { Text("Password") },
-            leadingIcon = { Icon(Icons.Rounded.Lock, contentDescription = null) },
-            visualTransformation = PasswordVisualTransformation(),
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        TextButton(
-            onClick = { showResetDialog = true },
-            modifier = Modifier.align(Alignment.End)
-        ) {
-            Text("Forgot Password?", color = MaterialTheme.colorScheme.primary)
+    // Handle login state changes
+    LaunchedEffect(loginState) {
+        // Adjust this logic based on the actual structure of LoginViewModel.loginState
+        // This is a placeholder to check for success or error states
+        when (loginState) {
+            // Replace with the actual success state type from LoginViewModel
+            is LoginViewModel.LoginState.Success -> {
+                scope.launch {
+                    DataStoreUtil.saveOnboardingCompleted(context, false)
+                    onLoginSuccess()
+                }
+            }
+            // Replace with the actual error state type from LoginViewModel
+            is LoginViewModel.LoginState.Error -> {
+                scope.launch {
+                    val errorMessage = (loginState as LoginViewModel.LoginState.Error).message
+                    snackbarHostState.showSnackbar(errorMessage.toString())
+                }
+            }
+            else -> {
+                // Handle other states like Loading if applicable
+            }
         }
+    }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = { loginViewModel.loginWithEmail(email, password) },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Sign-in", fontWeight = FontWeight.Bold)
-        }
-
-        Box(
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { paddingValues ->
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp),
-            contentAlignment = Alignment.Center
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(20.dp),
+            verticalArrangement = Arrangement.Center
         ) {
-            Text("or continue with")
-        }
+            Text("Sign-in", style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Bold)
+            Text("Please fill the form to continue", style = MaterialTheme.typography.titleMedium)
 
-        OutlinedButton(
-            onClick = { loginViewModel.loginWithGoogle() },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Image(painter = painterResource(id = R.drawable.google), contentDescription = null, modifier = Modifier.size(36.dp))
-            Spacer(modifier = Modifier.width(6.dp))
-            Text("Sign-in with Google", fontWeight = FontWeight.Bold)
-        }
+            Spacer(modifier = Modifier.height(32.dp))
 
-        Spacer(modifier = Modifier.height(16.dp))
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                placeholder = { Text("Email") },
+                leadingIcon = { Icon(Icons.Rounded.Email, contentDescription = null) },
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        TextButton(
-            onClick = navigateToRegister,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        ) {
-            Text("Don't have an account? Register")
-        }
+            Spacer(modifier = Modifier.height(16.dp))
 
-        if (loginState is AuthResponse.Error) {
-            Text((loginState as AuthResponse.Error).message, color = MaterialTheme.colorScheme.error)
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                placeholder = { Text("Password") },
+                leadingIcon = { Icon(Icons.Rounded.Lock, contentDescription = null) },
+                visualTransformation = PasswordVisualTransformation(),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            TextButton(
+                onClick = { showResetDialog = true },
+                modifier = Modifier.align(Alignment.End)
+            ) {
+                Text("Forgot Password?", color = MaterialTheme.colorScheme.primary)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = {
+                    if (email.isEmpty() || password.isEmpty()) {
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Please enter both email and password")
+                        }
+                    } else {
+                        loginViewModel.loginWithEmail(email, password)
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = email.isNotEmpty() && password.isNotEmpty() // Disable button if fields are empty
+            ) {
+                Text("Sign-in", fontWeight = FontWeight.Bold)
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("or continue with")
+            }
+
+            OutlinedButton(
+                onClick = { loginViewModel.loginWithGoogle() },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Image(painter = painterResource(id = R.drawable.google), contentDescription = null, modifier = Modifier.size(36.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Sign-in with Google", fontWeight = FontWeight.Bold)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            TextButton(
+                onClick = navigateToRegister,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            ) {
+                Text("Don't have an account? Register")
+            }
+
+            // Removed the direct error text here since it's now handled via snackbar
         }
     }
 

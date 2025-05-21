@@ -16,33 +16,59 @@ class LoginViewModel @Inject constructor(
     private val authManager: AuthManager
 ) : ViewModel() {
 
-    private val _loginState = MutableStateFlow<AuthResponse?>(null)
-    val loginState: StateFlow<AuthResponse?> = _loginState
+    sealed class LoginState {
+        object Idle : LoginState()
+        object Loading : LoginState()
+        object Success : LoginState()
+        data class Error(val message: String?) : LoginState()
+    }
+
+    private val _loginState = MutableStateFlow<LoginState>(LoginState.Idle)
+    val loginState: StateFlow<LoginState> = _loginState
 
     fun loginWithEmail(email: String, password: String) {
         viewModelScope.launch {
+            _loginState.value = LoginState.Loading
             authManager.loginWithEmail(email, password)
-                .collectLatest {
-                    _loginState.value = it
+                .collectLatest { authResponse ->
+                    _loginState.value = when (authResponse) {
+                        is AuthResponse.Success -> LoginState.Success
+                        is AuthResponse.Error -> LoginState.Error(authResponse.message)
+                        else -> LoginState.Error("Unexpected response")
+                    }
                 }
         }
     }
 
     fun loginWithGoogle() {
         viewModelScope.launch {
+            _loginState.value = LoginState.Loading
             authManager.signInWithGoogle()
-                .collectLatest {
-                    _loginState.value = it
+                .collectLatest { authResponse ->
+                    _loginState.value = when (authResponse) {
+                        is AuthResponse.Success -> LoginState.Success
+                        is AuthResponse.Error -> LoginState.Error(authResponse.message)
+                        else -> LoginState.Error("Unexpected response")
+                    }
                 }
         }
     }
 
     fun sendPasswordResetEmail(email: String) {
         viewModelScope.launch {
+            _loginState.value = LoginState.Loading
             authManager.sendPasswordResetEmail(email)
-                .collectLatest {
-                    _loginState.value = it
+                .collectLatest { authResponse ->
+                    _loginState.value = when (authResponse) {
+                        is AuthResponse.Success -> LoginState.Success
+                        is AuthResponse.Error -> LoginState.Error(authResponse.message)
+                        else -> LoginState.Error("Unexpected response")
+                    }
                 }
         }
+    }
+
+    fun resetLoginState() {
+        _loginState.value = LoginState.Idle
     }
 }
