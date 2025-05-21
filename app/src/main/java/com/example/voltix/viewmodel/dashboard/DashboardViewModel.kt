@@ -1,9 +1,12 @@
 package com.example.voltix.viewmodel.dashboard
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.voltix.data.repository.DashboardData
 import com.example.voltix.data.repository.DashboardRepository
+import com.example.voltix.data.repository.SimulationRepository
+import com.example.voltix.data.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +20,8 @@ enum class TimeRange {
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
-    private val repository: DashboardRepository
+    private val repository: SimulationRepository,
+    private val userRepository: UserRepository
 ) : ViewModel() {
     private val _dashboardData = MutableStateFlow<DashboardData?>(null)
     val dashboardData: StateFlow<DashboardData?> = _dashboardData.asStateFlow()
@@ -36,18 +40,28 @@ class DashboardViewModel @Inject constructor(
 
     private fun loadDashboardData() {
         viewModelScope.launch {
-            repository.getDashboardData().collect { data ->
+            val result = userRepository.getCurrentUser()
+            val user = result.getOrNull()
+
+            if (user == null) {
+                // Handle jika user tidak ditemukan
+                Log.e("DashboardViewModel", "User not logged in or data unavailable")
+                return@launch
+            }
+
+
+            repository.getDashboardData(user.id).let { data ->
                 val scaledData = when (_timeRange.value) {
                     TimeRange.DAILY -> data
                     TimeRange.MONTHLY -> data.copy(
                         totalPower = data.totalPower * 30.42f,
                         totalCost = data.totalCost * 30.42f,
-                        hourlyPower = data.hourlyPower.map { it * 30.42f}
+                        hourlyPower = data.hourlyPower.map { it * 30.42f }
                     )
                     TimeRange.YEARLY -> data.copy(
-                        totalPower = data.totalPower * 365.25f, // Wh to kWh
+                        totalPower = data.totalPower * 365.25f,
                         totalCost = data.totalCost * 365.25f,
-                        hourlyPower = data.hourlyPower.map { it * 365.25f}
+                        hourlyPower = data.hourlyPower.map { it * 365.25f }
                     )
                 }
                 _dashboardData.value = scaledData

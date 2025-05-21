@@ -195,16 +195,28 @@ class UserRepository @Inject constructor(
     }
 
     suspend fun getUserTarif(id: Int, usedKWH: Double): Int {
-        var isPrabayar = getUserisPrabayar(id)
+        val isPrabayar = getUserisPrabayar(id)
         var biayaListrik = getUserBiayaListrik(id)
-        biayaListrik = biayaListrik.reversed()
-        val golonganTarif = biayaListrik.firstOrNull { usedKWH > it.minKWH }
-        if (isPrabayar){
-            Log.d("DEBUG", "Biaya Tarif Listrik = ${golonganTarif!!.biayaPrabayar}")
-            return golonganTarif.biayaPrabayar
-        } else {
-            Log.d("DEBUG", "Biaya Tarif Listrik = ${golonganTarif!!.biayaPrabayar}")
-            return golonganTarif.biayaReguler
+        biayaListrik = biayaListrik.asReversed()
+        val golonganTarif = biayaListrik.firstOrNull { usedKWH >= it.minKWH }
+
+        if (golonganTarif == null) {
+            Log.e("ERROR", "Tidak ada golongan tarif yang sesuai untuk KWH: $usedKWH")
+            throw IllegalStateException("Tidak ditemukan golongan tarif yang sesuai.")
         }
+
+        return if (isPrabayar) {
+            Log.d("DEBUG", "Biaya Tarif Listrik = ${golonganTarif.biayaPrabayar}")
+            golonganTarif.biayaPrabayar
+        } else {
+            Log.d("DEBUG", "Biaya Tarif Listrik = ${golonganTarif.biayaReguler}")
+            golonganTarif.biayaReguler
+        }
+    }
+
+    suspend fun getUserBatasDaya(id: Int): Int{
+        val userGolonganListrik = getUserBiayaListrik(id)
+        var batasDaya = userGolonganListrik.firstOrNull()!!.batasDaya
+        return batasDaya
     }
 }

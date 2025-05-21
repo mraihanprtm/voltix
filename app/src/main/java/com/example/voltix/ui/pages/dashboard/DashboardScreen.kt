@@ -32,6 +32,7 @@ import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.voltix.R
 import com.example.voltix.data.repository.DashboardData
+import com.example.voltix.data.repository.SimulationRepository
 import com.example.voltix.ui.component.LoadingAnimationSection
 import com.example.voltix.viewmodel.dashboard.DashboardViewModel
 import com.example.voltix.viewmodel.dashboard.TimeRange

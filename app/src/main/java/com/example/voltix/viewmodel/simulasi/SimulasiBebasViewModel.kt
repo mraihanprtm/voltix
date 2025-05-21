@@ -105,6 +105,30 @@ class SimulasiBebasViewModel @Inject constructor(
         Log.d("SimulasiBebasViewModel", "Time range set to: $range")
     }
 
+    private fun loadBatasDayaPengguna() {
+        viewModelScope.launch {
+            try {
+                val firebaseUid = FirebaseAuth.getInstance().currentUser?.uid
+                if (firebaseUid != null) {
+                    val currentUser = userRepository.getUserByUid(firebaseUid)
+                    if (currentUser != null) {
+                        batasDayaPengguna = currentUser.jenisListrik
+                        val besaranDaya = repository.getTotalPower().toDouble()
+                        val tarifFromUser = userRepository.getUserTarif(currentUser.id, besaranDaya)
+                        hargaPerKWh = tarifFromUser.toDouble()
+
+                        Log.d("SimulasiBebasViewModel", "Tarif: $hargaPerKWh")
+                    }
+                }
+                updateMelebihiDaya(_devices.value ?: emptyList())
+            } catch (e: Exception) {
+                Log.e("SimulasiBebasViewModel", "Error loading user data", e)
+                updateMelebihiDaya(_devices.value ?: emptyList())
+            }
+        }
+    }
+
+
     private fun updateMelebihiDaya(devices: List<SimulationDeviceEntity>) {
         var totalPower = 0.0 // Wh for daily, kWh for monthly/yearly
         val timeRange = _timeRange.value
@@ -145,44 +169,8 @@ class SimulasiBebasViewModel @Inject constructor(
             TimeRange.MONTHLY -> _totalDaya.value > batasDayaPengguna
             TimeRange.YEARLY -> _totalDaya.value > batasDayaPengguna
         }
-
-        Log.d(
-            "SimulasiBebasViewModel",
-            "TimeRange: $timeRange, Total Power: $totalPower, Biaya: ${_biayaListrik.value}, Melebihi: ${_melebihiDaya.value}"
-        )
     }
 
-    private fun loadBatasDayaPengguna() {
-        viewModelScope.launch {
-            try {
-                val userId = FirebaseAuth.getInstance().currentUser?.uid
-                Log.d("SimulasiBebasViewModel", "Current User ID: $userId")
-                if (userId != null) {
-                    val currentUser = userRepository.getUserByUid(userId)
-                    Log.d("SimulasiBebasViewModel", "Current User Data: $currentUser")
-                    if (currentUser != null) {
-                        batasDayaPengguna = currentUser.jenisListrik
-                        // Assuming jenisListrik is the power limit in Watts; adjust hargaPerKWh if needed
-                        hargaPerKWh = when (currentUser.jenisListrik) {
-                            900 -> 1352.0 // Example: PLN R-1/900VA
-                            1300 -> 1444.70 // PLN R-1/1300VA
-                            2200 -> 1444.70 // PLN R-1/2200VA
-                            else -> 1444.70 // Default
-                        }
-                        Log.d("SimulasiBebasViewModel", "Batas Daya: $batasDayaPengguna, Harga/kWh: $hargaPerKWh")
-                    } else {
-                        Log.w("SimulasiBebasViewModel", "User data not found for ID: $userId")
-                    }
-                } else {
-                    Log.w("SimulasiBebasViewModel", "No user is currently logged in")
-                }
-                updateMelebihiDaya(_devices.value ?: emptyList())
-            } catch (e: Exception) {
-                Log.e("SimulasiBebasViewModel", "Error loading user data", e)
-                updateMelebihiDaya(_devices.value ?: emptyList())
-            }
-        }
-    }
 
     fun startSimulation(name: String) {
         viewModelScope.launch {
