@@ -489,7 +489,7 @@ fun PerangkatCard(
                             )
                             PerangkatDetailRow(
                                 label = "Durasi Pemakaian",
-                                value = "$durasiPemakaian jam",
+                                value = String.format("%.2f jam", durasiPemakaian),
                                 iconResource = R.drawable.ic_fa_clock
                             )
                             PerangkatDetailRow(

@@ -46,7 +46,7 @@ data class OnboardingPage(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OnboardingScreen(
-    onFinish: () -> Unit, // Changed to a non-composable callback
+    onFinish: () -> Unit,
     viewModel: PerangkatViewModel = hiltViewModel(),
     userViewModel: UserViewModel = hiltViewModel(),
     golonganListrikViewModel: GolonganListrikViewModel = hiltViewModel()
@@ -83,7 +83,6 @@ fun OnboardingScreen(
 
     var selectedJenisListrik by remember { mutableStateOf<GolonganListrikEntity?>(null) }
 
-    // Update selected after data is loaded
     LaunchedEffect(jenisListrikList) {
         if (jenisListrikList.isNotEmpty()) {
             selectedJenisListrik = jenisListrikList[0]
@@ -128,20 +127,21 @@ fun OnboardingScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(horizontal = 32.dp, vertical = 16.dp),
+                            .padding(horizontal = 16.dp, vertical = 16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Lottie Animation dengan ukuran responsif
+                        // Lottie Animation with controlled size (smaller on page 3)
                         val composition by rememberLottieComposition(
                             LottieCompositionSpec.RawRes(pages[page].lottieRes)
                         )
+                        val lottieSize = if (page == 2) screenWidth * 0.3f else screenWidth * 0.6f // Reduced to 30% on page 3
                         LottieAnimation(
                             composition = composition,
                             iterations = LottieConstants.IterateForever,
                             modifier = Modifier
-                                .size(width = screenWidth * 0.8f, height = screenWidth * 0.8f)
-                                .padding(bottom = 24.dp),
+                                .size(width = lottieSize, height = lottieSize)
+                                .padding(bottom = 16.dp),
                         )
 
                         // Title
@@ -156,23 +156,30 @@ fun OnboardingScreen(
                         )
 
                         // Description
-                        Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = pages[page].description,
                             style = MaterialTheme.typography.bodyLarge.copy(
                                 fontSize = 16.sp
                             ),
                             textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                            modifier = Modifier.padding(horizontal = 16.dp)
                         )
 
-                        // Jenis Listrik Dropdown (hanya di halaman terakhir)
+                        // Jenis Listrik Dropdown and Radio Buttons (only on the last page)
                         if (page == pages.size - 1) {
+                            Text(
+                                text = "Pilih Jenis Pembayaran",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Medium
+                                ),
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
                             jenisPembayaran.forEach { jenis ->
                                 Row(
                                     Modifier
                                         .fillMaxWidth()
-                                        .height(56.dp)
+                                        .height(35.dp)
                                         .selectable(
                                             selected = (jenis == selectedOption),
                                             onClick = { onOptionSelected(jenis) },
@@ -193,13 +200,19 @@ fun OnboardingScreen(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(24.dp))
+                            Text(
+                                text = "Pilih Jenis Listrik",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Medium
+                                ),
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
                             ExposedDropdownMenuBox(
                                 expanded = expanded,
                                 onExpandedChange = { expanded = !expanded }
                             ) {
                                 OutlinedTextField(
-                                    value = "${selectedJenisListrik?.golonganTarif} ${selectedJenisListrik?.batasDaya} VA",
+                                    value = selectedJenisListrik?.let { "${it.golonganTarif} ${it.batasDaya} VA" } ?: "",
                                     onValueChange = {},
                                     readOnly = true,
                                     label = { Text("Jenis Listrik") },
@@ -272,7 +285,7 @@ fun OnboardingScreen(
                     TextButton(
                         onClick = {
                             scope.launch {
-                                DataStoreUtil.saveOnboardingCompleted(context, true) // Fixed function name
+                                DataStoreUtil.saveOnboardingCompleted(context, true)
                                 onFinish()
                             }
                         }
@@ -318,7 +331,7 @@ fun OnboardingScreen(
                                             val tarifUser = userViewModel.getUserTarif(currentUserId, 35.0)
                                             println("TARIF USER = $tarifUser")
                                         }
-                                        DataStoreUtil.saveOnboardingCompleted(context, true) // Fixed function name
+                                        DataStoreUtil.saveOnboardingCompleted(context, true)
                                         onFinish()
                                     } catch (e: Exception) {
                                         snackbarHostState.showSnackbar("Gagal menyimpan data: ${e.message}")

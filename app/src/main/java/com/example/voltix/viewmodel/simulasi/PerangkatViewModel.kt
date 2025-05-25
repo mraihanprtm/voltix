@@ -233,17 +233,24 @@ class PerangkatViewModel @Inject constructor(
                     )
                     repository.updatePerangkat(updatedPerangkat)
 
-                    // Update atau hapus LampuEntity
+                    // Update or create LampuEntity
                     if (kategori == jenis.Lampu && jenisLampu != null && lumen != null) {
                         val existingLampu = repository.getLampuByPerangkatId(currentPerangkat.id)
-                        val updatedLampu = LampuEntity(
-                            id = existingLampu?.id ?: 0,
+                        val lampuEntity = LampuEntity(
+                            id = existingLampu?.id ?: 0, // Let Room handle ID for new entities
                             perangkatId = currentPerangkat.id,
                             jenis = jenisLampu,
                             lumen = lumen
                         )
-                        repository.updateLampu(updatedLampu)
+                        if (existingLampu == null) {
+                            Log.d("PerangkatViewModel", "Inserting new LampuEntity: perangkatId=${currentPerangkat.id}, jenis=$jenisLampu, lumen=$lumen")
+                            repository.insertLampu(lampuEntity) // Insert new LampuEntity
+                        } else {
+                            Log.d("PerangkatViewModel", "Updating LampuEntity: perangkatId=${currentPerangkat.id}, jenis=$jenisLampu, lumen=$lumen")
+                            repository.updateLampu(lampuEntity) // Update existing LampuEntity
+                        }
                     } else {
+                        Log.d("PerangkatViewModel", "Deleting LampuEntity for perangkatId=${currentPerangkat.id}")
                         repository.deleteLampuByPerangkatId(currentPerangkat.id)
                     }
 
