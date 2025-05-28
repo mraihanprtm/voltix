@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 2,
-    "identityHash": "eea7f8a7f6d218d33f7d8c1e183528dd",
+    "identityHash": "98b418a4d4f41fc3768c3dd71410ead4",
     "entities": [
       {
         "tableName": "users",
@@ -112,12 +112,18 @@
       },
       {
         "tableName": "ruangan",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `namaRuangan` TEXT NOT NULL, `panjangRuangan` REAL NOT NULL, `lebarRuangan` REAL NOT NULL, `jenisRuangan` TEXT NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `userFirebaseUid` TEXT NOT NULL, `namaRuangan` TEXT NOT NULL, `panjangRuangan` REAL NOT NULL, `lebarRuangan` REAL NOT NULL, `jenisRuangan` TEXT NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
             "columnName": "id",
             "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userFirebaseUid",
+            "columnName": "userFirebaseUid",
+            "affinity": "TEXT",
             "notNull": true
           },
           {
@@ -151,7 +157,17 @@
             "id"
           ]
         },
-        "indices": [],
+        "indices": [
+          {
+            "name": "index_ruangan_userFirebaseUid",
+            "unique": false,
+            "columnNames": [
+              "userFirebaseUid"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ruangan_userFirebaseUid` ON `${TABLE_NAME}` (`userFirebaseUid`)"
+          }
+        ],
         "foreignKeys": []
       },
       {
@@ -691,7 +707,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'eea7f8a7f6d218d33f7d8c1e183528dd')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '98b418a4d4f41fc3768c3dd71410ead4')"
     ]
   }
 }

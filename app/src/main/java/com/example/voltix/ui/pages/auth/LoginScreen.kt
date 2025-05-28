@@ -1,5 +1,9 @@
 package com.example.voltix.ui.pages.auth
 
+import android.app.Activity
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,15 +21,23 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.voltix.R
-import com.example.voltix.util.DataStoreUtil
 import com.example.voltix.viewmodel.auth.LoginViewModel
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
+/**
+ * Composable untuk layar Login.
+ * Menangani input pengguna, interaksi dengan ViewModel, dan navigasi.
+ */
 @Composable
 fun LoginScreen(
     loginViewModel: LoginViewModel = hiltViewModel(),
     navigateToRegister: () -> Unit = {},
-    onLoginSuccess: () -> Unit = {} // Callback for successful login
+    onLoginSuccess: () -> Unit = {} // Callback untuk navigasi setelah login sukses
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -37,28 +49,72 @@ fun LoginScreen(
     val loginState by loginViewModel.loginState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Handle login state changes
+    // --- Google Sign-In Setup ---
+    val googleSignInClient = remember {
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            // web_client_id harus dari Google Cloud Console, tipe "Web application"
+            .requestIdToken(context.getString(R.string.web_client_id))
+            .requestEmail()
+            .build()
+        GoogleSignIn.getClient(context, gso)
+    }
+
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        Log.d("LoginScreen", "Google Sign-In Activity Result: resultCode=${result.resultCode}")
+        if (result.resultCode == Activity.RESULT_OK) {
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            try {
+                val account: GoogleSignInAccount? = task.getResult(ApiException::class.java)
+                if (account?.idToken != null) {
+                    Log.d("LoginScreen", "Google Sign-In: idToken didapatkan, memproses dengan ViewModel.")
+                    loginViewModel.processGoogleSignInToken(account.idToken!!)
+                } else {
+                    scope.launch { snackbarHostState.showSnackbar("Gagal mendapatkan token Google.") }
+                    Log.e("LoginScreen", "Google Sign-In: idToken is null after successful result.")
+                }
+            } catch (e: ApiException) {
+                scope.launch { snackbarHostState.showSnackbar("Login Google gagal: ${e.localizedMessage}") }
+                Log.e("LoginScreen", "Google Sign-In failed with ApiException: statusCode=${e.statusCode}, message=${e.message}", e)
+            }
+        } else {
+            // resultCode=0 berarti pengguna membatalkan atau ada masalah awal
+            Log.w("LoginScreen", "Google Sign-In dibatalkan atau gagal: resultCode=${result.resultCode}")
+            if (result.resultCode != Activity.RESULT_CANCELED) { // Tampilkan pesan hanya jika bukan pembatalan eksplisit
+                scope.launch { snackbarHostState.showSnackbar("Login Google dibatalkan atau gagal.") }
+            }
+        }
+    }
+    // --- Akhir Google Sign-In Setup ---
+
+    // Handle perubahan state login dari ViewModel (untuk navigasi dan error utama)
     LaunchedEffect(loginState) {
-        // Adjust this logic based on the actual structure of LoginViewModel.loginState
-        // This is a placeholder to check for success or error states
-        when (loginState) {
-            // Replace with the actual success state type from LoginViewModel
+        Log.d("LoginScreen", "LaunchedEffect(loginState): Current state is $loginState")
+        when (val currentState = loginState) {
             is LoginViewModel.LoginState.Success -> {
-                scope.launch {
-                    DataStoreUtil.saveOnboardingCompleted(context, false)
-                    onLoginSuccess()
-                }
+                Log.i("LoginScreen", "LoginState.Success: Memanggil onLoginSuccess().")
+                onLoginSuccess() // Panggil callback navigasi HANYA untuk login berhasil
             }
-            // Replace with the actual error state type from LoginViewModel
             is LoginViewModel.LoginState.Error -> {
-                scope.launch {
-                    val errorMessage = (loginState as LoginViewModel.LoginState.Error).message
-                    snackbarHostState.showSnackbar(errorMessage.toString())
+                Log.e("LoginScreen", "LoginState.Error: Menampilkan snackbar: ${currentState.message}")
+                if (currentState.message != null) {
+                    scope.launch {
+                        snackbarHostState.showSnackbar(currentState.message)
+                        loginViewModel.resetLoginState() // Reset state setelah error ditampilkan
+                    }
                 }
             }
-            else -> {
-                // Handle other states like Loading if applicable
-            }
+            // Kasus Loading dan Idle tidak perlu navigasi langsung dari sini
+            else -> {}
+        }
+    }
+
+    // Handle UI events/messages dari ViewModel (untuk Snackbar, seperti pesan reset password)
+    LaunchedEffect(Unit) {
+        loginViewModel.uiEvents.collectLatest { message ->
+            Log.d("LoginScreen", "uiEvents: Menampilkan snackbar: $message")
+            snackbarHostState.showSnackbar(message)
         }
     }
 
@@ -111,18 +167,23 @@ fun LoginScreen(
 
             Button(
                 onClick = {
-                    if (email.isEmpty() || password.isEmpty()) {
-                        scope.launch {
-                            snackbarHostState.showSnackbar("Please enter both email and password")
-                        }
-                    } else {
+                    if (email.isNotBlank() && password.isNotBlank()) {
+                        Log.d("LoginScreen", "Attempting email/password login.")
                         loginViewModel.loginWithEmail(email, password)
+                    } else {
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Email dan password tidak boleh kosong.")
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = email.isNotEmpty() && password.isNotEmpty() // Disable button if fields are empty
+                enabled = loginState !is LoginViewModel.LoginState.Loading && email.isNotEmpty() && password.isNotEmpty()
             ) {
-                Text("Sign-in", fontWeight = FontWeight.Bold)
+                if (loginState is LoginViewModel.LoginState.Loading && (email.isNotEmpty() || password.isNotEmpty())) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                } else {
+                    Text("Sign-in", fontWeight = FontWeight.Bold)
+                }
             }
 
             Box(
@@ -135,8 +196,21 @@ fun LoginScreen(
             }
 
             OutlinedButton(
-                onClick = { loginViewModel.loginWithGoogle() },
-                modifier = Modifier.fillMaxWidth()
+                onClick = {
+                    try {
+                        val signInIntent = googleSignInClient.signInIntent
+                        Log.d("LoginScreen", "Google SignInIntent berhasil dibuat. Meluncurkan activity Google Sign-In...")
+                        Log.d("LoginScreen", "Requesting ID token for server client ID: ${context.getString(R.string.web_client_id)}")
+                        googleSignInLauncher.launch(signInIntent)
+                    } catch (e: Exception) {
+                        Log.e("LoginScreen", "Gagal membuat atau meluncurkan Google SignInIntent.", e)
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Tidak dapat memulai proses login Google.")
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = loginState !is LoginViewModel.LoginState.Loading
             ) {
                 Image(painter = painterResource(id = R.drawable.google), contentDescription = null, modifier = Modifier.size(36.dp))
                 Spacer(modifier = Modifier.width(6.dp))
@@ -151,8 +225,6 @@ fun LoginScreen(
             ) {
                 Text("Don't have an account? Register")
             }
-
-            // Removed the direct error text here since it's now handled via snackbar
         }
     }
 
@@ -177,8 +249,11 @@ fun LoginScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        loginViewModel.sendPasswordResetEmail(resetEmail)
-                        showResetDialog = false
+                        if(resetEmail.isNotBlank()){
+                            Log.d("LoginScreen", "Sending password reset email to $resetEmail.")
+                            loginViewModel.sendPasswordResetEmail(resetEmail)
+                        }
+                        showResetDialog = false // Tutup dialog setelah memanggil fungsi ViewModel
                     }
                 ) {
                     Text("Send")

@@ -1,4 +1,4 @@
-package com.example.voltix.di
+package com.example.voltix.di // Pastikan package ini sesuai dengan lokasi file Anda
 
 import com.google.firebase.auth.FirebaseAuth
 import dagger.Module
@@ -8,10 +8,12 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 @Module
-@InstallIn(SingletonComponent::class)
+@InstallIn(SingletonComponent::class) // Menyediakan dependensi selama lifecycle aplikasi (singleton)
 object FirebaseModule {
 
     @Provides
-    @Singleton
-    fun provideFirebaseAuth(): FirebaseAuth = FirebaseAuth.getInstance()
+    @Singleton // Membuat instance FirebaseAuth sebagai singleton
+    fun provideFirebaseAuth(): FirebaseAuth {
+        return FirebaseAuth.getInstance() // Cara standar untuk mendapatkan instance FirebaseAuth
+    }
 }

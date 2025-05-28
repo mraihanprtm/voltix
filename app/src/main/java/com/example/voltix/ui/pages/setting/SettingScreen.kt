@@ -1,5 +1,6 @@
-package com.example.voltix.ui.pages.setting
+package com.example.voltix.ui.pages.setting // Pastikan package ini benar
 
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -21,267 +22,247 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import com.example.voltix.data.entity.GolonganListrikDenganBiaya
-import com.example.voltix.data.entity.UserEntity
+import com.example.voltix.data.entity.GolonganListrikDenganBiaya // Anda menggunakan ini, pastikan ini adalah data yang benar
+import com.example.voltix.data.entity.GolonganListrikEntity // Untuk pilihan dropdown
+// import com.example.voltix.data.entity.UserEntity // Kita akan pakai UserData dari backend
+import com.example.voltix.data.remote.dto.UserData // DTO untuk data user dari backend
 import com.example.voltix.ui.component.LoadingAnimationSection
 import com.example.voltix.viewmodel.UserViewModel
-import com.google.firebase.auth.FirebaseAuth
+import com.example.voltix.viewmodel.ProfileUpdateState // Import sealed class state
+import com.example.voltix.viewmodel.simulasi.GolonganListrikViewModel
+// FirebaseAuth tidak diakses langsung untuk update, user sudah terautentikasi via token Laravel
+// import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
 @Composable
 fun SettingScreen(
-    navController: NavHostController,
-    userViewModel: UserViewModel,
+    navController: NavHostController, // Untuk navigasi jika login diperlukan
+    userViewModel: UserViewModel = hiltViewModel(),
+    golonganListrikViewModel: GolonganListrikViewModel = hiltViewModel(), // Untuk daftar golongan
     onLogOutClick: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    var isVisible by remember { mutableStateOf(true) }
-    var showDialog by remember { mutableStateOf(false) }
-    var selectedJenisListrik by remember { mutableStateOf<GolonganListrikDenganBiaya?>(null) }
-    var selectedOption by remember { mutableStateOf("Prabayar") }
-    var jenisListrikList by remember { mutableStateOf<List<GolonganListrikDenganBiaya>>(emptyList()) }
-    var currentUser by remember { mutableStateOf<UserEntity?>(null) }
-    var isLoading by remember { mutableStateOf(true) }
+    val context = LocalContext.current // Untuk Snackbar atau Toast
     val snackbarHostState = remember { SnackbarHostState() }
     val scrollState = rememberScrollState()
 
-    // Load user and jenisListrikList
+    // Observasi data user termutakhir dari backend
+    val currentUserDataFromBackend by userViewModel.currentUserFromBackend.collectAsState()
+    // Observasi state update profil
+    val profileUpdateState by userViewModel.profileUpdateState.collectAsState()
+
+    var showJenisListrikDialog by remember { mutableStateOf(false) }
+    var jenisListrikList by remember { mutableStateOf<List<GolonganListrikEntity>>(emptyList()) }
+
+    // State lokal untuk UI, diinisialisasi dari currentUserDataFromBackend
+    var selectedGolonganEntity by remember { mutableStateOf<GolonganListrikEntity?>(null) }
+    var selectedPembayaranOption by remember { mutableStateOf("Pascabayar") } // Default
+
+    // Load data awal saat screen pertama kali muncul atau saat currentUserDataFromBackend berubah
     LaunchedEffect(Unit) {
-        currentUser = userViewModel.getCurrentUser()
-        if (currentUser == null) {
-            snackbarHostState.showSnackbar("Silakan login terlebih dahulu")
-            navController.navigate("login") { // Replace with Screen.Login.route
-                popUpTo(0) { inclusive = true }
+        userViewModel.refreshUserProfileFromBackend() // Ambil data user terbaru dari backend
+        // Ambil daftar golongan listrik (ini masih dari lokal, bisa disesuaikan jika dari backend)
+        jenisListrikList = golonganListrikViewModel.getAllGolonganListrik()
+        Log.d("SettingScreen", "Jenis Listrik List (local): $jenisListrikList")
+    }
+
+    // Update UI state lokal ketika data user dari backend berubah atau daftar golongan listrik dimuat
+    LaunchedEffect(currentUserDataFromBackend, jenisListrikList) {
+        currentUserDataFromBackend?.let { user ->
+            Log.d("SettingScreen", "Current User Data from Backend: $user")
+            // Cocokkan jenis_listrik (nilai daya) dari backend dengan GolonganListrikEntity
+            selectedGolonganEntity = jenisListrikList.find { it.batasDaya == user.jenisListrik }
+            selectedPembayaranOption = if (user.isPrabayar == true) "Prabayar" else "Pascabayar"
+            Log.d("SettingScreen", "UI states updated: selectedGolongan=${selectedGolonganEntity?.batasDaya}, selectedPembayaran=$selectedPembayaranOption")
+        }
+    }
+
+    // Handle efek dari perubahan profileUpdateState (hasil panggilan API update)
+    LaunchedEffect(profileUpdateState) {
+        when (val state = profileUpdateState) {
+            is ProfileUpdateState.Success -> {
+                Log.i("SettingScreen", "Profile updated successfully on backend: ${state.updatedUserFromBackend}")
+                scope.launch {
+                    snackbarHostState.showSnackbar("Pengaturan berhasil diperbarui!")
+                    // Refresh data user setelah update sukses
+                    userViewModel.refreshUserProfileFromBackend()
+                    userViewModel.resetProfileUpdateState()
+                }
             }
-        } else {
-            jenisListrikList = userViewModel.getAllGolonganListrik()
-                .distinctBy { "${it.golonganTarif}-${it.batasDaya}-${it.isRTM}" }
-            if (jenisListrikList.isEmpty()) {
-                snackbarHostState.showSnackbar("Gagal memuat daftar Jenis Listrik")
+            is ProfileUpdateState.Error -> {
+                Log.e("SettingScreen", "Failed to update profile: ${state.message}")
+                scope.launch {
+                    snackbarHostState.showSnackbar("Gagal memperbarui pengaturan: ${state.message ?: "Error tidak diketahui"}")
+                    userViewModel.resetProfileUpdateState()
+                }
             }
-            currentUser?.let { user ->
-                selectedJenisListrik = jenisListrikList.find { it.idGolonganListrik == user.jenisListrik }
-                selectedOption = if (userViewModel.getUserisPrabayar(user.id ?: 0)) "Prabayar" else "Pascabayar"
+            is ProfileUpdateState.Loading -> {
+                Log.d("SettingScreen", "Profile update is Loading...")
             }
-            isLoading = false
+            is ProfileUpdateState.Idle -> {
+                // Initial state
+            }
+
+            else -> {
+                TODO()}
         }
     }
 
     Scaffold(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White),
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
-        if (isLoading) {
-            LoadingAnimationSection(isLoading)
-        } else if (currentUser == null) {
-            // Handled in LaunchedEffect
+        if (currentUserDataFromBackend == null && profileUpdateState !is ProfileUpdateState.Loading) {
+            // Tampilkan loading atau pesan jika data user belum ada (selain saat proses update)
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                if (profileUpdateState is ProfileUpdateState.Idle) { // Hanya tampilkan loading jika idle dan belum ada data
+                    CircularProgressIndicator()
+                } else if (profileUpdateState !is ProfileUpdateState.Loading){
+                    Text("Gagal memuat data pengguna. Silakan coba lagi.")
+                }
+            }
         } else {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
-                    .verticalScroll(scrollState),
+                modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 24.dp, vertical = 16.dp).verticalScroll(scrollState),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top
             ) {
-                AnimatedVisibility(
-                    visible = isVisible,
-                    enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
-                    exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut()
+                Text(
+                    "Pengaturan Akun",
+                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 28.sp),
+                    modifier = Modifier.padding(bottom = 24.dp)
+                )
+
+                // Jenis Listrik Card
+                CardSetting(
+                    title = "Kapasitas Listrik",
+                    description = selectedGolonganEntity?.let {
+                        "${it.golonganTarif} ${it.batasDaya} VA" + if (it.isRTM) " (RTM)" else ""
+                    } ?: (if (jenisListrikList.isEmpty()) "Memuat..." else "Pilih Kapasitas"),
+                    onClick = {
+                        if (jenisListrikList.isNotEmpty()) {
+                            showJenisListrikDialog = true
+                        } else {
+                            scope.launch { snackbarHostState.showSnackbar("Daftar jenis listrik belum termuat.")}
+                        }
+                    }
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Tipe Pembayaran Card
+                CardSetting(
+                    title = "Jenis Pembayaran",
+                    description = selectedPembayaranOption,
+                    onClick = { /* Klik pada Card tidak melakukan apa-apa, aksi di RadioButton */ }
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "Pengaturan",
-                            style = MaterialTheme.typography.headlineMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF1A237E),
-                                fontSize = 28.sp
-                            ),
-                            modifier = Modifier.padding(bottom = 24.dp)
-                        )
-                        // Jenis Listrik Selection Card
-                        CardSetting(
-                            title = "Jenis Listrik",
-                            description = selectedJenisListrik?.let {
-                                if (it.isRTM) "${it.golonganTarif} ${it.batasDaya} VA-RTM"
-                                else "${it.golonganTarif} ${it.batasDaya} VA"
-                            } ?: "Pilih Jenis Listrik",
-                            onClick = { if (jenisListrikList.isNotEmpty()) showDialog = true }
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        // Tipe Pembayaran Selection Card
-                        CardSetting(
-                            title = "Tipe Pembayaran",
-                            description = selectedOption,
-                            onClick = {}
-                        ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 0.dp, vertical = 8.dp), // Kurangi padding internal
+                        horizontalArrangement = Arrangement.SpaceAround // Sebar merata
+                    ) {
+                        listOf("Prabayar", "Pascabayar").forEach { option ->
                             Row(
+                                verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                listOf("Prabayar", "Pascabayar").forEach { option ->
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        RadioButton(
-                                            selected = selectedOption == option,
-                                            onClick = {
-                                                selectedOption = option
-                                                scope.launch {
-                                                    try {
-                                                        val firebaseUser = FirebaseAuth.getInstance().currentUser
-                                                        val userId = firebaseUser?.uid ?: return@launch
-                                                        val existingUser = userViewModel.getUserByUid(userId)
-                                                        val updatedUser = existingUser?.copy(
-                                                            isPrabayar = option == "Prabayar"
-                                                        ) ?: UserEntity(
-                                                            name = firebaseUser.displayName ?: "Guest User",
-                                                            email = firebaseUser.email ?: "guest@example.com",
-                                                            jenisListrik = selectedJenisListrik?.idGolonganListrik ?: 0,
-                                                            isPrabayar = option == "Prabayar",
-                                                            uid = userId
-                                                        )
-                                                        if (existingUser != null) {
-                                                            userViewModel.updateUser(updatedUser)
-                                                        } else {
-                                                            userViewModel.insertUser(updatedUser)
-                                                        }
-                                                        snackbarHostState.showSnackbar("Tipe Pembayaran berhasil diperbarui")
-                                                    } catch (e: Exception) {
-                                                        snackbarHostState.showSnackbar("Gagal memperbarui Tipe Pembayaran: ${e.message}")
-                                                    }
-                                                }
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable {
+                                        if (selectedPembayaranOption != option) {
+                                            val newIsPrabayar = option == "Prabayar"
+                                            val currentBatasDaya = selectedGolonganEntity?.batasDaya
+                                            if (currentBatasDaya != null) {
+                                                userViewModel.saveOnboardingChoices(currentBatasDaya, newIsPrabayar)
+                                            } else {
+                                                scope.launch { snackbarHostState.showSnackbar("Pilih kapasitas listrik terlebih dahulu.") }
                                             }
-                                        )
-                                        Text(
-                                            text = option,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            modifier = Modifier.padding(start = 8.dp)
-                                        )
+                                        }
                                     }
-                                }
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                RadioButton(
+                                    selected = selectedPembayaranOption == option,
+                                    onClick = {
+                                        if (selectedPembayaranOption != option) {
+                                            val newIsPrabayar = option == "Prabayar"
+                                            val currentBatasDaya = selectedGolonganEntity?.batasDaya
+                                            if (currentBatasDaya != null) {
+                                                userViewModel.saveOnboardingChoices(currentBatasDaya, newIsPrabayar)
+                                            } else {
+                                                scope.launch { snackbarHostState.showSnackbar("Pilih kapasitas listrik terlebih dahulu.") }
+                                            }
+                                        }
+                                    },
+                                    enabled = profileUpdateState !is ProfileUpdateState.Loading
+                                )
+                                Text(text = option, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(start = 8.dp))
                             }
                         }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        // Log-Out Card
-                        CardSetting(
-                            title = "Log-Out",
-                            description = "Keluar Akun",
-                            onClick = onLogOutClick
-                        )
                     }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Log-Out Card
+                CardSetting(
+                    title = "Log-Out",
+                    description = "Keluar dari akun Anda",
+                    onClick = {
+                        // Panggil fungsi logout dari AuthManager melalui ViewModel jika perlu interaksi backend (misal invalidate token server)
+                        // Untuk sekarang, onLogOutClick akan menangani Firebase sign out dan clear local token.
+                        onLogOutClick()
+                    }
+                )
+
+                // Tampilkan loading indicator jika sedang proses update
+                if (profileUpdateState is ProfileUpdateState.Loading) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    CircularProgressIndicator()
                 }
             }
         }
     }
 
-    // Dialog for Jenis Listrik Selection
-    if (showDialog) {
-        Dialog(
-            onDismissRequest = { showDialog = false }
-        ) {
+    // Dialog untuk memilih Jenis Listrik
+    if (showJenisListrikDialog) {
+        Dialog(onDismissRequest = { showJenisListrikDialog = false }) {
             Card(
-                modifier = Modifier
-                    .fillMaxWidth(0.9f)
-                    .padding(16.dp)
-                    .clip(RoundedCornerShape(16.dp)),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                modifier = Modifier.fillMaxWidth(0.9f).padding(16.dp).clip(RoundedCornerShape(16.dp)),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "Pilih Jenis Listrik",
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1A237E)
-                        ),
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
+                Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Pilih Kapasitas Listrik", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary), modifier = Modifier.padding(bottom = 16.dp))
                     if (jenisListrikList.isEmpty()) {
-                        Text(
-                            text = "Tidak ada opsi tersedia",
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(bottom = 16.dp)
-                        )
-                        Button(
-                            onClick = { showDialog = false },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Tutup")
-                        }
+                        Text("Memuat pilihan...", modifier = Modifier.padding(bottom = 16.dp))
                     } else {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(max = 500.dp)
-                                .verticalScroll(rememberScrollState())
-                        ) {
+                        Column(modifier = Modifier.fillMaxWidth().heightIn(max = 300.dp).verticalScroll(rememberScrollState())) {
                             jenisListrikList.forEach { option ->
                                 TextButton(
                                     onClick = {
-                                        selectedJenisListrik = option
-                                        showDialog = false
-                                        scope.launch {
-                                            try {
-                                                val firebaseUser = FirebaseAuth.getInstance().currentUser
-                                                val userId = firebaseUser?.uid ?: return@launch
-                                                val existingUser = userViewModel.getUserByUid(userId)
-                                                val updatedUser = existingUser?.copy(
-                                                    jenisListrik = option.idGolonganListrik,
-                                                    isPrabayar = selectedOption == "Prabayar"
-                                                ) ?: UserEntity(
-                                                    name = firebaseUser.displayName ?: "Guest User",
-                                                    email = firebaseUser.email ?: "guest@example.com",
-                                                    jenisListrik = option.idGolonganListrik,
-                                                    isPrabayar = selectedOption == "Prabayar",
-                                                    uid = userId
-                                                )
-                                                if (existingUser != null) {
-                                                    userViewModel.updateUser(updatedUser)
-                                                } else {
-                                                    userViewModel.insertUser(updatedUser)
-                                                }
-                                                snackbarHostState.showSnackbar("Jenis Listrik berhasil diperbarui")
-                                            } catch (e: Exception) {
-                                                snackbarHostState.showSnackbar("Gagal memperbarui Jenis Listrik: ${e.message}")
-                                            }
-                                        }
+                                        val currentIsPrabayar = selectedPembayaranOption == "Prabayar"
+                                        // Kirim nilai BATAS DAYA ke ViewModel
+                                        userViewModel.saveOnboardingChoices(option.batasDaya, currentIsPrabayar)
+                                        showJenisListrikDialog = false
                                     },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 4.dp)
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                    enabled = profileUpdateState !is ProfileUpdateState.Loading
                                 ) {
                                     Text(
-                                        text = if (option.isRTM) "${option.golonganTarif} ${option.batasDaya} VA-RTM"
-                                        else "${option.golonganTarif} ${option.batasDaya} VA",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = Color(0xFF1A237E)
+                                        text = "${option.golonganTarif} ${option.batasDaya} VA" + if (option.isRTM) " (RTM)" else "",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
                             }
                         }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(
-                            onClick = { showDialog = false },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Batal")
-                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = { showJenisListrikDialog = false }, modifier = Modifier.fillMaxWidth()) {
+                        Text("Batal")
                     }
                 }
             }
@@ -289,58 +270,38 @@ fun SettingScreen(
     }
 }
 
+// CardSetting Composable tetap sama seperti yang Anda berikan
 @Composable
 private fun CardSetting(
     title: String,
     description: String,
     onClick: () -> Unit,
-    content: @Composable () -> Unit = {}
+    content: @Composable () -> Unit = {} // Untuk konten tambahan seperti RadioButton
 ) {
+    // ... implementasi CardSetting Anda ...
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .clickable { onClick() }
-            .shadow(8.dp, RoundedCornerShape(16.dp)),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFF5F7FA)
-        ),
-        border = BorderStroke(2.dp, Color(0xFFE0E0E0))
+            .clickable(onClick = onClick) // Hanya clickable jika content kosong
+            .shadow(4.dp, RoundedCornerShape(16.dp)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF1A237E)
-                        )
-                    )
-                    Text(
-                        text = description,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            color = Color(0xFF424242)
-                        ),
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(title, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant))
+                    Text(description, style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)), modifier = Modifier.padding(top = 2.dp))
                 }
-                Icon(
-                    imageVector = Icons.Default.ArrowForward,
-                    contentDescription = null,
-                    tint = Color(0xFF3F51B5),
-                    modifier = Modifier.size(24.dp)
-                )
+                if (content == {}) { // Tampilkan ikon panah hanya jika tidak ada konten custom
+                    Icon(imageVector = Icons.Default.ArrowForward, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                }
             }
-            content()
+            if (content != {}) { // Jika ada konten custom, tampilkan di bawah
+                Spacer(modifier = Modifier.height(8.dp))
+                content()
+            }
         }
     }
 }

@@ -53,13 +53,14 @@ fun DashboardScreen(
     navController: NavHostController
 ) {
     val dashboardData by viewModel.dashboardData.collectAsState()
+    val currentUser by viewModel.currentUserProfile.collectAsState()
     val timeRange by viewModel.timeRange.collectAsState()
     val numberFormat = NumberFormat.getCurrencyInstance(Locale("id", "ID"))
 
     // Debug data loading
-    LaunchedEffect(dashboardData) {
-        dashboardData?.let { data ->
-            println("Dashboard: totalDevices = ${data.totalDevices}")
+    LaunchedEffect(currentUser) {
+        if (currentUser != null) { // Hanya load jika user ada & data dashboard belum ada
+            // DashboardViewModel.loadDashboardDataBasedOnUser akan dipicu oleh kolektor di init ViewModel
         }
     }
 

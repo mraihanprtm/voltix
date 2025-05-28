@@ -24,12 +24,13 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file("D:/DEV/Archive/VoltixKeystore/voltixkey.jks")
+            storeFile = file("D:/Kuliah/Semester 4/Proyek 4/voltixgithub/voltix/app/voltixkey.jks")
             storePassword = "admin123"
             keyAlias = "voltixkey"
             keyPassword = "admin123"
         }
     }
+
 
     buildTypes {
         getByName("release") {
@@ -68,6 +69,7 @@ dependencies {
     implementation(libs.androidx.runtime.livedata)
     implementation ("androidx.lifecycle:lifecycle-viewmodel-savedstate:2.6.1")
     implementation(libs.androidx.room.common.jvm)
+    implementation ("androidx.security:security-crypto:1.1.0-alpha06") // Cek versi terbaru
     val credentialManagerVersion = "1.5.0-alpha05"
     implementation("androidx.credentials:credentials:$credentialManagerVersion")
     implementation("androidx.credentials:credentials-play-services-auth:$credentialManagerVersion")

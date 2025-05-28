@@ -1,10 +1,12 @@
 package com.example.voltix.ui
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -30,14 +32,18 @@ import com.example.voltix.util.DataStoreUtil
 import com.example.voltix.viewmodel.UserViewModel
 import com.example.voltix.viewmodel.auth.LoginViewModel
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.flow.first // Import first untuk mengambil nilai tunggal dari Flow
 import kotlinx.coroutines.launch
 
+/**
+ * Sealed class untuk mendefinisikan rute navigasi dalam aplikasi.
+ */
 sealed class Screen(val route: String, val title: String = "") {
-    object Login : Screen("login", "Login")
-    object Setting : Screen("setting", "Setting")
-    object Register : Screen("register", "Register")
-    object SimulasiPage : Screen("simulasi", "Simulasi")
-    object SimulasiBebas {
+    data object Login : Screen("login", "Login")
+    data object Setting : Screen("setting", "Setting")
+    data object Register : Screen("register", "Register")
+    data object SimulasiPage : Screen("simulasi", "Simulasi")
+    data object SimulasiBebas {
         const val route = "simulasi_bebas"
         fun createRoute(simulationId: Int? = null) = if (simulationId != null) {
             "simulasi_bebas?simulationId=$simulationId"
@@ -45,21 +51,21 @@ sealed class Screen(val route: String, val title: String = "") {
             route
         }
     }
-    object SimulationComparison : Screen("simulation_comparison", "Simulation Comparison")
-    object DaftarRuangan : Screen("daftar_ruangan", "Ruangan")
-    object DetailRuangan : Screen("detail_ruangan/{ruanganId}", "Detail Ruangan") {
+    data object SimulationComparison : Screen("simulation_comparison", "Simulation Comparison")
+    data object DaftarRuangan : Screen("daftar_ruangan", "Ruangan")
+    data object DetailRuangan : Screen("detail_ruangan/{ruanganId}", "Detail Ruangan") {
         fun createRoute(ruanganId: Int) = "detail_ruangan/$ruanganId"
     }
-    object Rekomendasi : Screen("rekomendasi?ruanganId={ruanganId}", "Rekomendasi") {
+    data object Rekomendasi : Screen("rekomendasi?ruanganId={ruanganId}", "Rekomendasi") {
         fun createRoute(ruanganId: Int? = null): String =
             if (ruanganId != null && ruanganId != -1) "rekomendasi?ruanganId=$ruanganId" else "rekomendasi"
     }
-    object ImagePicker : Screen("image_picker/{ruanganId}", "Image Picker") {
+    data object ImagePicker : Screen("image_picker/{ruanganId}", "Image Picker") {
         fun createRoute(ruanganId: Int) = "image_picker/$ruanganId"
     }
-    object Dashboard : Screen("dashboard", "Dashboard")
-    object Onboarding : Screen("onboarding", "Onboarding")
-    object InputPerangkat : Screen(
+    data object Dashboard : Screen("dashboard", "Dashboard")
+    data object Onboarding : Screen("onboarding", "Onboarding")
+    data object InputPerangkat : Screen(
         "input_perangkat/{ruanganId}?deviceName={deviceName}&wattage={wattage}&lumen={lumen}&lampType={lampType}"
     ) {
         fun createRoute(
@@ -72,38 +78,90 @@ sealed class Screen(val route: String, val title: String = "") {
     }
 }
 
+/**
+ * Composable utama yang mendefinisikan struktur navigasi aplikasi.
+ * Menentukan rute dan layar untuk setiap tujuan.
+ */
 @SuppressLint("CoroutineCreationDuringComposition")
 @Composable
 fun AppNavHost(navController: NavHostController, loginViewModel: LoginViewModel = hiltViewModel()) {
     val loginState by loginViewModel.loginState.collectAsState()
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
 
+    // LaunchedEffect untuk menangani navigasi setelah login berhasil (dari LoginViewModel)
     LaunchedEffect(loginState) {
+        Log.d("AppNavHost", "LaunchedEffect(loginState): Current state is $loginState")
         when (loginState) {
             is LoginViewModel.LoginState.Success -> {
-                navController.navigate(Screen.Dashboard.route) {
-                    popUpTo(Screen.Login.route) { inclusive = true }
-                    launchSingleTop = true
+                // Setelah login sukses, cek status onboarding
+                val isOnboardingCompleted = DataStoreUtil.isOnboardingCompleted(context).first()
+                Log.d("AppNavHost", "LoginState.Success: Onboarding completed status: $isOnboardingCompleted")
+
+                if (isOnboardingCompleted) {
+                    // Jika onboarding sudah selesai, navigasi ke Dashboard
+                    navController.navigate(Screen.Dashboard.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true } // Hapus Login dari back stack
+                        launchSingleTop = true // Hindari duplikasi layar
+                    }
+                    Log.i("AppNavHost", "Navigating to Dashboard after successful login.")
+                } else {
+                    // Jika onboarding belum selesai, navigasi ke Onboarding Screen
+                    navController.navigate(Screen.Onboarding.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true } // Hapus Login dari back stack
+                        launchSingleTop = true
+                    }
+                    Log.i("AppNavHost", "Navigating to Onboarding after successful login.")
                 }
             }
             is LoginViewModel.LoginState.Error -> {
-                // Handled in LoginScreen
+                Log.e("AppNavHost", "LoginState.Error detected. Handled in LoginScreen.")
+                // Error sudah ditangani di LoginScreen melalui Snackbar.
             }
-            else -> {}
+            else -> {
+                // Idle atau Loading, tidak ada navigasi langsung dari sini
+            }
         }
     }
 
-    NavHost(navController = navController, startDestination = Screen.Login.route) {
+    // Penentuan startDestination awal aplikasi saat pertama kali dibuka
+    val startDestination = remember {
+        val user = FirebaseAuth.getInstance().currentUser
+        // Menggunakan runBlocking atau .first() di sini tidak ideal karena ini di Composable.
+        // Asumsi: Jika Firebase user ada, coba ke Dashboard. DashboardScreen akan menangani
+        // apakah data profil lengkap atau perlu refresh.
+        // Jika tidak ada user Firebase, default ke Login.
+        val initialRoute = if (user != null) {
+            Log.d("AppNavHost", "Initial startDestination: Firebase user found, navigating to Dashboard.")
+            Screen.Dashboard.route // Jika sudah login Firebase, langsung ke Dashboard
+        } else {
+            Log.d("AppNavHost", "Initial startDestination: No Firebase user, navigating to Login.")
+            Screen.Login.route // Jika belum login, ke Login
+        }
+        initialRoute
+    }
+
+    NavHost(navController = navController, startDestination = startDestination) {
         composable(Screen.Onboarding.route) {
-            val context = LocalContext.current
-            val coroutineScope = rememberCoroutineScope()
             OnboardingScreen(
                 onFinish = {
                     coroutineScope.launch {
-                        DataStoreUtil.saveOnboardingCompleted(context, true)
-                        navController.navigate(if (FirebaseAuth.getInstance().currentUser != null) Screen.Dashboard.route else Screen.Login.route) {
-                            popUpTo(Screen.Onboarding.route) { inclusive = true }
+                        // Setelah onboarding selesai (baik dengan "Get Started" atau "Skip"
+                        // yang sudah menyimpan data default dan menandai onboarding completed),
+                        // navigasi ke Dashboard.
+                        // FirebaseAuth.getInstance().currentUser seharusnya non-null di sini.
+                        val destination = if (FirebaseAuth.getInstance().currentUser != null) {
+                            Screen.Dashboard.route
+                        } else {
+                            // Ini seharusnya jarang terjadi jika alur login/register benar
+                            Log.w("AppNavHost", "Onboarding finished but Firebase user is null, redirecting to Login.")
+                            Screen.Login.route
+                        }
+                        navController.navigate(destination) {
+                            popUpTo(Screen.Onboarding.route) { inclusive = true } // Hapus Onboarding dari back stack
                             launchSingleTop = true
                         }
+                        Log.i("AppNavHost", "Navigating to $destination after Onboarding finished.")
                     }
                 }
             )
@@ -113,6 +171,7 @@ fun AppNavHost(navController: NavHostController, loginViewModel: LoginViewModel 
                 loginViewModel = loginViewModel,
                 navigateToRegister = {
                     navController.navigate(Screen.Register.route)
+                    Log.d("AppNavHost", "Navigating to Register.")
                 }
             )
         }
@@ -120,20 +179,26 @@ fun AppNavHost(navController: NavHostController, loginViewModel: LoginViewModel 
             RegisterScreen(
                 registerViewModel = hiltViewModel(),
                 onRegisterSuccess = {
-                    navController.navigate(Screen.Dashboard.route) {
-                        popUpTo(Screen.Login.route) { inclusive = true }
+                    // Setelah register sukses, navigasi ke Onboarding
+                    // (Karena register otomatis login, dan onboarding adalah langkah berikutnya)
+                    navController.navigate(Screen.Onboarding.route) {
+                        popUpTo(Screen.Register.route) { inclusive = true } // Hapus Register dari back stack
+                        popUpTo(Screen.Login.route) { inclusive = true } // Hapus Login juga jika ada
                         launchSingleTop = true
                     }
+                    Log.i("AppNavHost", "Navigating to Onboarding after successful registration.")
                 },
                 navigateToLogin = {
                     navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Register.route) { inclusive = true }
                     }
+                    Log.d("AppNavHost", "Navigating to Login from Register.")
                 }
             )
         }
         composable(Screen.Dashboard.route) {
             DashboardScreen(viewModel = hiltViewModel(), navController = navController)
+            Log.d("AppNavHost", "Displaying DashboardScreen.")
         }
         composable(
             route = "daftar_ruangan?openDialog={openDialog}",
@@ -144,34 +209,37 @@ fun AppNavHost(navController: NavHostController, loginViewModel: LoginViewModel 
                 }
             )
         ) { backStackEntry ->
-            val openDialog = backStackEntry.arguments?.getBoolean("openDialog") ?: false
             DaftarRuanganScreen(
                 navController = navController,
-                openDialog = openDialog
             )
+            Log.d("AppNavHost", "Displaying DaftarRuanganScreen.")
         }
         composable(Screen.SimulasiPage.route) {
             SimulasiScreen(
                 navController = navController,
                 onSimulasiBebasClick = {
                     navController.navigate(Screen.SimulasiBebas.route)
+                    Log.d("AppNavHost", "Navigating to SimulasiBebas.")
                 }
             )
+            Log.d("AppNavHost", "Displaying SimulasiScreen.")
         }
         composable(Screen.Setting.route) {
-            val userViewModel: UserViewModel = hiltViewModel() // Inject UserViewModel
+            val userViewModel: UserViewModel = hiltViewModel()
             SettingScreen(
                 navController = navController,
-                userViewModel = userViewModel, // Pass the injected ViewModel
+                userViewModel = userViewModel,
                 onLogOutClick = {
                     FirebaseAuth.getInstance().signOut()
-                    loginViewModel.resetLoginState()
+                    loginViewModel.resetLoginState() // Reset state login di ViewModel
                     navController.navigate(Screen.Login.route) {
-                        popUpTo(0) { inclusive = true }
+                        popUpTo(0) { inclusive = true } // Hapus semua dari back stack
                         launchSingleTop = true
                     }
+                    Log.i("AppNavHost", "User logged out, navigating to Login.")
                 }
             )
+            Log.d("AppNavHost", "Displaying SettingScreen.")
         }
         composable(
             route = Screen.Rekomendasi.route,
@@ -185,6 +253,7 @@ fun AppNavHost(navController: NavHostController, loginViewModel: LoginViewModel 
         ) { backStack ->
             val id = backStack.arguments?.getInt("ruanganId") ?: -1
             RekomendasiScreen(ruanganId = id, navController = navController)
+            Log.d("AppNavHost", "Displaying RekomendasiScreen for ruanganId: $id.")
         }
         composable(
             route = "${Screen.SimulasiBebas.route}?simulationId={simulationId}",
@@ -197,17 +266,19 @@ fun AppNavHost(navController: NavHostController, loginViewModel: LoginViewModel 
             )
         ) { backStackEntry ->
             SimulasiBebasScreen(
-                onDeviceSelect = { device -> println("Selected device: ${device.nama}") },
+                onDeviceSelect = { device -> Log.d("AppNavHost", "Selected device: ${device.nama}") },
                 navController = navController,
                 simulationId = backStackEntry.arguments?.getInt("simulationId")?.takeIf { it != -1 },
                 viewModel = hiltViewModel()
             )
+            Log.d("AppNavHost", "Displaying SimulasiBebasScreen.")
         }
         composable(Screen.SimulationComparison.route) {
             SimulationComparisonScreen(
                 viewModel = hiltViewModel(),
                 navController = navController
             )
+            Log.d("AppNavHost", "Displaying SimulationComparisonScreen.")
         }
         composable(
             route = Screen.ImagePicker.route,
@@ -215,6 +286,7 @@ fun AppNavHost(navController: NavHostController, loginViewModel: LoginViewModel 
         ) { backStackEntry ->
             val ruanganId = backStackEntry.arguments?.getInt("ruanganId") ?: 0
             SearchScreen(navController = navController, ruanganId = ruanganId)
+            Log.d("AppNavHost", "Displaying SearchScreen for ruanganId: $ruanganId.")
         }
         composable(
             route = Screen.InputPerangkat.route,
@@ -239,6 +311,7 @@ fun AppNavHost(navController: NavHostController, loginViewModel: LoginViewModel 
                 initialLumen = lumen,
                 initialLampType = lampType
             )
+            Log.d("AppNavHost", "Displaying InputPerangkatScreen for ruanganId: $ruanganId.")
         }
         composable(
             route = Screen.DetailRuangan.route,
@@ -251,6 +324,7 @@ fun AppNavHost(navController: NavHostController, loginViewModel: LoginViewModel 
                 navController = navController,
                 ruanganId = ruanganId
             )
+            Log.d("AppNavHost", "Displaying DetailRuangan for ruanganId: $ruanganId.")
         }
     }
 }

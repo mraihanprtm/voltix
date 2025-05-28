@@ -36,6 +36,10 @@ class RuanganRepository @Inject constructor(
         return ruanganDao.getAllRuanganList()
     }
 
+    fun getAllRuanganByFirebaseUid(userFirebaseUid: String): Flow<List<RuanganEntity>> {
+        return ruanganDao.getAllRuanganByFirebaseUid(userFirebaseUid)
+    }
+
     fun getRuanganWithPerangkat(ruanganId: Int): Flow<RuanganWithPerangkat> =
         ruanganDao.getRuanganWithPerangkat(ruanganId)
 }

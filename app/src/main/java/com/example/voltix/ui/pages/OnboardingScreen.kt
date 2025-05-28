@@ -1,5 +1,6 @@
-package com.example.voltix.ui.pages
+package com.example.voltix.ui.pages // Pastikan package Anda benar
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -28,15 +29,19 @@ import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.voltix.R
 import com.example.voltix.data.entity.GolonganListrikEntity
-import com.example.voltix.data.entity.UserEntity
-import com.example.voltix.ui.component.LoadingAnimationSection
+// UserEntity tidak lagi di-manage langsung di sini untuk update ke backend
+// import com.example.voltix.data.entity.UserEntity
 import com.example.voltix.util.DataStoreUtil
 import com.example.voltix.viewmodel.UserViewModel
+import com.example.voltix.viewmodel.ProfileUpdateState // Pastikan ProfileUpdateState di-import dari UserViewModel
 import com.example.voltix.viewmodel.simulasi.GolonganListrikViewModel
-import com.example.voltix.viewmodel.simulasi.PerangkatViewModel
-import com.google.firebase.auth.FirebaseAuth
+// PerangkatViewModel sepertinya tidak lagi dibutuhkan di sini setelah perbaikan
+// import com.example.voltix.viewmodel.simulasi.PerangkatViewModel
+// FirebaseAuth tidak diakses langsung di sini untuk update, user sudah login dan punya token Laravel
+// import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
+// data class OnboardingPage tetap sama
 data class OnboardingPage(
     val title: String,
     val description: String,
@@ -47,319 +52,187 @@ data class OnboardingPage(
 @Composable
 fun OnboardingScreen(
     onFinish: () -> Unit,
-    viewModel: PerangkatViewModel = hiltViewModel(),
+    // Hapus viewModel: PerangkatViewModel jika tidak lagi digunakan
     userViewModel: UserViewModel = hiltViewModel(),
     golonganListrikViewModel: GolonganListrikViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+
+    // Amati state update profil dari UserViewModel
+    val profileUpdateState by userViewModel.profileUpdateState.collectAsState()
+
     val pages = listOf(
-        OnboardingPage(
-            title = "Selamat Datang di Voltix",
-            description = "Aplikasi untuk mengelola kebutuhan listrik Anda dengan cerdas dan efisien.",
-            lottieRes = R.raw.welcome
-        ),
-        OnboardingPage(
-            title = "Fitur Unggulan",
-            description = "Pindai perangkat elektronik, dapatkan rekomendasi lampu, dan simulasikan konsumsi listrik.",
-            lottieRes = R.raw.features
-        ),
-        OnboardingPage(
-            title = "Pilih Jenis Listrik",
-            description = "Pilih kapasitas listrik rumah Anda untuk pengalaman yang lebih personal.",
-            lottieRes = R.raw.electricity
-        )
+        OnboardingPage("Selamat Datang di Voltix", "Aplikasi untuk mengelola kebutuhan listrik Anda dengan cerdas dan efisien.", R.raw.welcome),
+        OnboardingPage("Fitur Unggulan", "Pindai perangkat elektronik, dapatkan rekomendasi lampu, dan simulasikan konsumsi listrik.", R.raw.features),
+        OnboardingPage("Pilih Jenis Listrik", "Pilih kapasitas listrik rumah Anda untuk pengalaman yang lebih personal.", R.raw.electricity)
     )
     val pagerState = rememberPagerState(pageCount = { pages.size })
-    val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
-    var user by remember { mutableStateOf<UserEntity?>(null) }
+
     var jenisListrikList by remember { mutableStateOf<List<GolonganListrikEntity>>(emptyList()) }
-
-    LaunchedEffect(Unit) {
-        user = userViewModel.getCurrentUser()
-        jenisListrikList = golonganListrikViewModel.getAllGolonganListrik()
-        println("jenisListrikList = $jenisListrikList")
-    }
-
     var selectedJenisListrik by remember { mutableStateOf<GolonganListrikEntity?>(null) }
 
+    // Mengambil daftar golongan listrik dari ViewModel (yang mengambil dari Room)
+    LaunchedEffect(Unit) {
+        jenisListrikList = golonganListrikViewModel.getAllGolonganListrik()
+        Log.d("OnboardingScreen", "Jenis Listrik List fetched: $jenisListrikList")
+    }
+
+    // Set pilihan default untuk jenis listrik
     LaunchedEffect(jenisListrikList) {
-        if (jenisListrikList.isNotEmpty()) {
-            selectedJenisListrik = jenisListrikList[0]
+        if (jenisListrikList.isNotEmpty() && selectedJenisListrik == null) {
+            // Coba default ke 2200 VA, jika tidak ada, ambil item pertama
+            selectedJenisListrik = jenisListrikList.find { it.batasDaya == 2200 } ?: jenisListrikList.firstOrNull()
+            Log.d("OnboardingScreen", "Default selectedJenisListrik: $selectedJenisListrik")
         }
     }
 
     val jenisPembayaran = listOf("Prabayar", "Pascabayar")
-    val (selectedOption, onOptionSelected) = remember { mutableStateOf(jenisPembayaran[0]) }
+    val (selectedPembayaranOption, onPembayaranOptionSelected) = remember { mutableStateOf(jenisPembayaran[0]) }
+    var isJenisListrikDropdownExpanded by remember { mutableStateOf(false) }
 
-    var expanded by remember { mutableStateOf(false) }
-    var isLoading by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val density = LocalDensity.current
     val screenWidth = with(density) { context.resources.displayMetrics.widthPixels.toDp() }
 
-    if (isLoading) {
-        LoadingAnimationSection(isLoading)
-    } else {
-        Scaffold(
-            snackbarHost = { SnackbarHost(snackbarHostState) },
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            MaterialTheme.colorScheme.background
-                        )
-                    )
-                )
-        ) { paddingValues ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.weight(1f)
-                ) { page ->
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 16.dp, vertical = 16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        // Lottie Animation with controlled size (smaller on page 3)
-                        val composition by rememberLottieComposition(
-                            LottieCompositionSpec.RawRes(pages[page].lottieRes)
-                        )
-                        val lottieSize = if (page == 2) screenWidth * 0.3f else screenWidth * 0.6f // Reduced to 30% on page 3
-                        LottieAnimation(
-                            composition = composition,
-                            iterations = LottieConstants.IterateForever,
-                            modifier = Modifier
-                                .size(width = lottieSize, height = lottieSize)
-                                .padding(bottom = 16.dp),
-                        )
+    // Handle efek dari perubahan profileUpdateState (hasil panggilan API)
+    LaunchedEffect(profileUpdateState) {
+        when (val state = profileUpdateState) {
+            is ProfileUpdateState.Success -> {
+                Log.i("OnboardingScreen", "Pilihan onboarding berhasil disimpan ke backend. User: ${state.updatedUserFromBackend}")
+                scope.launch {
+                    DataStoreUtil.saveOnboardingCompleted(context, true) // Tandai onboarding selesai
+                    userViewModel.resetProfileUpdateState() // Reset state di ViewModel agar tidak trigger lagi
+                    onFinish() // Panggil callback untuk navigasi
+                }
+            }
+            is ProfileUpdateState.Error -> {
+                Log.e("OnboardingScreen", "Gagal menyimpan pilihan onboarding ke backend: ${state.message}")
+                scope.launch {
+                    snackbarHostState.showSnackbar("Gagal menyimpan pilihan: ${state.message ?: "Terjadi kesalahan"}")
+                    userViewModel.resetProfileUpdateState()
+                }
+            }
+            is ProfileUpdateState.Loading -> {
+                Log.d("OnboardingScreen", "Proses penyimpanan onboarding sedang berjalan...")
+                // Indikator loading utama bisa ditampilkan di sini atau di tombol
+            }
+            is ProfileUpdateState.Idle -> {
+                // Tidak ada aksi
+            }
+             else -> {
+                // Ini seharusnya tidak pernah terpanggil jika ProfileUpdateState sealed
+                // dan semua kasus sudah ditangani. Anda bisa tambahkan log di sini jika ingin tahu.
+                Log.w("OnboardingScreen", "Kasus ProfileUpdateState yang tidak terduga: $state")
+             }
+        }
+    }
 
-                        // Title
-                        Text(
-                            text = pages[page].title,
-                            style = MaterialTheme.typography.headlineSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 24.sp
-                            ),
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        modifier = Modifier.fillMaxSize().background(
+            Brush.verticalGradient(colors = listOf(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), MaterialTheme.colorScheme.background))
+        )
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier.fillMaxSize().padding(paddingValues),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { page ->
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(pages[page].lottieRes))
+                    val lottieSize = if (page == 2) screenWidth * 0.4f else screenWidth * 0.6f // Sedikit diperbesar untuk halaman terakhir
+                    LottieAnimation(composition = composition, iterations = LottieConstants.IterateForever, modifier = Modifier.size(width = lottieSize, height = lottieSize).padding(bottom = 16.dp))
+                    Text(pages[page].title, style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold, fontSize = 24.sp), textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onBackground)
+                    Text(pages[page].description, style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp), textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f), modifier = Modifier.padding(horizontal = 16.dp))
 
-                        // Description
-                        Text(
-                            text = pages[page].description,
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                fontSize = 16.sp
-                            ),
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                            modifier = Modifier.padding(horizontal = 16.dp)
-                        )
-
-                        // Jenis Listrik Dropdown and Radio Buttons (only on the last page)
-                        if (page == pages.size - 1) {
-                            Text(
-                                text = "Pilih Jenis Pembayaran",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Medium
-                                ),
-                                color = MaterialTheme.colorScheme.onBackground
-                            )
+                    if (page == pages.size - 1) { // Form pilihan hanya di halaman terakhir
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Pilih Jenis Pembayaran Listrik Anda", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium), color = MaterialTheme.colorScheme.onBackground)
+                        Row(Modifier.padding(vertical = 8.dp)) { // Radio button jenis pembayaran
                             jenisPembayaran.forEach { jenis ->
                                 Row(
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .height(35.dp)
-                                        .selectable(
-                                            selected = (jenis == selectedOption),
-                                            onClick = { onOptionSelected(jenis) },
-                                            role = Role.RadioButton
-                                        )
-                                        .padding(horizontal = 16.dp),
+                                    Modifier.selectable(selected = (jenis == selectedPembayaranOption), onClick = { onPembayaranOptionSelected(jenis) }, role = Role.RadioButton).padding(horizontal = 8.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    RadioButton(
-                                        selected = (jenis == selectedOption),
-                                        onClick = null
-                                    )
-                                    Text(
-                                        text = jenis,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        modifier = Modifier.padding(start = 16.dp)
-                                    )
+                                    RadioButton(selected = (jenis == selectedPembayaranOption), onClick = null)
+                                    Text(text = jenis, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp))
                                 }
                             }
+                        }
 
-                            Text(
-                                text = "Pilih Jenis Listrik",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Medium
-                                ),
-                                color = MaterialTheme.colorScheme.onBackground
+                        Text("Pilih Kapasitas Listrik Terpasang", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium), color = MaterialTheme.colorScheme.onBackground)
+                        ExposedDropdownMenuBox(
+                            expanded = isJenisListrikDropdownExpanded,
+                            onExpandedChange = { isJenisListrikDropdownExpanded = it }
+                        ) {
+                            OutlinedTextField(
+                                value = selectedJenisListrik?.let { "${it.golonganTarif} ${it.batasDaya} VA" + if(it.isRTM) " (RTM)" else "" } ?: "Pilih Kapasitas Listrik",
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Kapasitas Listrik") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isJenisListrikDropdownExpanded) },
+                                modifier = Modifier.menuAnchor().fillMaxWidth().clip(RoundedCornerShape(12.dp)),
+                                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = MaterialTheme.colorScheme.primary, unfocusedBorderColor = MaterialTheme.colorScheme.outline)
                             )
-                            ExposedDropdownMenuBox(
-                                expanded = expanded,
-                                onExpandedChange = { expanded = !expanded }
-                            ) {
-                                OutlinedTextField(
-                                    value = selectedJenisListrik?.let { "${it.golonganTarif} ${it.batasDaya} VA" } ?: "",
-                                    onValueChange = {},
-                                    readOnly = true,
-                                    label = { Text("Jenis Listrik") },
-                                    trailingIcon = {
-                                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-                                    },
-                                    modifier = Modifier
-                                        .menuAnchor()
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(12.dp)),
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                            ExposedDropdownMenu(expanded = isJenisListrikDropdownExpanded, onDismissRequest = { isJenisListrikDropdownExpanded = false }) {
+                                jenisListrikList.forEach { option ->
+                                    DropdownMenuItem(
+                                        text = { Text(if (option.isRTM) "${option.golonganTarif} ${option.batasDaya} VA (RTM)" else "${option.golonganTarif} ${option.batasDaya} VA") },
+                                        onClick = { selectedJenisListrik = option; isJenisListrikDropdownExpanded = false }
                                     )
-                                )
-                                ExposedDropdownMenu(
-                                    expanded = expanded,
-                                    onDismissRequest = { expanded = false }
-                                ) {
-                                    jenisListrikList.forEach { option ->
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    if (option.isRTM) "${option.golonganTarif} ${option.batasDaya} VA-RTM"
-                                                    else "${option.golonganTarif} ${option.batasDaya} VA"
-                                                )
-                                            },
-                                            onClick = {
-                                                selectedJenisListrik = option
-                                                expanded = false
-                                            }
-                                        )
-                                    }
                                 }
                             }
                         }
                     }
                 }
+            }
 
-                // Page Indicator
-                Row(
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    repeat(pages.size) { index ->
-                        val color = if (pagerState.currentPage == index) {
-                            MaterialTheme.colorScheme.primary
+            Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.Center) { // Indikator halaman
+                repeat(pages.size) { index ->
+                    val color = if (pagerState.currentPage == index) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                    Box(modifier = Modifier.padding(4.dp).size(8.dp).clip(CircleShape).background(color))
+                }
+            }
+
+            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { // Tombol Navigasi
+                TextButton(onClick = {
+                    scope.launch { DataStoreUtil.saveOnboardingCompleted(context, true); onFinish() }
+                }) { Text("Skip", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium) }
+
+                Button(
+                    onClick = {
+                        if (pagerState.currentPage == pages.size - 1) { // Jika di halaman terakhir
+                            selectedJenisListrik?.let { golonganPilihan ->
+                                val nilaiDayaUntukDikirim = golonganPilihan.batasDaya // Ini adalah nilai daya (misal 2200)
+                                val statusPrabayar = selectedPembayaranOption == "Prabayar"
+                                // Panggil fungsi di UserViewModel untuk update ke backend
+                                userViewModel.saveOnboardingChoices(nilaiDayaUntukDikirim, statusPrabayar)
+                            } ?: scope.launch {
+                                snackbarHostState.showSnackbar("Silakan pilih jenis listrik terlebih dahulu.")
+                            }
                         } else {
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                            scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
                         }
-                        Box(
-                            modifier = Modifier
-                                .padding(4.dp)
-                                .size(8.dp)
-                                .clip(CircleShape)
-                                .background(color)
-                        )
-                    }
-                }
-
-                // Navigation Buttons
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    },
+                    enabled = profileUpdateState !is ProfileUpdateState.Loading, // Disable tombol saat proses update berjalan
+                    modifier = Modifier.height(48.dp).clip(RoundedCornerShape(12.dp)),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
-                    TextButton(
-                        onClick = {
-                            scope.launch {
-                                DataStoreUtil.saveOnboardingCompleted(context, true)
-                                onFinish()
-                            }
-                        }
-                    ) {
-                        Text(
-                            text = "Skip",
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-
-                    Button(
-                        onClick = {
-                            if (pagerState.currentPage == pages.size - 1) {
-                                isLoading = true
-                                scope.launch {
-                                    try {
-                                        val firebaseUser = FirebaseAuth.getInstance().currentUser
-                                        val existingUser = userViewModel.getUserByUid(userId)
-
-                                        val updatedUser = existingUser?.copy(
-                                            jenisListrik = selectedJenisListrik!!.idGolonganListrik,
-                                            isPrabayar = selectedOption == "Prabayar"
-                                        ) ?: UserEntity(
-                                            name = firebaseUser?.displayName ?: "Guest User",
-                                            email = firebaseUser?.email ?: "guest@example.com",
-                                            jenisListrik = selectedJenisListrik!!.idGolonganListrik,
-                                            isPrabayar = selectedOption == "Prabayar",
-                                            uid = userId
-                                        )
-
-                                        if (existingUser != null) {
-                                            userViewModel.updateUser(updatedUser)
-                                        } else {
-                                            userViewModel.insertUser(updatedUser)
-                                        }
-
-                                        viewModel.updateJenisListrik(selectedJenisListrik!!.idGolonganListrik)
-                                        val currentUserId = userViewModel.getCurrentUser()?.id
-                                        if (currentUserId != null) {
-                                            val biayaListrikUser = userViewModel.getUserBiayaListrik(currentUserId)
-                                            println("Biaya Listrik User= $biayaListrikUser")
-                                            val tarifUser = userViewModel.getUserTarif(currentUserId, 35.0)
-                                            println("TARIF USER = $tarifUser")
-                                        }
-                                        DataStoreUtil.saveOnboardingCompleted(context, true)
-                                        onFinish()
-                                    } catch (e: Exception) {
-                                        snackbarHostState.showSnackbar("Gagal menyimpan data: ${e.message}")
-                                    } finally {
-                                        isLoading = false
-                                    }
-                                }
-                            } else {
-                                scope.launch {
-                                    pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                                }
-                            }
-                        },
-                        modifier = Modifier
-                            .height(48.dp)
-                            .clip(RoundedCornerShape(12.dp)),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        )
-                    ) {
-                        Text(
-                            text = if (pagerState.currentPage == pages.size - 1) "Get Started" else "Next",
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            fontWeight = FontWeight.Medium
-                        )
+                    // Tampilkan loading di tombol jika ini page terakhir dan sedang loading
+                    if (pagerState.currentPage == pages.size - 1 && profileUpdateState is ProfileUpdateState.Loading) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
+                    } else {
+                        Text(if (pagerState.currentPage == pages.size - 1) "Get Started" else "Next", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Medium)
                     }
                 }
             }
         }
     }
+    // Hapus var isLoading lokal jika sudah dikelola oleh profileUpdateState
+    // if (isLoading) { LoadingAnimationSection(isLoading) } -> ini bisa diganti dengan observasi profileUpdateState
 }

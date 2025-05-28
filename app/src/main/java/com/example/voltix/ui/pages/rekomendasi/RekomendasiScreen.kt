@@ -50,7 +50,7 @@ fun RekomendasiScreen(
     ruanganViewModel: RuanganViewModel = hiltViewModel(),
     rekomViewModel: RekomendasiViewModel = hiltViewModel()
 ) {
-    val ruanganList by ruanganViewModel.allRuangan.observeAsState(initial = emptyList())
+    val ruanganList by ruanganViewModel.allRuangan.collectAsState()
     var selectedRuanganId by remember { mutableIntStateOf(-1) }
     var textFieldValue by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }

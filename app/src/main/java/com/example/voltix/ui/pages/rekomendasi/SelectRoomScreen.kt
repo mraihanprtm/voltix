@@ -19,7 +19,7 @@ fun SelectRoomScreen(
     ruanganViewModel: RuanganViewModel = hiltViewModel()
 ) {
     // Observe rooms owned by user
-    val ruanganList by ruanganViewModel.allRuangan.observeAsState(emptyList())
+    val ruanganList by ruanganViewModel.allRuangan.collectAsState()
     var expanded by remember { mutableStateOf(false) }
     var selectedRuangan by remember { mutableStateOf<RuanganEntity?>(null) }
 

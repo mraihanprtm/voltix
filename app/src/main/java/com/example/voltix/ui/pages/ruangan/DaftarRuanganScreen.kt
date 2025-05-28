@@ -49,6 +49,7 @@ import com.example.voltix.R
 import com.example.voltix.data.entity.JenisRuangan
 import com.example.voltix.data.entity.RuanganEntity
 import com.example.voltix.ui.component.LoadingAnimationSection
+import com.example.voltix.viewmodel.UserViewModel
 import com.example.voltix.viewmodel.simulasi.RuanganViewModel
 import kotlinx.coroutines.launch
 
@@ -56,35 +57,74 @@ import kotlinx.coroutines.launch
 @Composable
 fun DaftarRuanganScreen(
     navController: NavHostController,
-    viewModel: RuanganViewModel = hiltViewModel(),
-    openDialog: Boolean = false, // Navigation argument
+    ruanganViewModel: RuanganViewModel = hiltViewModel(), // Hanya SATU instance RuanganViewModel
+    userViewModel: UserViewModel = hiltViewModel()
 ) {
-    val daftarRuangan by viewModel.allRuangan.observeAsState(initial = emptyList())
+    // Menggunakan collectAsStateWithLifecycle jika menggunakan lifecycle-runtime-compose
+    val daftarRuangan by ruanganViewModel.allRuangan.collectAsState()
+    val isRuanganListLoading by ruanganViewModel.isLoading.collectAsState() // Dari RuanganViewModel
+
     var showAddDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf<RuanganEntity?>(null) }
     var showEditDialog by remember { mutableStateOf<RuanganEntity?>(null) }
-    var isLoading by remember { mutableStateOf(true) }
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    val currentUserDataFromBackend by userViewModel.currentUserFromBackend.collectAsState()
+    // Variabel untuk loading awal sampai UID didapatkan dan dikirim ke RuanganViewModel
+    var initialLoading by remember { mutableStateOf(true) }
+    val currentUser by userViewModel.currentUserFromBackend.collectAsState()
+    val isUserProfileLoading by userViewModel.isUserProfileLoading.collectAsState() // Dari UserViewModel
+
+
+    LaunchedEffect(currentUserDataFromBackend) {
+        currentUserDataFromBackend?.firebaseUid?.let { uid ->
+            ruanganViewModel.loadRuanganForUser(uid)
+            initialLoading = false // Selesai loading awal setelah UID dikirim
+        } ?: run {
+            // Jika currentUserDataFromBackend ada tapi UID null (jarang terjadi jika login sukses)
+            if (currentUserDataFromBackend != null && currentUserDataFromBackend?.firebaseUid == null) {
+                initialLoading = false
+                scope.launch {
+                    snackbarHostState.showSnackbar("UID pengguna tidak ditemukan.")
+                }
+            } else if (currentUserDataFromBackend == null) {
+                // Jika user data belum ada, panggil refresh (jika belum otomatis)
+                // userViewModel.refreshUserProfileFromBackend() // Hati-hati infinite loop jika tidak ada kondisi berhenti
+                initialLoading = true // Tetap loading jika data user belum siap
+            } else {
+                TODO()
+            }
+        }
+    }
+
+    // Cek jika user data masih null dan coba refresh sekali
     LaunchedEffect(Unit) {
-        kotlinx.coroutines.delay(1000)
-        isLoading = false
-        if (openDialog) {
-            showAddDialog = true
+        if (userViewModel.currentUserFromBackend.value == null) {
+            userViewModel.refreshUserProfileFromBackend()
         }
     }
 
 
     val fabScale by animateFloatAsState(
-        targetValue = if (isLoading) 1f else 1.1f,
+        targetValue = if (initialLoading || isRuanganListLoading) 1f else 1.1f, // Sesuaikan animasi FAB
         animationSpec = tween(durationMillis = 200)
     )
+
+    val showOverallLoading = isUserProfileLoading || (currentUser == null && !isUserProfileLoading) || (currentUser != null && isRuanganListLoading)
 
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showAddDialog = true },
+                onClick = {
+                    if (currentUserDataFromBackend?.firebaseUid != null) {
+                        showAddDialog = true
+                    } else {
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Data pengguna belum siap untuk menambah ruangan.")
+                        }
+                    }
+                },
                 shape = CircleShape,
                 modifier = Modifier
                     .shadow(12.dp, CircleShape)
@@ -111,15 +151,16 @@ fun DaftarRuanganScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
-    ) { _ ->
+    ) { paddingValues -> // Gunakan paddingValues
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(paddingValues) // Terapkan paddingValues
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            // Tombol back di pojok kiri atas
             Row(
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(start = 4.dp, top = 16.dp) // Padding untuk back button dan title
             ) {
                 IconButton(
                     onClick = { navController.popBackStack() },
@@ -130,7 +171,7 @@ fun DaftarRuanganScreen(
                         tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
-                Spacer(modifier = Modifier.width(8.dp)) // Jarak antara icon dan teks
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "Daftar Ruangan",
                     style = MaterialTheme.typography.headlineSmall.copy(
@@ -143,8 +184,7 @@ fun DaftarRuanganScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Content
-            if (isLoading) {
+            if (initialLoading || isRuanganListLoading) { // Gabungkan kondisi loading
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -158,17 +198,26 @@ fun DaftarRuanganScreen(
                         iterations = LottieConstants.IterateForever
                     )
                 }
-            } else if (daftarRuangan.isEmpty()) {
+            } else if (daftarRuangan.isEmpty() && currentUserDataFromBackend?.firebaseUid != null) {
+                // Tampilkan EmptyStateView hanya jika UID sudah ada tapi daftar ruangan kosong
                 EmptyStateView()
+            } else if (currentUserDataFromBackend?.firebaseUid == null && !initialLoading) {
+                // Kondisi jika UID tidak ada setelah initial loading selesai (error state)
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Gagal memuat data pengguna. Silakan coba lagi.", textAlign = TextAlign.Center)
+                }
             } else {
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp), // Padding bawah agar tidak tertutup FAB
+                    horizontalArrangement = Arrangement.spacedBy(16.dp), // Tingkatkan spacing jika perlu
+                    verticalArrangement = Arrangement.spacedBy(16.dp)   // Tingkatkan spacing jika perlu
                 ) {
-                    items(daftarRuangan.size) { index ->
+                    items(daftarRuangan.size, key = { daftarRuangan[it].id }) { index -> // Tambahkan key untuk performa
                         RuanganCard(
                             ruangan = daftarRuangan[index],
                             onClick = {
@@ -189,34 +238,44 @@ fun DaftarRuanganScreen(
 
     // Add Dialog
     if (showAddDialog) {
-        AddRuanganDialog(
-            onConfirm = { nama, panjang, lebar, jenis ->
-                if (nama.isNotBlank() && panjang > 0 && lebar > 0) {
-                    viewModel.insertRuangan(
-                        RuanganEntity(
-                            namaRuangan = nama,
-                            panjangRuangan = panjang,
-                            lebarRuangan = lebar,
-                            jenisRuangan = jenis
+        currentUserDataFromBackend?.firebaseUid?.let { userFirebaseUid ->
+            AddRuanganDialog(
+                onConfirm = { nama, panjang, lebar, jenis ->
+                    if (nama.isNotBlank() && panjang > 0 && lebar > 0) {
+                        ruanganViewModel.insertRuangan(
+                            RuanganEntity(
+                                namaRuangan = nama,
+                                panjangRuangan = panjang,
+                                lebarRuangan = lebar,
+                                jenisRuangan = jenis,
+                                userFirebaseUid = userFirebaseUid
+                            )
                         )
-                    )
-                    scope.launch {
-                        snackbarHostState.showSnackbar("Ruangan berhasil ditambahkan")
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Ruangan berhasil ditambahkan")
+                        }
+                        showAddDialog = false
+                    } else {
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Semua field harus diisi dengan benar.")
+                        }
                     }
+                },
+                onDismiss = {
                     showAddDialog = false
                 }
-            },
-            onDismiss = {
-                showAddDialog = false
-            }
-        )
+            )
+        } ?: LaunchedEffect(Unit) { // Jika UID tiba-tiba null saat dialog mau dibuka
+            snackbarHostState.showSnackbar("Data pengguna tidak valid untuk menambah ruangan.")
+            showAddDialog = false
+        }
     }
 
     // Delete Dialog
     showDeleteDialog?.let { ruangan ->
         DeleteConfirmationDialog(
             onConfirm = {
-                viewModel.deleteRuangan(ruangan)
+                ruanganViewModel.deleteRuangan(ruangan)
                 scope.launch {
                     snackbarHostState.showSnackbar("Ruangan berhasil dihapus")
                 }
@@ -233,7 +292,7 @@ fun DaftarRuanganScreen(
         EditRuanganDialog(
             ruangan = ruangan,
             onConfirm = { updatedRuangan ->
-                viewModel.updateRuangan(updatedRuangan)
+                ruanganViewModel.updateRuangan(updatedRuangan)
                 scope.launch {
                     snackbarHostState.showSnackbar("Ruangan berhasil diperbarui")
                 }

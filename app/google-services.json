@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "719363858604-hirtoldp57v46sgokro33mmoq00vama9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.voltix",
+            "certificate_hash": "45b793d981b68ee7043977dbf8b97562e337e721"
+          }
+        },
+        {
           "client_id": "719363858604-f9nbvb57ak0tc9s6oe4p81vurbbhmuqe.apps.googleusercontent.com",
           "client_type": 3
         }

@@ -1,5 +1,6 @@
 package com.example.voltix.data.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -13,9 +14,18 @@ enum class JenisRuangan(val label: String) {
 
 @Entity(tableName = "ruangan")
 data class RuanganEntity(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
+
+    // ---- TAMBAHKAN FIELD INI ----
+    @ColumnInfo(index = true) // Menambahkan index pada kolom ini baik untuk performa query
+    val userFirebaseUid: String, // Untuk menyimpan Firebase UID dari pemilik ruangan
+    // --------------------------
+
     val namaRuangan: String,
     val panjangRuangan: Float, // dalam meter
-    val lebarRuangan: Float,   // dalam meter
+    val lebarRuangan: Float, // dalam meter
     val jenisRuangan: JenisRuangan
+    // Tambahkan field isPrabayar di sini jika setiap ruangan punya setting prabayar/pascabayar sendiri
+    // Namun, dari diskusi kita sebelumnya, isPrabayar ada di UserEntity
 )
