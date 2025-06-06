@@ -1,39 +1,34 @@
-package com.example.voltix.data.util // Sesuaikan package
+package com.example.voltix.data.util
 
 import android.content.Context
-import android.content.SharedPreferences
-import androidx.security.crypto.EncryptedSharedPreferences // Untuk keamanan lebih
-import androidx.security.crypto.MasterKeys
-import dagger.hilt.android.qualifiers.ApplicationContext
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class TokenManager @Inject constructor(@ApplicationContext context: Context) {
-
-    private val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
-
-    private val prefs: SharedPreferences = EncryptedSharedPreferences.create(
-        "voltix_auth_prefs", // Nama file prefs
-        masterKeyAlias,
+class TokenManager @Inject constructor(context: Context) {
+    private val sharedPreferences = EncryptedSharedPreferences.create(
         context,
+        "voltix_prefs",
+        MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build(),
         EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
         EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
     )
 
     companion object {
-        private const val API_TOKEN = "api_token"
+        private const val KEY_API_TOKEN = "api_token"
     }
 
-    fun saveApiToken(token: String) {
-        prefs.edit().putString(API_TOKEN, token).apply()
+    fun saveApiToken(token: String?) {
+        sharedPreferences.edit().putString(KEY_API_TOKEN, token).apply()
     }
 
     fun getApiToken(): String? {
-        return prefs.getString(API_TOKEN, null)
+        return sharedPreferences.getString(KEY_API_TOKEN, null)
     }
 
     fun clearApiToken() {
-        prefs.edit().remove(API_TOKEN).apply()
+        sharedPreferences.edit().remove(KEY_API_TOKEN).apply()
     }
 }

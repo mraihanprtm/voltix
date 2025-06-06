@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.voltix.data.remote.AuthManager
 import com.example.voltix.data.remote.response.AuthResponse
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 /**
@@ -43,24 +45,24 @@ class LoginViewModel @Inject constructor(
     private val _uiEvents = MutableSharedFlow<String>()
     val uiEvents: SharedFlow<String> = _uiEvents.asSharedFlow()
 
-    /**
-     * Melakukan login dengan email dan password.
-     *
-     * @param email Email pengguna.
-     * @param password Password pengguna.
-     */
     fun loginWithEmail(email: String, password: String) {
         viewModelScope.launch {
-            _loginState.value = LoginState.Loading // Set loading state di awal
+            _loginState.value = LoginState.Loading // Set status loading saat proses dimulai
+            Log.d("LoginViewModel", "loginWithEmail: Attempting to login with email and password.")
+
+            // =======================================================================
+            // === PERBAIKAN UTAMA: Gunakan authManager.loginWithEmail di sini ===
+            // =======================================================================
             authManager.loginWithEmail(email, password)
                 .collectLatest { authResponse ->
+                    Log.d("LoginViewModel", "loginWithEmail: AuthResponse from AuthManager: $authResponse")
                     _loginState.value = when (authResponse) {
                         is AuthResponse.Success -> LoginState.Success
                         is AuthResponse.Error -> LoginState.Error(authResponse.message)
-                        is AuthResponse.Loading -> LoginState.Loading // AuthManager juga bisa mengirim state Loading
+                        is AuthResponse.Loading -> LoginState.Loading // Tetap Loading jika AuthManager mengirim state ini
                         else -> {
                             Log.w("LoginViewModel", "loginWithEmail: Unexpected AuthResponse type: $authResponse")
-                            LoginState.Error("Terjadi kesalahan tak terduga.")
+                            LoginState.Error("Terjadi kesalahan tak terduga saat login.")
                         }
                     }
                     Log.d("LoginViewModel", "loginWithEmail: LoginState updated to: ${_loginState.value}")

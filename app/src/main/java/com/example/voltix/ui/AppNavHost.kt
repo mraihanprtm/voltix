@@ -15,6 +15,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.example.voltix.data.remote.AuthManager
 import com.example.voltix.ui.pages.OnboardingScreen
 import com.example.voltix.ui.pages.auth.LoginScreen
 import com.example.voltix.ui.pages.auth.RegisterScreen
@@ -34,6 +35,7 @@ import com.example.voltix.viewmodel.auth.LoginViewModel
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.first // Import first untuk mengambil nilai tunggal dari Flow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 /**
  * Sealed class untuk mendefinisikan rute navigasi dalam aplikasi.
@@ -94,32 +96,35 @@ fun AppNavHost(navController: NavHostController, loginViewModel: LoginViewModel 
         Log.d("AppNavHost", "LaunchedEffect(loginState): Current state is $loginState")
         when (loginState) {
             is LoginViewModel.LoginState.Success -> {
-                // Setelah login sukses, cek status onboarding
-                val isOnboardingCompleted = DataStoreUtil.isOnboardingCompleted(context).first()
-                Log.d("AppNavHost", "LoginState.Success: Onboarding completed status: $isOnboardingCompleted")
-
-                if (isOnboardingCompleted) {
-                    // Jika onboarding sudah selesai, navigasi ke Dashboard
-                    navController.navigate(Screen.Dashboard.route) {
-                        popUpTo(Screen.Login.route) { inclusive = true } // Hapus Login dari back stack
-                        launchSingleTop = true // Hindari duplikasi layar
+                val user = FirebaseAuth.getInstance().currentUser
+                if (user != null && user.isEmailVerified) {
+                    val isOnboardingCompleted = DataStoreUtil.isOnboardingCompleted(context).first()
+                    Log.d("AppNavHost", "LoginState.Success: Onboarding completed status: $isOnboardingCompleted")
+                    val destination = if (isOnboardingCompleted) {
+                        Screen.Dashboard.route
+                    } else {
+                        Screen.Onboarding.route
                     }
-                    Log.i("AppNavHost", "Navigating to Dashboard after successful login.")
-                } else {
-                    // Jika onboarding belum selesai, navigasi ke Onboarding Screen
-                    navController.navigate(Screen.Onboarding.route) {
-                        popUpTo(Screen.Login.route) { inclusive = true } // Hapus Login dari back stack
+                    navController.navigate(destination) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
                         launchSingleTop = true
                     }
-                    Log.i("AppNavHost", "Navigating to Onboarding after successful login.")
+                    Log.i("AppNavHost", "Navigating to $destination after successful login and email verified.")
+                } else {
+                    Log.w("AppNavHost", "LoginState.Success but email not verified or user null, staying on Login.")
+                    loginViewModel.resetLoginState()
                 }
             }
             is LoginViewModel.LoginState.Error -> {
-                Log.e("AppNavHost", "LoginState.Error detected. Handled in LoginScreen.")
-                // Error sudah ditangani di LoginScreen melalui Snackbar.
+                Log.e("AppNavHost", "LoginState.Error detected: ${(loginState as LoginViewModel.LoginState.Error).message}")
+                // Pastikan tetap di LoginScreen
+                navController.navigate(Screen.Login.route) {
+                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                    launchSingleTop = true
+                }
             }
             else -> {
-                // Idle atau Loading, tidak ada navigasi langsung dari sini
+                // Idle atau Loading, tidak ada navigasi
             }
         }
     }
@@ -127,16 +132,18 @@ fun AppNavHost(navController: NavHostController, loginViewModel: LoginViewModel 
     // Penentuan startDestination awal aplikasi saat pertama kali dibuka
     val startDestination = remember {
         val user = FirebaseAuth.getInstance().currentUser
-        // Menggunakan runBlocking atau .first() di sini tidak ideal karena ini di Composable.
-        // Asumsi: Jika Firebase user ada, coba ke Dashboard. DashboardScreen akan menangani
-        // apakah data profil lengkap atau perlu refresh.
-        // Jika tidak ada user Firebase, default ke Login.
-        val initialRoute = if (user != null) {
-            Log.d("AppNavHost", "Initial startDestination: Firebase user found, navigating to Dashboard.")
-            Screen.Dashboard.route // Jika sudah login Firebase, langsung ke Dashboard
+        val initialRoute = if (user != null && user.isEmailVerified) {
+            val isOnboardingCompleted = runBlocking { DataStoreUtil.isOnboardingCompleted(context).first() }
+            if (isOnboardingCompleted) {
+                Log.d("AppNavHost", "Initial startDestination: Firebase user found, email verified, onboarding completed. Navigating to Dashboard.")
+                Screen.Dashboard.route
+            } else {
+                Log.d("AppNavHost", "Initial startDestination: Firebase user found, email verified, but onboarding not completed. Navigating to Onboarding.")
+                Screen.Onboarding.route
+            }
         } else {
-            Log.d("AppNavHost", "Initial startDestination: No Firebase user, navigating to Login.")
-            Screen.Login.route // Jika belum login, ke Login
+            Log.d("AppNavHost", "Initial startDestination: No Firebase user or email not verified. Navigating to Login.")
+            Screen.Login.route
         }
         initialRoute
     }
@@ -230,10 +237,10 @@ fun AppNavHost(navController: NavHostController, loginViewModel: LoginViewModel 
                 navController = navController,
                 userViewModel = userViewModel,
                 onLogOutClick = {
-                    FirebaseAuth.getInstance().signOut()
-                    loginViewModel.resetLoginState() // Reset state login di ViewModel
+                    userViewModel.logout()
+                    loginViewModel.resetLoginState()
                     navController.navigate(Screen.Login.route) {
-                        popUpTo(0) { inclusive = true } // Hapus semua dari back stack
+                        popUpTo(0) { inclusive = true }
                         launchSingleTop = true
                     }
                     Log.i("AppNavHost", "User logged out, navigating to Login.")

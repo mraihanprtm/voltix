@@ -199,11 +199,7 @@ fun OnboardingScreen(
                 }
             }
 
-            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { // Tombol Navigasi
-                TextButton(onClick = {
-                    scope.launch { DataStoreUtil.saveOnboardingCompleted(context, true); onFinish() }
-                }) { Text("Skip", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium) }
-
+            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.Absolute.Right, verticalAlignment = Alignment.CenterVertically) { // Tombol Navigasi
                 Button(
                     onClick = {
                         if (pagerState.currentPage == pages.size - 1) { // Jika di halaman terakhir

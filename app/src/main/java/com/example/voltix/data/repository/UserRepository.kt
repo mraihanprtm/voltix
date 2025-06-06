@@ -248,13 +248,19 @@ class UserRepository @Inject constructor(
         }
     }
 
-    suspend fun deleteUser(user: UserEntity): Result<Unit> {
+    suspend fun deleteUserByUid(uid: String): Result<Unit> {
         return try {
-            Log.d(TAG, "Deleting user from Room: $user")
-            userDao.deleteUser(user)
-            Result.success(Unit)
+            val userToDelete = userDao.getUserByUid(uid)
+            if (userToDelete != null) {
+                Log.d(TAG, "Deleting user from Room by UID: $uid")
+                userDao.deleteUser(userToDelete)
+                Result.success(Unit)
+            } else {
+                Log.w(TAG, "No user found in Room for UID: $uid to delete.")
+                Result.success(Unit) // Tetap success jika user tidak ditemukan (sudah terhapus)
+            }
         } catch (e: Exception) {
-            Log.e(TAG, "Error deleting user from Room", e)
+            Log.e(TAG, "Error deleting user by UID from Room", e)
             Result.failure(e)
         }
     }

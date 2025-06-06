@@ -54,25 +54,25 @@ class AuthManager @Inject constructor(
             Log.d("AuthManager", "syncWithBackend: Backend response code: ${response.code()}")
 
             if (response.isSuccessful && response.body() != null) {
-                val backendResponse = response.body()!! // Asumsi ini adalah DTO utama dari backend
-                Log.d("AuthManager", "syncWithBackend: Backend response successful. Body: $backendResponse")
+                val backendResponse = response.body()!!
 
-                // Simpan token Laravel dari respons backend
-                backendResponse.apiToken?.let {
-                    tokenManager.saveApiToken(it)
+                val apiToken = backendResponse.apiToken
+                val userDataFromApi = backendResponse.user
+
+                if (apiToken != null && userDataFromApi != null) {
+                    tokenManager.saveApiToken(apiToken)
                     Log.d("AuthManager", "syncWithBackend: Laravel API token saved.")
-                }
 
-                // Ambil UserData dari backend (pastikan struktur DTO backendResponse sesuai)
-                val userDataFromApi = backendResponse.user // Ganti 'user' jika nama fieldnya berbeda
-                if (userDataFromApi != null) {
-                    // === PERUBAHAN KUNCI: UPDATE USER PROFILE DI REPOSITORY ===
                     userRepository.setCurrentUserProfile(userDataFromApi)
                     Log.i("AuthManager", "syncWithBackend: UserRepository._currentUserProfile updated with UserData from backend: ${userDataFromApi.name}")
-                    return AuthResponse.Success(userDataFromApi) // Kembalikan UserData
+                    return AuthResponse.Success(userDataFromApi)
                 } else {
-                    Log.e("AuthManager", "syncWithBackend: UserData from backend is null in successful response body.")
-                    return AuthResponse.Error("Data pengguna tidak ditemukan dari server meskipun login berhasil.")
+                    val missingData = mutableListOf<String>()
+                    if (apiToken == null) missingData.add("API Token")
+                    if (userDataFromApi == null) missingData.add("User Data")
+                    val errorMessage = "Gagal sinkronisasi: ${missingData.joinToString(" dan ")} tidak ditemukan dalam respons backend."
+                    Log.e("AuthManager", "syncWithBackend: $errorMessage. Backend response: $backendResponse")
+                    return AuthResponse.Error(errorMessage)
                 }
             } else {
                 val errorMsg = response.errorBody()?.string() ?: "Gagal sinkronisasi dengan server (Code: ${response.code()})"
@@ -80,6 +80,16 @@ class AuthManager @Inject constructor(
                 if (response.code() == 401) { // Jika token tidak valid, bersihkan
                     tokenManager.clearApiToken()
                     userRepository.setCurrentUserProfile(null) // Bersihkan profil juga
+                    // === TAMBAHKAN INI ===
+                    Log.w("AuthManager", "Token invalid (401), attempting to clear local user data.")
+                    try {
+                        val currentUser = firebaseAuth.currentUser
+                        if (currentUser != null) {
+                            userRepository.deleteUserByUid(currentUser.uid) // Anda perlu membuat method ini di UserRepository
+                        }
+                    } catch (e: Exception) {
+                        Log.e("AuthManager", "Failed to delete local user data after 401: ${e.message}", e)
+                    }
                 }
                 return AuthResponse.Error(errorMsg)
             }
@@ -167,15 +177,17 @@ class AuthManager @Inject constructor(
                 if (task.isSuccessful) {
                     val firebaseUser: FirebaseUser? = task.result?.user
                     if (firebaseUser != null) {
-                        // === PERUBAHAN KUNCI: PENGECEKAN VERIFIKASI EMAIL ===
                         if (firebaseUser.isEmailVerified) {
-                            // Email sudah diverifikasi, lanjutkan proses login normal
                             firebaseUser.getIdToken(true).addOnCompleteListener { tokenTask ->
                                 if (tokenTask.isSuccessful) {
                                     val idToken = tokenTask.result?.token
                                     if (idToken != null) {
+                                        // =========================================================
+                                        // === PERBAIKAN: TAMBAHKAN PANGGILAN syncWithBackend DI SINI ===
+                                        // =========================================================
                                         CoroutineScope(Dispatchers.IO).launch {
-                                            val backendResult = syncWithBackend(idToken, null) // null untuk nama karena ini login
+                                            Log.d("AuthManager", "Firebase ID Token obtained: ${idToken.substring(0, 20)}...") // Log sebagian token
+                                            val backendResult = syncWithBackend(idToken, null) // null for name as it's a login
                                             trySend(backendResult)
                                             close()
                                         }
@@ -189,7 +201,6 @@ class AuthManager @Inject constructor(
                                 }
                             }
                         } else {
-                            // Email belum diverifikasi
                             Log.w("AuthManager", "loginWithEmail: Login attempt untuk email yang belum diverifikasi: ${firebaseUser.email}")
                             // Opsional: signOut pengguna dari Firebase agar sesi tidak aktif jika email belum diverifikasi
                             // firebaseAuth.signOut()
@@ -297,7 +308,21 @@ class AuthManager @Inject constructor(
     fun signOut() {
         firebaseAuth.signOut()
         tokenManager.clearApiToken()
-        userRepository.setCurrentUserProfile(null) // BERSIHKAN JUGA PROFIL DI REPOSITORY
-        Log.d("AuthManager", "User signed out, Laravel token & user profile cleared.")
+        userRepository.setCurrentUserProfile(null)
+        // === TAMBAHKAN INI UNTUK SIGNOUT LENGKAP ===
+        CoroutineScope(Dispatchers.IO).launch {
+            val currentUser = firebaseAuth.currentUser // Firebase user mungkin null setelah signOut
+            if (currentUser != null) {
+                userRepository.deleteUserByUid(currentUser.uid) // Pastikan ini menghapus dari Room
+            } else {
+                // Jika firebaseUser sudah null, coba hapus semua user di Room (hati-hati jika ada multiple user)
+                // atau setidaknya user yang terakhir diketahui.
+                // Pendekatan lebih baik: hapus user yang *saat ini* dianggap terautentikasi oleh app.
+                // Misalnya, jika Anda menyimpan UID terakhir yang login di SharedPreferences.
+                // Untuk kesederhanaan, asumsikan kita ingin menghapus satu user.
+                Log.i("AuthManager", "Firebase user is null, skipping local user deletion by UID.")
+            }
+        }
+        Log.i("AuthManager", "User signed out, token cleared, and user profile removed.")
     }
 }

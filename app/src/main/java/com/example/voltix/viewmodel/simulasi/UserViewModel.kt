@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.voltix.data.entity.UserEntity
+import com.example.voltix.data.remote.AuthManager
 import com.example.voltix.data.remote.dto.ProfileUpdateRequest
 import com.example.voltix.data.remote.dto.UserData
 import com.example.voltix.data.repository.ListrikRepository
@@ -29,9 +30,14 @@ sealed class ProfileUpdateState {
  */
 @HiltViewModel
 class UserViewModel @Inject constructor(
+    private val authManager: AuthManager,
     private val userRepository: UserRepository,
     private val listrikRepository: ListrikRepository // Untuk mapping jenisListrik ke ID lokal
 ) : ViewModel() {
+
+    fun logout() {
+        authManager.signOut()
+    }
 
     private val _profileUpdateState = MutableStateFlow<ProfileUpdateState>(ProfileUpdateState.Idle)
     val profileUpdateState: StateFlow<ProfileUpdateState> = _profileUpdateState.asStateFlow()
