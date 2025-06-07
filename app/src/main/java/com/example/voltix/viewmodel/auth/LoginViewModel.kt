@@ -47,43 +47,43 @@ class LoginViewModel @Inject constructor(
 
     fun loginWithEmail(email: String, password: String) {
         viewModelScope.launch {
-            _loginState.value = LoginState.Loading // Set status loading saat proses dimulai
-            Log.d("LoginViewModel", "loginWithEmail: Attempting to login with email and password.")
-
-            // =======================================================================
-            // === PERBAIKAN UTAMA: Gunakan authManager.loginWithEmail di sini ===
-            // =======================================================================
+            _loginState.value = LoginState.Loading
+            Log.d("LoginViewModel", "loginWithEmail: Attempting to login with email: $email")
             authManager.loginWithEmail(email, password)
                 .collectLatest { authResponse ->
                     Log.d("LoginViewModel", "loginWithEmail: AuthResponse from AuthManager: $authResponse")
                     _loginState.value = when (authResponse) {
-                        is AuthResponse.Success -> LoginState.Success
+                        is AuthResponse.Success -> {
+                            val user = FirebaseAuth.getInstance().currentUser
+                            val isNewUser = user?.metadata?.creationTimestamp == user?.metadata?.lastSignInTimestamp
+                            Log.d("LoginViewModel", "loginWithEmail: isNewUser=$isNewUser")
+                            LoginState.Success
+                        }
                         is AuthResponse.Error -> LoginState.Error(authResponse.message)
-                        is AuthResponse.Loading -> LoginState.Loading // Tetap Loading jika AuthManager mengirim state ini
+                        is AuthResponse.Loading -> LoginState.Loading
                         else -> {
                             Log.w("LoginViewModel", "loginWithEmail: Unexpected AuthResponse type: $authResponse")
                             LoginState.Error("Terjadi kesalahan tak terduga saat login.")
                         }
                     }
-                    Log.d("LoginViewModel", "loginWithEmail: LoginState updated to: ${_loginState.value}")
                 }
         }
     }
 
-    /**
-     * Memproses token ID Google yang diterima dari UI setelah Google Sign-In berhasil.
-     *
-     * @param idTokenGoogle Token ID dari Google Sign-In SDK.
-     */
     fun processGoogleSignInToken(idTokenGoogle: String) {
         viewModelScope.launch {
             _loginState.value = LoginState.Loading
-            Log.d("LoginViewModel", "processGoogleSignInToken: Processing Google idToken: ${idTokenGoogle.take(20)}...")
+            Log.d("LoginViewModel", "processGoogleSignInToken: Processing Google idToken...")
             authManager.signInWithGoogleCredential(idTokenGoogle)
                 .collectLatest { authResponse ->
                     Log.d("LoginViewModel", "processGoogleSignInToken: AuthResponse from AuthManager: $authResponse")
                     _loginState.value = when (authResponse) {
-                        is AuthResponse.Success -> LoginState.Success
+                        is AuthResponse.Success -> {
+                            val user = FirebaseAuth.getInstance().currentUser
+                            val isNewUser = user?.metadata?.creationTimestamp == user?.metadata?.lastSignInTimestamp
+                            Log.d("LoginViewModel", "processGoogleSignInToken: isNewUser=$isNewUser")
+                            LoginState.Success
+                        }
                         is AuthResponse.Error -> LoginState.Error(authResponse.message)
                         is AuthResponse.Loading -> LoginState.Loading
                         else -> {
@@ -91,7 +91,6 @@ class LoginViewModel @Inject constructor(
                             LoginState.Error("Terjadi kesalahan tak terduga.")
                         }
                     }
-                    Log.d("LoginViewModel", "processGoogleSignInToken: LoginState updated to: ${_loginState.value}")
                 }
         }
     }

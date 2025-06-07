@@ -31,7 +31,6 @@ import com.example.voltix.R
 import com.example.voltix.data.entity.GolonganListrikEntity
 // UserEntity tidak lagi di-manage langsung di sini untuk update ke backend
 // import com.example.voltix.data.entity.UserEntity
-import com.example.voltix.util.DataStoreUtil
 import com.example.voltix.viewmodel.UserViewModel
 import com.example.voltix.viewmodel.ProfileUpdateState // Pastikan ProfileUpdateState di-import dari UserViewModel
 import com.example.voltix.viewmodel.simulasi.GolonganListrikViewModel
@@ -52,7 +51,6 @@ data class OnboardingPage(
 @Composable
 fun OnboardingScreen(
     onFinish: () -> Unit,
-    // Hapus viewModel: PerangkatViewModel jika tidak lagi digunakan
     userViewModel: UserViewModel = hiltViewModel(),
     golonganListrikViewModel: GolonganListrikViewModel = hiltViewModel()
 ) {
@@ -101,7 +99,6 @@ fun OnboardingScreen(
             is ProfileUpdateState.Success -> {
                 Log.i("OnboardingScreen", "Pilihan onboarding berhasil disimpan ke backend. User: ${state.updatedUserFromBackend}")
                 scope.launch {
-                    DataStoreUtil.saveOnboardingCompleted(context, true) // Tandai onboarding selesai
                     userViewModel.resetProfileUpdateState() // Reset state di ViewModel agar tidak trigger lagi
                     onFinish() // Panggil callback untuk navigasi
                 }
@@ -120,11 +117,9 @@ fun OnboardingScreen(
             is ProfileUpdateState.Idle -> {
                 // Tidak ada aksi
             }
-             else -> {
-                // Ini seharusnya tidak pernah terpanggil jika ProfileUpdateState sealed
-                // dan semua kasus sudah ditangani. Anda bisa tambahkan log di sini jika ingin tahu.
+            else -> {
                 Log.w("OnboardingScreen", "Kasus ProfileUpdateState yang tidak terduga: $state")
-             }
+            }
         }
     }
 

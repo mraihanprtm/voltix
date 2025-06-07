@@ -24,28 +24,8 @@ import com.google.firebase.auth.FirebaseAuth
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
-    val context = LocalContext.current
-    val isOnboardingCompleted by DataStoreUtil.isOnboardingCompleted(context).collectAsState(initial = false)
-    val authState by produceState(initialValue = FirebaseAuth.getInstance().currentUser) {
-        val authListener = FirebaseAuth.AuthStateListener { auth ->
-            value = auth.currentUser
-        }
-        FirebaseAuth.getInstance().addAuthStateListener(authListener)
-        awaitDispose { FirebaseAuth.getInstance().removeAuthStateListener(authListener) }
-    }
-
-    // Navigate based on auth state and onboarding status
-    LaunchedEffect(authState, isOnboardingCompleted) {
-        val targetRoute = when {
-            authState == null -> Screen.Login.route
-            !isOnboardingCompleted -> Screen.Onboarding.route
-            else -> Screen.Dashboard.route
-        }
-        navController.navigate(targetRoute) {
-            popUpTo(0) { inclusive = true }
-            launchSingleTop = true
-        }
-    }
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
 
     val bottomItems = listOf(
         Screen.Dashboard to R.drawable.ic_fa_home,
