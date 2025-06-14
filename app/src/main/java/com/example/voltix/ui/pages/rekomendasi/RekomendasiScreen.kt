@@ -34,30 +34,38 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.airbnb.lottie.compose.*
 import com.example.voltix.R
-import com.example.voltix.data.entity.LampWithPerangkat
+import com.example.voltix.data.entity.JenisRuangan
 import com.example.voltix.domain.LampRecommendationInput
 import com.example.voltix.domain.LampRecommendationResult
-import com.example.voltix.viewmodel.simulasi.RuanganViewModel
 import com.example.voltix.ui.viewmodel.RekomendasiViewModel
+import com.example.voltix.viewmodel.simulasi.RuanganViewModel
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
-import com.example.voltix.data.entity.JenisRuangan
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RekomendasiScreen(
-    ruanganId: Int,
     navController: NavController,
     ruanganViewModel: RuanganViewModel = hiltViewModel(),
     rekomViewModel: RekomendasiViewModel = hiltViewModel()
 ) {
+    // --- STATE MANAGEMENT ---
+    val isLoading by ruanganViewModel.isLoading.collectAsState()
     val ruanganList by ruanganViewModel.allRuangan.collectAsState()
+
     var selectedRuanganId by remember { mutableIntStateOf(-1) }
     var textFieldValue by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    // --- PEMICU PENGAMBILAN DATA ---
+    LaunchedEffect(key1 = Unit) {
+        val firebaseUid = FirebaseAuth.getInstance().currentUser?.uid
+        ruanganViewModel.loadRuanganForUser(firebaseUid)
+    }
+
+    // --- Efek samping saat ruangan dipilih ---
     LaunchedEffect(selectedRuanganId) {
         if (selectedRuanganId != -1) {
             ruanganViewModel.loadDetail(selectedRuanganId)
@@ -67,18 +75,16 @@ fun RekomendasiScreen(
 
     val detail by ruanganViewModel.ruanganDetail.collectAsState(initial = null)
     val lampuWithPerangkat by ruanganViewModel.lampuWithPerangkat.collectAsState(initial = emptyList())
-    val loading by rekomViewModel.loading.observeAsState(initial = false)
+    val loadingRekomendasi by rekomViewModel.loading.observeAsState(initial = false)
     val error by rekomViewModel.error.observeAsState(initial = null)
     val result by rekomViewModel.result.observeAsState(initial = null)
 
     var buttonClicked by remember { mutableStateOf(false) }
     val buttonScale by animateFloatAsState(
         targetValue = if (buttonClicked) 0.95f else 1f,
-        animationSpec = tween(durationMillis = 150),
-        label = "Button Scale Animation"
+        animationSpec = tween(durationMillis = 150), label = "Button Scale Animation"
     )
 
-    // Logika untuk menentukan ikon ruangan berdasarkan jenis ruangan yang dipilih
     val roomIconRes = remember(detail) {
         detail?.ruangan?.jenisRuangan?.let { jenisRuangan ->
             when (jenisRuangan) {
@@ -91,33 +97,17 @@ fun RekomendasiScreen(
         }
     }
 
-
+    // --- UI STRUCTURE ---
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text(
-                        "Rekomendasi Lampu",
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                },
+                title = { Text("Rekomendasi Lampu", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Kembali",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Kembali")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -126,416 +116,287 @@ fun RekomendasiScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(paddingValues),
+            contentAlignment = Alignment.Center
         ) {
             when {
-                loading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CustomLoadingAnimation()
-                    }
+                isLoading -> {
+                    CircularProgressIndicator()
                 }
                 ruanganList.isEmpty() -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        val emptyAnimation by rememberLottieComposition(
-                            LottieCompositionSpec.RawRes(R.raw.no_data_animation)
+                    EmptyState(navController)
+                }
+                else -> {
+                    MainContent(
+                        ruanganList = ruanganList,
+                        selectedRuanganId = selectedRuanganId,
+                        onRuanganSelected = { id, nama ->
+                            selectedRuanganId = id
+                            textFieldValue = nama
+                            expanded = false
+                            scope.launch { rekomViewModel.resetResult() }
+                        },
+                        textFieldValue = textFieldValue,
+                        onTextFieldValueChange = { textFieldValue = it },
+                        expanded = expanded,
+                        onExpandedChange = { expanded = it },
+                        detail = detail,
+                        lampuWithPerangkat = lampuWithPerangkat,
+                        buttonClicked = buttonClicked,
+                        onButtonClicked = { buttonClicked = true },
+                        buttonScale = buttonScale,
+                        rekomViewModel = rekomViewModel,
+                        result = result,
+                        error = error,
+                        roomIconRes = roomIconRes,
+                        navController = navController,
+                        loadingRekomendasi = loadingRekomendasi
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyState(navController: NavController) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        val emptyAnimation by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.no_data_animation))
+        LottieAnimation(
+            composition = emptyAnimation,
+            modifier = Modifier.size(150.dp),
+            iterations = LottieConstants.IterateForever
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text("Belum ada ruangan", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), textAlign = TextAlign.Center)
+        Spacer(modifier = Modifier.height(8.dp))
+        Text("Tambah ruangan baru untuk memulai.", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f), textAlign = TextAlign.Center)
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(
+            onClick = { navController.navigate("daftar_ruangan") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+        ) {
+            Text("Tambah Ruangan", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimary)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MainContent(
+    ruanganList: List<com.example.voltix.data.entity.RuanganEntity>,
+    selectedRuanganId: Int,
+    onRuanganSelected: (Int, String) -> Unit,
+    textFieldValue: String,
+    onTextFieldValueChange: (String) -> Unit,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    detail: com.example.voltix.data.entity.RuanganWithPerangkat?,
+    lampuWithPerangkat: List<com.example.voltix.data.entity.LampWithPerangkat>,
+    buttonClicked: Boolean,
+    onButtonClicked: () -> Unit,
+    buttonScale: Float,
+    rekomViewModel: RekomendasiViewModel,
+    result: LampRecommendationResult?,
+    error: String?,
+    roomIconRes: Int?,
+    navController: NavController,
+    loadingRekomendasi: Boolean
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        SectionCard(title = "Pilih Ruangan", modifier = Modifier.fillMaxWidth()) {
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = onExpandedChange
+            ) {
+                OutlinedTextField(
+                    value = if (selectedRuanganId != -1 && !expanded) textFieldValue else if (expanded) textFieldValue else "Pilih Ruangan",
+                    onValueChange = onTextFieldValueChange,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
+                    label = { Text("Ruangan") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                    readOnly = true
+                )
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { onExpandedChange(false) },
+                ) {
+                    ruanganList.forEach { ruangan ->
+                        DropdownMenuItem(
+                            text = { Text(ruangan.namaRuangan) },
+                            onClick = { onRuanganSelected(ruangan.id, ruangan.namaRuangan) }
                         )
-                        LottieAnimation(
-                            composition = emptyAnimation,
-                            modifier = Modifier.size(150.dp),
-                            iterations = LottieConstants.IterateForever
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "Belum ada ruangan",
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 0.3.sp
-                            ),
-                            color = MaterialTheme.colorScheme.onBackground,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Tambah ruangan baru dengan tombol di bawah!",
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                letterSpacing = 0.2.sp
-                            ),
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(
-                            onClick = { navController.navigate("daftar_ruangan") },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(48.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            )
-                        ) {
-                            Text(
-                                "Tambah Ruangan",
-                                style = MaterialTheme.typography.labelLarge.copy(
-                                    letterSpacing = 0.3.sp
-                                ),
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
+                    }
+                }
+            }
+        }
+
+        if (selectedRuanganId != -1) {
+            detail?.let { d ->
+                SectionCard(
+                    title = "Detail Ruangan",
+                    modifier = Modifier.fillMaxWidth(),
+                    iconRes = roomIconRes
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        DetailRow("Nama", d.ruangan.namaRuangan)
+                        DetailRow("Jenis", d.ruangan.jenisRuangan.label)
+                        DetailRow("Luas", "${d.ruangan.panjangRuangan} x ${d.ruangan.lebarRuangan} m²")
+                    }
+                }
+            }
+
+            val totalQty = lampuWithPerangkat.sumOf { it.jumlah }
+            val totalLumen = lampuWithPerangkat.sumOf { it.lumenTotal }
+            val totalPower = lampuWithPerangkat.sumOf { it.jumlah * it.dayaPerLamp.toDouble() }
+            val area = detail?.ruangan?.let { it.panjangRuangan * it.lebarRuangan } ?: 0f
+            val currentDensity = if (area > 0 && totalPower > 0) totalPower / area else 0.0
+
+            if (lampuWithPerangkat.isNotEmpty()) {
+                SectionCard(
+                    title = "Informasi Lampu Saat Ini",
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        DetailRow("Jumlah", "$totalQty lampu")
+                        DetailRow("Total Lumen", "$totalLumen lm")
+                        DetailRow("Total Daya", "%.2f W".format(totalPower))
+                        if (area > 0) {
+                            DetailRow("Densitas", "%.2f W/m²".format(currentDensity))
+                        }
+
+                        // Menampilkan animasi loading di dalam tombol
+                        AnimatedContent(
+                            targetState = loadingRekomendasi,
+                            transitionSpec = { fadeIn() togetherWith fadeOut() },
+                            label = "Loading Button Animation"
+                        ) { isLoading ->
+                            if (isLoading) {
+                                Box(modifier = Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.Center) {
+                                    CustomLoadingAnimation()
+                                }
+                            } else {
+                                Button(
+                                    onClick = {
+                                        onButtonClicked()
+                                        detail?.let { d ->
+                                            val firstLamp = lampuWithPerangkat.first()
+                                            val input = LampRecommendationInput(
+                                                jenisRuangan = d.ruangan.jenisRuangan,
+                                                panjang = d.ruangan.panjangRuangan,
+                                                lebar = d.ruangan.lebarRuangan,
+                                                lampOutputLm = firstLamp.lumenPerLamp,
+                                                lampEfficacy = (firstLamp.lumenPerLamp / firstLamp.dayaPerLamp).toInt()
+                                            )
+                                            rekomViewModel.calculateAndSave(
+                                                input,
+                                                null,
+                                                selectedRuanganId,
+                                                firstLamp.lampu.id
+                                            )
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(48.dp)
+                                        .scale(buttonScale),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                    enabled = detail != null && area > 0 && !loadingRekomendasi
+                                ) {
+                                    Text("Hitung Rekomendasi", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimary)
+                                }
+                            }
                         }
                     }
                 }
-                else -> {
+            } else {
+                SectionCard(title = "Informasi Lampu", modifier = Modifier.fillMaxWidth()) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("Belum ada lampu di ruangan ini.", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), textAlign = TextAlign.Center)
+                        Button(
+                            onClick = { navController.navigate("daftar_ruangan") },
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("Tambah Lampu", style = MaterialTheme.typography.labelLarge)
+                        }
+                    }
+                }
+            }
+
+            result?.let { r ->
+                SectionCard(title = "Hasil Rekomendasi", modifier = Modifier.fillMaxWidth()) {
                     AnimatedVisibility(
                         visible = true,
-                        enter = slideInVertically(animationSpec = tween(durationMillis = 300)) + fadeIn(),
-                        exit = slideOutVertically() + fadeOut()
+                        enter = fadeIn(animationSpec = tween(durationMillis = 500)) + expandVertically(animationSpec = tween(durationMillis = 500)),
+                        exit = shrinkVertically() + fadeOut()
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                                .verticalScroll(scrollState),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            // SectionCard "Pilih Ruangan" - Tanpa ikon watermark
-                            SectionCard(
-                                title = "Pilih Ruangan",
-                                modifier = Modifier.fillMaxWidth(),
-                                // iconRes TIDAK DIBERIKAN DI SINI
-                            ) {
-                                ExposedDropdownMenuBox(
-                                    expanded = expanded,
-                                    onExpandedChange = { expanded = it; if (it) textFieldValue = "" }
-                                ) {
-                                    OutlinedTextField(
-                                        value = textFieldValue,
-                                        onValueChange = { textFieldValue = it },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .menuAnchor(),
-                                        label = {
-                                            Text(
-                                                if (textFieldValue.isEmpty() && !expanded)
-                                                    "Pilih Ruangan"
-                                                else
-                                                    "Cari Ruangan"
-                                            )
-                                        },
-                                        trailingIcon = {
-                                            ExposedDropdownMenuDefaults.TrailingIcon(expanded)
-                                        },
-                                        colors = TextFieldDefaults.outlinedTextFieldColors(
-                                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                                            focusedLabelColor = MaterialTheme.colorScheme.primary,
-                                            cursorColor = MaterialTheme.colorScheme.primary
-                                        ),
-                                        singleLine = true,
-                                        isError = ruanganList.isEmpty(),
-                                        placeholder = {
-                                            Text(
-                                                "Ketik untuk mencari...",
-                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                                            )
-                                        }
-                                    )
-                                    ExposedDropdownMenu(
-                                        expanded = expanded,
-                                        onDismissRequest = { expanded = false },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .background(MaterialTheme.colorScheme.surface)
-                                            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
-                                            .padding(vertical = 4.dp)
-                                    ) {
-                                        val filteredRuangan = ruanganList.filter {
-                                            textFieldValue.isEmpty() ||
-                                                    it.namaRuangan.contains(textFieldValue, ignoreCase = true)
-                                        }
-                                        if (filteredRuangan.isEmpty() && textFieldValue.isNotEmpty()) {
-                                            DropdownMenuItem(
-                                                text = {
-                                                    Text(
-                                                        "Tidak ada ruangan ditemukan",
-                                                        style = MaterialTheme.typography.titleMedium.copy( // Font lebih besar
-                                                            letterSpacing = 0.2.sp,
-                                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                                                        )
-                                                    )
-                                                },
-                                                onClick = {},
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                                                enabled = false
-                                            )
-                                        } else {
-                                            filteredRuangan.forEach { ruangan ->
-                                                DropdownMenuItem(
-                                                    text = {
-                                                        Text(
-                                                            ruangan.namaRuangan,
-                                                            style = MaterialTheme.typography.titleMedium.copy( // Font lebih besar
-                                                                letterSpacing = 0.2.sp
-                                                            )
-                                                        )
-                                                    },
-                                                    onClick = {
-                                                        selectedRuanganId = ruangan.id
-                                                        textFieldValue = ruangan.namaRuangan
-                                                        expanded = false
-                                                        scope.launch { rekomViewModel.resetResult() }
-                                                    },
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            DetailRow("Jumlah Lampu", "${r.numberOfLamps}")
+                            DetailRow("Total Lumen", "${r.totalLumen} lm")
+                            DetailRow("Total Daya", "%.2f W".format(r.totalPowerWatt))
+                            DetailRow("Densitas Daya", "%.2f W/m²".format(r.densityPower))
+                            DetailRow("Status SNI", if (r.withinStandard) "✅ Sesuai SNI" else "❌ Melebihi SNI", color = if (r.withinStandard) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
+                        }
+                    }
+                }
+                SectionCard(title = "Perbandingan", modifier = Modifier.fillMaxWidth()) {
+                    ComparisonTable(
+                        currentQty = totalQty,
+                        currentTotalLumen = totalLumen,
+                        currentTotalPower = totalPower,
+                        currentDensity = currentDensity,
+                        recommendedResult = r
+                    )
+                }
+            }
 
-                            if (selectedRuanganId != -1 && ruanganList.isNotEmpty()) {
+            error?.let { errorMsg ->
+                SectionCard(title = "Error", modifier = Modifier.fillMaxWidth(), containerColor = MaterialTheme.colorScheme.errorContainer) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(errorMsg, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
+                        TextButton(
+                            onClick = {
                                 detail?.let { d ->
-                                    // SectionCard "Detail Ruangan" - Diberi ikon watermark
-                                    SectionCard(
-                                        title = "Detail Ruangan",
-                                        modifier = Modifier.fillMaxWidth(),
-                                        iconRes = roomIconRes // Hanya di sini ikon diteruskan
-                                    ) {
-                                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                            DetailRow("Nama", d.ruangan.namaRuangan)
-                                            DetailRow("Jenis", d.ruangan.jenisRuangan.label)
-                                            DetailRow(
-                                                "Luas",
-                                                "${d.ruangan.panjangRuangan} x ${d.ruangan.lebarRuangan} m²"
-                                            )
-                                        }
-                                    }
-                                }
-
-                                val totalQty = lampuWithPerangkat.sumOf { it.jumlah }
-                                val totalLumen = lampuWithPerangkat.sumOf { it.lumenTotal }
-                                val totalPower = lampuWithPerangkat.sumOf { it.jumlah * it.dayaPerLamp.toDouble() }
-                                val area = detail?.ruangan?.let { it.panjangRuangan * it.lebarRuangan } ?: 0f
-                                val currentDensity = if (area > 0 && totalPower > 0) totalPower / area else 0.0
-
-                                if (lampuWithPerangkat.isNotEmpty()) {
-                                    // SectionCard "Informasi Lampu Saat Ini" - Tanpa ikon watermark
-                                    SectionCard(
-                                        title = "Informasi Lampu Saat Ini",
-                                        modifier = Modifier.fillMaxWidth(),
-                                        // iconRes TIDAK DIBERIKAN DI SINI
-                                    ) {
-                                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                            DetailRow("Jumlah", "$totalQty lampu")
-                                            DetailRow("Total Lumen", "$totalLumen lm")
-                                            DetailRow("Total Daya", "%.2f W".format(totalPower))
-                                            if (area > 0) {
-                                                DetailRow("Densitas", "%.2f W/m²".format(currentDensity))
-                                            } else {
-                                                Text(
-                                                    "Densitas: Tidak dapat dihitung (dimensi belum diatur)",
-                                                    style = MaterialTheme.typography.titleMedium.copy( // Font lebih besar
-                                                        letterSpacing = 0.2.sp
-                                                    ),
-                                                    color = MaterialTheme.colorScheme.error
-                                                )
-                                            }
-                                            Button(
-                                                onClick = {
-                                                    buttonClicked = true
-                                                    detail?.let { d ->
-                                                        val firstLamp = lampuWithPerangkat.first()
-                                                        val input = LampRecommendationInput(
-                                                            jenisRuangan = d.ruangan.jenisRuangan,
-                                                            panjang = d.ruangan.panjangRuangan,
-                                                            lebar = d.ruangan.lebarRuangan,
-                                                            lampOutputLm = firstLamp.lumenPerLamp,
-                                                            lampEfficacy = (firstLamp.lumenPerLamp / firstLamp.dayaPerLamp).toInt()
-                                                        )
-                                                        rekomViewModel.calculateAndSave(
-                                                            input,
-                                                            null,
-                                                            selectedRuanganId,
-                                                            firstLamp.lampu.id
-                                                        )
-                                                    }
-                                                },
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .height(48.dp)
-                                                    .scale(buttonScale),
-                                                shape = RoundedCornerShape(12.dp),
-                                                colors = ButtonDefaults.buttonColors(
-                                                    containerColor = MaterialTheme.colorScheme.primary
-                                                ),
-                                                enabled = detail != null && area > 0 && lampuWithPerangkat.isNotEmpty()
-                                            ) {
-                                                Text(
-                                                    "Hitung Rekomendasi",
-                                                    style = MaterialTheme.typography.labelLarge.copy(
-                                                        letterSpacing = 0.3.sp
-                                                    ),
-                                                    color = MaterialTheme.colorScheme.onPrimary
-                                                )
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    // SectionCard "Informasi Lampu" - Tanpa ikon watermark
-                                    SectionCard(
-                                        title = "Informasi Lampu",
-                                        modifier = Modifier.fillMaxWidth(),
-                                        // iconRes TIDAK DIBERIKAN DI SINI
-                                    ) {
-                                        Column(
-                                            horizontalAlignment = Alignment.CenterHorizontally,
-                                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                                        ) {
-                                            Text(
-                                                "Belum ada lampu di ruangan ini.",
-                                                style = MaterialTheme.typography.titleMedium.copy( // Font lebih besar
-                                                    letterSpacing = 0.2.sp
-                                                ),
-                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                                                textAlign = TextAlign.Center
-                                            )
-                                            Button(
-                                                onClick = { navController.navigate("daftar_ruangan") },
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .height(48.dp),
-                                                shape = RoundedCornerShape(12.dp),
-                                                colors = ButtonDefaults.buttonColors(
-                                                    containerColor = MaterialTheme.colorScheme.primary
-                                                )
-                                            ) {
-                                                Text(
-                                                    "Tambah Lampu",
-                                                    style = MaterialTheme.typography.labelLarge.copy(
-                                                        letterSpacing = 0.3.sp
-                                                    ),
-                                                    color = MaterialTheme.colorScheme.onPrimary
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-
-                                result?.let { r ->
-                                    SectionCard(
-                                        title = "Hasil Rekomendasi",
-                                        modifier = Modifier.fillMaxWidth()
-                                        // iconRes tidak diberikan untuk ini
-                                    ) {
-                                        AnimatedVisibility(
-                                            visible = true,
-                                            enter = fadeIn(animationSpec = tween(
-                                                durationMillis = 500,
-                                                easing = FastOutSlowInEasing
-                                            )) + expandVertically(animationSpec = tween(
-                                                durationMillis = 500,
-                                                easing = FastOutSlowInEasing
-                                            )),
-                                            exit = shrinkVertically() + fadeOut()
-                                        ) {
-                                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                                DetailRow("Jumlah Lampu", "${r.numberOfLamps}")
-                                                DetailRow("Total Lumen", "${r.totalLumen} lm")
-                                                DetailRow("Total Daya", "%.2f W".format(r.totalPowerWatt))
-                                                DetailRow("Densitas Daya", "%.2f W/m²".format(r.densityPower))
-                                                DetailRow(
-                                                    "Status SNI",
-                                                    if (r.withinStandard) "✅ Sesuai SNI" else "❌ Melebihi SNI",
-                                                    color = if (r.withinStandard)
-                                                        MaterialTheme.colorScheme.primary
-                                                    else
-                                                        MaterialTheme.colorScheme.error
-                                                )
-                                            }
-                                        }
-                                    }
-                                    SectionCard(
-                                        title = "Perbandingan",
-                                        modifier = Modifier.fillMaxWidth()
-                                        // iconRes tidak diberikan untuk ini
-                                    ) {
-                                        ComparisonTable(
-                                            currentQty = totalQty,
-                                            currentTotalLumen = totalLumen,
-                                            currentTotalPower = totalPower,
-                                            currentDensity = currentDensity,
-                                            recommendedResult = r
+                                    val input = lampuWithPerangkat.firstOrNull()?.let { item ->
+                                        LampRecommendationInput(
+                                            jenisRuangan = d.ruangan.jenisRuangan,
+                                            panjang = d.ruangan.panjangRuangan,
+                                            lebar = d.ruangan.lebarRuangan,
+                                            lampOutputLm = item.lumenPerLamp,
+                                            lampEfficacy = (item.lumenPerLamp / item.dayaPerLamp).toInt()
                                         )
                                     }
-                                }
-
-                                error?.let { errorMsg ->
-                                    SectionCard(
-                                        title = "Error",
-                                        modifier = Modifier.fillMaxWidth(),
-                                        containerColor = MaterialTheme.colorScheme.errorContainer
-                                        // iconRes tidak diberikan untuk ini
-                                    ) {
-                                        Column(
-                                            horizontalAlignment = Alignment.CenterHorizontally,
-                                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                                        ) {
-                                            Text(
-                                                errorMsg,
-                                                style = MaterialTheme.typography.titleMedium.copy( // Font lebih besar
-                                                    letterSpacing = 0.2.sp
-                                                ),
-                                                color = MaterialTheme.colorScheme.error,
-                                                textAlign = TextAlign.Center
-                                            )
-                                            TextButton(
-                                                onClick = {
-                                                    detail?.let { d ->
-                                                        val input = lampuWithPerangkat.firstOrNull()?.let { item ->
-                                                            LampRecommendationInput(
-                                                                jenisRuangan = d.ruangan.jenisRuangan,
-                                                                panjang = d.ruangan.panjangRuangan,
-                                                                lebar = d.ruangan.lebarRuangan,
-                                                                lampOutputLm = item.lumenPerLamp,
-                                                                lampEfficacy = (item.lumenPerLamp / item.dayaPerLamp).toInt()
-                                                            )
-                                                        }
-                                                        if (input != null) {
-                                                            lampuWithPerangkat.firstOrNull()?.lampu?.id?.let {
-                                                                rekomViewModel.calculateAndSave(
-                                                                    input,
-                                                                    null,
-                                                                    selectedRuanganId,
-                                                                    it
-                                                                )
-                                                            }
-                                                        }
-                                                    }
-                                                },
-                                                enabled = detail != null && lampuWithPerangkat.isNotEmpty(),
-                                                modifier = Modifier.fillMaxWidth()
-                                            ) {
-                                                Text(
-                                                    "Coba Lagi",
-                                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                                        letterSpacing = 0.3.sp
-                                                    ),
-                                                    color = MaterialTheme.colorScheme.error
-                                                )
-                                            }
+                                    if (input != null) {
+                                        lampuWithPerangkat.firstOrNull()?.lampu?.id?.let {
+                                            rekomViewModel.calculateAndSave(input, null, selectedRuanganId, it)
                                         }
                                     }
                                 }
-                            }
+                            },
+                            enabled = detail != null && lampuWithPerangkat.isNotEmpty(),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Coba Lagi", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
                         }
                     }
                 }
@@ -544,13 +405,14 @@ fun RekomendasiScreen(
     }
 }
 
+
 @Composable
 private fun SectionCard(
     title: String,
     modifier: Modifier = Modifier,
     containerColor: Color = MaterialTheme.colorScheme.surface,
     onClick: (() -> Unit)? = null,
-    iconRes: Int? = null, // Parameter untuk ikon watermark
+    iconRes: Int? = null,
     content: @Composable () -> Unit
 ) {
     var scale by remember { mutableStateOf(1f) }
@@ -565,12 +427,7 @@ private fun SectionCard(
             .shadow(6.dp, RoundedCornerShape(12.dp))
             .graphicsLayer(scaleX = animatedScale, scaleY = animatedScale)
             .clip(RoundedCornerShape(12.dp))
-            .animateContentSize(
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioLowBouncy,
-                    stiffness = Spring.StiffnessLow
-                )
-            )
+            .animateContentSize(animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow))
             .then(
                 if (onClick != null) {
                     Modifier.pointerInput(Unit) {
@@ -595,7 +452,6 @@ private fun SectionCard(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            // Background Icon Watermark - hanya tampil jika iconRes tidak null
             iconRes?.let {
                 Image(
                     painter = painterResource(id = it),
@@ -604,38 +460,25 @@ private fun SectionCard(
                         .fillMaxWidth(0.7f)
                         .aspectRatio(1f)
                         .align(Alignment.TopEnd)
-                        .offset(x = 20.dp, y = (-20).dp) // Penyesuaian posisi
+                        .offset(x = 20.dp, y = (-20).dp)
                         .alpha(0.07f)
                 )
             }
-
             Column(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.5.sp
-                    ),
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp),
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
-                HorizontalDivider(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                )
+                HorizontalDivider(modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                 Spacer(modifier = Modifier.height(16.dp))
                 AnimatedVisibility(
                     visible = true,
-                    enter = fadeIn(animationSpec = tween(
-                        durationMillis = 600,
-                        easing = FastOutSlowInEasing
-                    )) + scaleIn(
-                        initialScale = 0.95f,
-                        animationSpec = tween(durationMillis = 600)
-                    ),
+                    enter = fadeIn(animationSpec = tween(durationMillis = 600, easing = FastOutSlowInEasing)) + scaleIn(initialScale = 0.95f, animationSpec = tween(durationMillis = 600)),
                     exit = fadeOut()
                 ) {
                     content()
@@ -658,16 +501,11 @@ private fun DetailRow(
     ) {
         Text(
             "$label:",
-            style = MaterialTheme.typography.titleMedium.copy( // Menggunakan titleMedium
-                letterSpacing = 0.2.sp,
-                fontWeight = FontWeight.Medium
-            )
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium)
         )
         Text(
             value,
-            style = MaterialTheme.typography.titleMedium.copy( // Menggunakan titleMedium
-                letterSpacing = 0.2.sp
-            ),
+            style = MaterialTheme.typography.titleMedium,
             color = color,
             textAlign = TextAlign.End,
             modifier = Modifier.weight(1f)
@@ -681,28 +519,19 @@ private fun CustomLoadingAnimation() {
     val pulse1 by infiniteTransition.animateFloat(
         initialValue = 0.8f,
         targetValue = 1.2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 600, easing = EaseInOut),
-            repeatMode = RepeatMode.Reverse
-        ),
+        animationSpec = infiniteRepeatable(animation = tween(durationMillis = 600, easing = EaseInOut), repeatMode = RepeatMode.Reverse),
         label = "Pulse 1"
     )
     val pulse2 by infiniteTransition.animateFloat(
         initialValue = 0.8f,
         targetValue = 1.2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 600, easing = EaseInOut, delayMillis = 200),
-            repeatMode = RepeatMode.Reverse
-        ),
+        animationSpec = infiniteRepeatable(animation = tween(durationMillis = 600, easing = EaseInOut, delayMillis = 200), repeatMode = RepeatMode.Reverse),
         label = "Pulse 2"
     )
     val pulse3 by infiniteTransition.animateFloat(
         initialValue = 0.8f,
         targetValue = 1.2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 600, easing = EaseInOut, delayMillis = 400),
-            repeatMode = RepeatMode.Reverse
-        ),
+        animationSpec = infiniteRepeatable(animation = tween(durationMillis = 600, easing = EaseInOut, delayMillis = 400), repeatMode = RepeatMode.Reverse),
         label = "Pulse 3"
     )
 
@@ -715,34 +544,12 @@ private fun CustomLoadingAnimation() {
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.size(60.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(12.dp)
-                    .scale(pulse1)
-                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(50))
-            )
-            Box(
-                modifier = Modifier
-                    .size(12.dp)
-                    .scale(pulse2)
-                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(50))
-            )
-            Box(
-                modifier = Modifier
-                    .size(12.dp)
-                    .scale(pulse3)
-                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(50))
-            )
+            Box(modifier = Modifier.size(12.dp).scale(pulse1).background(MaterialTheme.colorScheme.primary, RoundedCornerShape(50)))
+            Box(modifier = Modifier.size(12.dp).scale(pulse2).background(MaterialTheme.colorScheme.primary, RoundedCornerShape(50)))
+            Box(modifier = Modifier.size(12.dp).scale(pulse3).background(MaterialTheme.colorScheme.primary, RoundedCornerShape(50)))
         }
         Spacer(modifier = Modifier.height(12.dp))
-        Text(
-            "Menghitung...",
-            style = MaterialTheme.typography.bodyLarge.copy(
-                letterSpacing = 0.2.sp,
-                fontWeight = FontWeight.Medium
-            ),
-            color = MaterialTheme.colorScheme.onSurface
-        )
+        Text("Menghitung...", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), color = MaterialTheme.colorScheme.onSurface)
     }
 }
 
@@ -758,9 +565,7 @@ fun ComparisonTable(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(6.dp, RoundedCornerShape(12.dp)),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(
             modifier = Modifier.padding(12.dp),
@@ -770,105 +575,30 @@ fun ComparisonTable(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    "Kategori",
-                    modifier = Modifier.weight(1.5f),
-                    style = MaterialTheme.typography.titleSmall.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 0.2.sp
-                    )
-                )
-                Text(
-                    "Saat Ini",
-                    modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.titleSmall.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 0.2.sp
-                    )
-                )
-                Text(
-                    "Rekomendasi",
-                    modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.titleSmall.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 0.2.sp
-                    )
-                )
+                Text("Kategori", modifier = Modifier.weight(1.5f), style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold))
+                Text("Saat Ini", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold))
+                Text("Rekomendasi", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold))
             }
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-            )
-            ComparisonTableRow(
-                "Jumlah Lampu",
-                currentQty.toString(),
-                recommendedResult.numberOfLamps.toString()
-            )
-            ComparisonTableRow(
-                "Total Lumen",
-                "$currentTotalLumen lm",
-                "${recommendedResult.totalLumen} lm"
-            )
-            ComparisonTableRow(
-                "Total Daya",
-                "%.2f W".format(currentTotalPower),
-                "%.2f W".format(recommendedResult.totalPowerWatt)
-            )
-            ComparisonTableRow(
-                "Densitas Daya",
-                "%.2f W/m²".format(currentDensity),
-                "%.2f W/m²".format(recommendedResult.densityPower)
-            )
-            ComparisonTableRow(
-                "Status SNI",
-                "-",
-                if (recommendedResult.withinStandard) "✅ Sesuai" else "❌ Melebihi"
-            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+            ComparisonTableRow("Jumlah Lampu", currentQty.toString(), recommendedResult.numberOfLamps.toString())
+            ComparisonTableRow("Total Lumen", "$currentTotalLumen lm", "${recommendedResult.totalLumen} lm")
+            ComparisonTableRow("Total Daya", "%.2f W".format(currentTotalPower), "%.2f W".format(recommendedResult.totalPowerWatt))
+            ComparisonTableRow("Densitas Daya", "%.2f W/m²".format(currentDensity), "%.2f W/m²".format(recommendedResult.densityPower))
+            ComparisonTableRow("Status SNI", "-", if (recommendedResult.withinStandard) "✅ Sesuai" else "❌ Melebihi")
         }
     }
 }
 
 @Composable
-fun ComparisonTableRow(
-    label: String,
-    current: String,
-    recommended: String
-) {
+fun ComparisonTableRow(label: String, current: String, recommended: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            label,
-            modifier = Modifier.weight(1.5f),
-            style = MaterialTheme.typography.bodyMedium.copy(
-                letterSpacing = 0.2.sp
-            ),
-            overflow = TextOverflow.Ellipsis,
-            maxLines = 1
-        )
-        Text(
-            current,
-            modifier = Modifier.weight(1f),
-            textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.bodyMedium.copy(
-                letterSpacing = 0.2.sp
-            ),
-            overflow = TextOverflow.Ellipsis,
-            maxLines = 1
-        )
-        Text(
-            recommended,
-            modifier = Modifier.weight(1f),
-            textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.bodyMedium.copy(
-                letterSpacing = 0.2.sp
-            ),
-            overflow = TextOverflow.Ellipsis,
-            maxLines = 1
-        )
+        Text(label, modifier = Modifier.weight(1.5f), style = MaterialTheme.typography.bodyMedium, overflow = TextOverflow.Ellipsis, maxLines = 1)
+        Text(current, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium, overflow = TextOverflow.Ellipsis, maxLines = 1)
+        Text(recommended, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium, overflow = TextOverflow.Ellipsis, maxLines = 1)
     }
 }

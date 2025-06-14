@@ -47,11 +47,7 @@ fun MainScreen() {
                                     (currentRoute?.startsWith("${screen.route}/") == true) ||
                                     (screen == Screen.Rekomendasi && currentRoute?.startsWith("rekomendasi") == true),
                             onClick = {
-                                val targetRoute = when (screen) {
-                                    Screen.Rekomendasi -> Screen.Rekomendasi.createRoute()
-                                    else -> screen.route
-                                }
-                                navController.navigate(targetRoute) {
+                                navController.navigate(screen.route) {
                                     popUpTo(navController.graph.startDestinationId) { inclusive = true }
                                     launchSingleTop = true
                                 }

@@ -58,10 +58,7 @@ sealed class Screen(val route: String, val title: String = "") {
     data object DetailRuangan : Screen("detail_ruangan/{ruanganId}", "Detail Ruangan") {
         fun createRoute(ruanganId: Int) = "detail_ruangan/$ruanganId"
     }
-    data object Rekomendasi : Screen("rekomendasi?ruanganId={ruanganId}", "Lampu") {
-        fun createRoute(ruanganId: Int? = null): String =
-            if (ruanganId != null && ruanganId != -1) "rekomendasi?ruanganId=$ruanganId" else "rekomendasi"
-    }
+    data object Rekomendasi : Screen("rekomendasi", "Lampu")
     data object ImagePicker : Screen("image_picker/{ruanganId}", "Image Picker") {
         fun createRoute(ruanganId: Int) = "image_picker/$ruanganId"
     }
@@ -243,19 +240,9 @@ fun AppNavHost(navController: NavHostController, loginViewModel: LoginViewModel 
             )
             Log.d("AppNavHost", "Displaying SettingScreen.")
         }
-        composable(
-            route = Screen.Rekomendasi.route,
-            arguments = listOf(
-                navArgument("ruanganId") {
-                    type = NavType.IntType
-                    defaultValue = -1
-                    nullable = false
-                }
-            )
-        ) { backStack ->
-            val id = backStack.arguments?.getInt("ruanganId") ?: -1
-            RekomendasiScreen(ruanganId = id, navController = navController)
-            Log.d("AppNavHost", "Displaying RekomendasiScreen for ruanganId: $id.")
+        composable(Screen.Rekomendasi.route) {
+            RekomendasiScreen(navController = navController)
+            Log.d("AppNavHost", "Displaying RekomendasiScreen.")
         }
         composable(
             route = "${Screen.SimulasiBebas.route}?simulationId={simulationId}",
