@@ -4,18 +4,21 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.launch
 import com.example.voltix.data.entity.RekomendasiPenghematanLampuEntity
+import com.example.voltix.data.repository.RekomendasiRepository
+import com.example.voltix.data.repository.RuanganAndPerangkatRepository
 import com.example.voltix.domain.LampRecommendationCalculator
 import com.example.voltix.domain.LampRecommendationInput
+import com.example.voltix.domain.SmartRecommendationResult
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class RekomendasiViewModel @Inject constructor(
     private val calculator: LampRecommendationCalculator,
-    private val rekomRepo: com.example.voltix.data.repository.RekomendasiRepository,
-    private val perangkatRepo: com.example.voltix.data.repository.RuanganAndPerangkatRepository
+    private val rekomRepo: RekomendasiRepository,
+    private val perangkatRepo: RuanganAndPerangkatRepository
 ) : ViewModel() {
 
     private val _loading = MutableLiveData(false)
@@ -24,14 +27,11 @@ class RekomendasiViewModel @Inject constructor(
     private val _error = MutableLiveData<String?>(null)
     val error: LiveData<String?> = _error
 
-    private val _result = MutableLiveData<com.example.voltix.domain.LampRecommendationResult?>(null)
-    val result: LiveData<com.example.voltix.domain.LampRecommendationResult?> = _result
+    private val _result = MutableLiveData<SmartRecommendationResult?>(null)
+    val result: LiveData<SmartRecommendationResult?> = _result
 
     private val _detail = MutableLiveData<com.example.voltix.data.entity.RekomendasiDetail?>()
     val detail: LiveData<com.example.voltix.data.entity.RekomendasiDetail?> = _detail
-
-    private val _perangkat = MutableLiveData<com.example.voltix.data.entity.PerangkatEntity?>()
-    val perangkat: LiveData<com.example.voltix.data.entity.PerangkatEntity?> = _perangkat
 
     fun calculateAndSave(
         input: LampRecommendationInput,
@@ -47,12 +47,18 @@ class RekomendasiViewModel @Inject constructor(
                 val res = calculator.calculate(input)
                 _result.value = res
 
-                val entity = RekomendasiPenghematanLampuEntity(
-                    userId = userId,
-                    ruanganId = ruanganId,
-                    lampuId = lampuId
-                )
-                rekomRepo.insertRekomendasi(entity)
+                // PERBAIKAN: Gunakan 'calculation' sesuai dengan nama properti di SmartRecommendationResult
+                if (res.isFeasible) {
+                    val entity = RekomendasiPenghematanLampuEntity(
+                        userId = userId,
+                        ruanganId = ruanganId,
+                        lampuId = lampuId
+                        // Anda bisa menambahkan kolom baru di Entity nanti dan mengisi datanya dari:
+                        // jumlahLampuDirekomendasikan = res.calculation.numberOfLamps,
+                        // totalDayaDirekomendasikan = res.calculation.totalPowerWatt
+                    )
+                    rekomRepo.insertRekomendasi(entity)
+                }
 
             } catch (e: Exception) {
                 _error.value = e.localizedMessage ?: "Error saat kalkulasi"
@@ -76,7 +82,7 @@ class RekomendasiViewModel @Inject constructor(
         }
     }
 
-    /** Bersihkan hasil dan error */
+    /** Bersihkan hasil dan error untuk perhitungan baru. */
     fun resetResult() {
         _result.value = null
         _error.value = null

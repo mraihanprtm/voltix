@@ -7,16 +7,28 @@ data class LampRecommendationInput(
     val panjang: Float,
     val lebar: Float,
     val lampOutputLm: Int,
-    val lampEfficacy: Int
-) {
-    // Menghitung daya lampu (dalam watt) berdasarkan output lumen dan efikasi
-    val lampPowerWatt: Double get() = lampOutputLm.toDouble() / lampEfficacy
-}
+    val lampPowerWatt: Double
+)
 
-data class LampRecommendationResult(
-    val area: Float,
+/**
+ * Model hasil baru yang bisa menangani dua skenario:
+ * 1. Rekomendasi layak (isFeasible = true)
+ * 2. Lampu pilihan tidak efisien (isFeasible = false)
+ */
+data class SmartRecommendationResult(
+    val isFeasible: Boolean,
+    val message: String,
     val requiredLux: Int,
-    val totalFlux: Double,
+    val requiredLumen: Double,
+    // 'calculation' akan SELALU berisi hasil perhitungan.
+    // 'isFeasible' akan menentukan bagaimana UI menampilkannya.
+    val calculation: LampRecommendationResult
+)
+
+/**
+ * Model yang berisi detail kalkulasi.
+ */
+data class LampRecommendationResult(
     val numberOfLamps: Int,
     val totalLumen: Int,
     val totalPowerWatt: Double,
