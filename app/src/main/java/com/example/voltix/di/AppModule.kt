@@ -5,12 +5,17 @@ import android.content.Context
 import androidx.room.Room // Pastikan import Room ada jika membuat AppDatabase
 import com.example.voltix.data.database.AppDatabase // Pastikan import AppDatabase ada
 import com.example.voltix.data.dao.* // Import semua DAO Anda
+import com.example.voltix.data.remote.ApiService
 import com.example.voltix.data.remote.AuthManager
 import com.example.voltix.data.remote.api.AuthApiService
+import com.example.voltix.data.remote.SyncManager
 import com.example.voltix.data.repository.*
 import com.example.voltix.data.util.TokenManager
 import com.example.voltix.domain.LampRecommendationCalculator
+import com.example.voltix.util.LocalTimeAdapter
 import com.google.firebase.auth.FirebaseAuth
+import com.google.gson.GsonBuilder
+import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import dagger.Module
 import dagger.Provides
@@ -21,6 +26,11 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import okhttp3.OkHttpClient
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import java.time.LocalTime
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 @Module
@@ -153,5 +163,56 @@ object AppModule {
         tokenManager: TokenManager
     ): AuthManager {
         return AuthManager(context, firebaseAuth, authApiService, userRepository, tokenManager)
+    }
+
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(): OkHttpClient {
+        return OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .build()
+    }
+
+
+    @Provides
+    @Singleton
+    fun provideGson(): Gson {
+        return GsonBuilder()
+            .registerTypeAdapter(LocalTime::class.java, LocalTimeAdapter())
+            .create()
+    }
+
+    @Provides
+    @Singleton
+    fun provideRetrofit(gson: Gson, okHttpClient: OkHttpClient): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl("http://10.10.128.137:8000/api/") // Replace with your actual base URL
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create(gson))
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideApiService(retrofit: Retrofit): ApiService {
+        return retrofit.create(ApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideContext(@ApplicationContext appContext: Context): Context {
+        return appContext
+    }
+
+    @Provides
+    @Singleton
+    fun provideSyncManger(
+        apiService: ApiService,
+        database: AppDatabase,
+        @ApplicationContext context: Context
+    ): SyncManager {
+        return SyncManager(apiService, database, context)
     }
 }

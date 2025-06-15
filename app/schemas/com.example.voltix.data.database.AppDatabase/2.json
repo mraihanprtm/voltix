@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 2,
-    "identityHash": "98b418a4d4f41fc3768c3dd71410ead4",
+    "identityHash": "f504eedad52adc5921d3786fd8db40ef",
     "entities": [
       {
         "tableName": "users",
@@ -68,7 +68,7 @@
       },
       {
         "tableName": "perangkat",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `nama` TEXT NOT NULL, `jumlah` INTEGER NOT NULL, `daya` INTEGER NOT NULL, `jenis` TEXT NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `nama` TEXT NOT NULL, `jumlah` INTEGER NOT NULL, `daya` INTEGER NOT NULL, `jenis` TEXT NOT NULL, `lastModified` INTEGER NOT NULL, `isDeleted` INTEGER NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -99,6 +99,18 @@
             "columnName": "jenis",
             "affinity": "TEXT",
             "notNull": true
+          },
+          {
+            "fieldPath": "lastModified",
+            "columnName": "lastModified",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isDeleted",
+            "columnName": "isDeleted",
+            "affinity": "INTEGER",
+            "notNull": true
           }
         ],
         "primaryKey": {
@@ -112,7 +124,7 @@
       },
       {
         "tableName": "ruangan",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `userFirebaseUid` TEXT NOT NULL, `namaRuangan` TEXT NOT NULL, `panjangRuangan` REAL NOT NULL, `lebarRuangan` REAL NOT NULL, `jenisRuangan` TEXT NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `userFirebaseUid` TEXT NOT NULL, `namaRuangan` TEXT NOT NULL, `panjangRuangan` REAL NOT NULL, `lebarRuangan` REAL NOT NULL, `jenisRuangan` TEXT NOT NULL, `lastModified` INTEGER NOT NULL, `isDeleted` INTEGER NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -149,6 +161,18 @@
             "columnName": "jenisRuangan",
             "affinity": "TEXT",
             "notNull": true
+          },
+          {
+            "fieldPath": "lastModified",
+            "columnName": "lastModified",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isDeleted",
+            "columnName": "isDeleted",
+            "affinity": "INTEGER",
+            "notNull": true
           }
         ],
         "primaryKey": {
@@ -172,7 +196,7 @@
       },
       {
         "tableName": "lampu",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `perangkatId` INTEGER NOT NULL, `jenis` TEXT NOT NULL, `lumen` INTEGER NOT NULL, FOREIGN KEY(`perangkatId`) REFERENCES `perangkat`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `perangkatId` INTEGER NOT NULL, `jenis` TEXT NOT NULL, `lumen` INTEGER NOT NULL, `lastModified` INTEGER NOT NULL, `isDeleted` INTEGER NOT NULL, FOREIGN KEY(`perangkatId`) REFERENCES `perangkat`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -195,6 +219,18 @@
           {
             "fieldPath": "lumen",
             "columnName": "lumen",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastModified",
+            "columnName": "lastModified",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isDeleted",
+            "columnName": "isDeleted",
             "affinity": "INTEGER",
             "notNull": true
           }
@@ -232,7 +268,7 @@
       },
       {
         "tableName": "ruangan_perangkat_cross_ref",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`ruanganId` INTEGER NOT NULL, `perangkatId` INTEGER NOT NULL, `waktuNyala` TEXT NOT NULL, `waktuMati` TEXT NOT NULL, PRIMARY KEY(`ruanganId`, `perangkatId`), FOREIGN KEY(`ruanganId`) REFERENCES `ruangan`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`perangkatId`) REFERENCES `perangkat`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`ruanganId` INTEGER NOT NULL, `perangkatId` INTEGER NOT NULL, `waktuNyala` TEXT NOT NULL, `waktuMati` TEXT NOT NULL, `lastModified` INTEGER NOT NULL, `isDeleted` INTEGER NOT NULL, PRIMARY KEY(`ruanganId`, `perangkatId`), FOREIGN KEY(`ruanganId`) REFERENCES `ruangan`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`perangkatId`) REFERENCES `perangkat`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "ruanganId",
@@ -256,6 +292,18 @@
             "fieldPath": "waktuMati",
             "columnName": "waktuMati",
             "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastModified",
+            "columnName": "lastModified",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isDeleted",
+            "columnName": "isDeleted",
+            "affinity": "INTEGER",
             "notNull": true
           }
         ],

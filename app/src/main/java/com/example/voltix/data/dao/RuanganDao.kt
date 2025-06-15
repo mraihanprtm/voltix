@@ -58,4 +58,13 @@ interface RuanganDAO {
     @Query("SELECT * FROM ruangan WHERE userFirebaseUid = :userFirebaseUid ORDER BY namaRuangan ASC") // Tambahkan ORDER BY jika perlu
     fun getAllRuanganWithPerangkatForUser(userFirebaseUid: String): Flow<List<RuanganWithPerangkat>>
     // ---------------------------------
+
+    @Insert
+    suspend fun insertAll(ruangan: List<RuanganEntity>)
+
+    @Query("SELECT * FROM ruangan WHERE lastModified > :timestamp AND isDeleted = 0")
+    suspend fun getChangedSince(timestamp: Long): List<RuanganEntity>
+
+    @Query("SELECT * FROM ruangan WHERE isDeleted = 1")
+    suspend fun getDeleted(): List<RuanganEntity>
 }

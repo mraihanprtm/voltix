@@ -55,4 +55,22 @@ interface PerangkatDAO {
 
     @Query("SELECT * FROM ruangan_perangkat_cross_ref WHERE ruanganId = :ruanganId AND perangkatId = :perangkatId")
     suspend fun getCrossRef(ruanganId: Int, perangkatId: Int): RuanganPerangkatCrossRef?
+
+    @Insert
+    suspend fun insertAllPerangkat(perangkat: List<PerangkatEntity>)
+
+    @Insert
+    suspend fun insertAllLampu(lampu: List<LampuEntity>)
+
+    @Query("SELECT * FROM perangkat WHERE lastModified > :timestamp AND isDeleted = 0")
+    suspend fun getChangedSince(timestamp: Long): List<PerangkatEntity>
+
+    @Query("SELECT * FROM perangkat WHERE isDeleted = 1")
+    suspend fun getDeleted(): List<PerangkatEntity>
+
+    @Query("SELECT * FROM lampu WHERE lastModified > :timestamp AND isDeleted = 0")
+    suspend fun getLampuChangedSince(timestamp: Long): List<LampuEntity>
+
+    @Query("SELECT * FROM lampu WHERE isDeleted = 1")
+    suspend fun getLampuDeleted(): List<LampuEntity>
 }

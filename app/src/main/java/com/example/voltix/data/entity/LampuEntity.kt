@@ -29,6 +29,8 @@ data class LampuEntity(
     val id: Int = 0,
     val perangkatId: Int, // Kolom untuk relasi dengan PerangkatEntity
     val jenis: jenisLampu,
-    val lumen: Int
+    val lumen: Int,
+    val lastModified: Long = System.currentTimeMillis(),
+    val isDeleted: Boolean = false,
 )
 

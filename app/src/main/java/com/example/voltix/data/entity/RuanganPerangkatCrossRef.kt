@@ -32,4 +32,6 @@ data class RuanganPerangkatCrossRef(
     val perangkatId: Int,
     val waktuNyala: LocalTime,
     val waktuMati: LocalTime,
+    val lastModified: Long = System.currentTimeMillis(),
+    val isDeleted: Boolean = false,
 )

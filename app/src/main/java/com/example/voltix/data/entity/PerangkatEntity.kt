@@ -15,5 +15,7 @@ data class PerangkatEntity(
     val nama: String,
     val jumlah: Int,
     val daya: Int, // dalam watt
-    val jenis: jenis
+    val jenis: jenis,
+    val lastModified: Long = System.currentTimeMillis(),
+    val isDeleted: Boolean = false,
 )

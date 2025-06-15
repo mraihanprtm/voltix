@@ -39,7 +39,7 @@ interface RuanganPerangkatCrossRefDAO {
     suspend fun getCrossRefByPerangkatId(perangkatId: Int): RuanganPerangkatCrossRef
 
     @Query("""
-        SELECT ruanganId, perangkatId, waktuNyala, waktuMati
+        SELECT *
         FROM ruangan_perangkat_cross_ref
         WHERE ruanganId = :ruanganId
     """)
@@ -58,4 +58,13 @@ interface RuanganPerangkatCrossRefDAO {
 
     @Query("SELECT * FROM ruangan_perangkat_cross_ref WHERE ruanganId = :ruanganId AND perangkatId = :perangkatId")
     suspend fun getCrossRef(ruanganId: Int, perangkatId: Int): RuanganPerangkatCrossRef?
+
+    @Insert
+    suspend fun insertAll(crossRefs: List<RuanganPerangkatCrossRef>)
+
+    @Query("SELECT * FROM ruangan_perangkat_cross_ref WHERE lastModified > :timestamp AND isDeleted = 1")
+    suspend fun getChangedSince(timestamp: Long): List<RuanganPerangkatCrossRef>
+
+    @Query("SELECT * FROM ruangan_perangkat_cross_ref WHERE isDeleted = 1")
+    suspend fun getDeleted(): List<RuanganPerangkatCrossRef>
 }

@@ -24,8 +24,8 @@ data class RuanganEntity(
 
     val namaRuangan: String,
     val panjangRuangan: Float, // dalam meter
-    val lebarRuangan: Float, // dalam meter
-    val jenisRuangan: JenisRuangan
-    // Tambahkan field isPrabayar di sini jika setiap ruangan punya setting prabayar/pascabayar sendiri
-    // Namun, dari diskusi kita sebelumnya, isPrabayar ada di UserEntity
+    val lebarRuangan: Float,   // dalam meter
+    val jenisRuangan: JenisRuangan,
+    val lastModified: Long = System.currentTimeMillis(),
+    val isDeleted: Boolean = false,
 )
