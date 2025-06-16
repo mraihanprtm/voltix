@@ -31,10 +31,10 @@ interface PerangkatDAO {
     @Query("SELECT * FROM perangkat WHERE id = :id")
     suspend fun getPerangkatById(id: Int): PerangkatEntity?
 
-    @Query("SELECT * FROM perangkat")
+    @Query("SELECT * FROM perangkat WHERE isDeleted = 0")
     suspend fun getAllPerangkat(): List<PerangkatEntity>
 
-    @Query("SELECT * FROM perangkat")
+    @Query("SELECT * FROM perangkat WHERE isDeleted = 0")
     fun getAllPerangkatLive(): LiveData<List<PerangkatEntity>>
 
     @Insert
@@ -50,9 +50,27 @@ interface PerangkatDAO {
     suspend fun getLampuByPerangkatId(perangkatId: Int): LampuEntity?
 
     @Transaction
-    @Query("SELECT * FROM ruangan")
+    @Query("SELECT * FROM ruangan WHERE isDeleted = 0 ORDER BY namaRuangan ASC")
     fun getAllRuanganWithPerangkat(): Flow<List<RuanganWithPerangkat>>
 
     @Query("SELECT * FROM ruangan_perangkat_cross_ref WHERE ruanganId = :ruanganId AND perangkatId = :perangkatId")
     suspend fun getCrossRef(ruanganId: Int, perangkatId: Int): RuanganPerangkatCrossRef?
+
+    @Insert
+    suspend fun insertAllPerangkat(perangkat: List<PerangkatEntity>)
+
+    @Insert
+    suspend fun insertAllLampu(lampu: List<LampuEntity>)
+
+    @Query("SELECT * FROM perangkat WHERE lastModified > :timestamp AND isDeleted = 0")
+    suspend fun getChangedSince(timestamp: Long): List<PerangkatEntity>
+
+    @Query("SELECT * FROM perangkat WHERE isDeleted = 1")
+    suspend fun getDeleted(): List<PerangkatEntity>
+
+    @Query("SELECT * FROM lampu WHERE lastModified > :timestamp AND isDeleted = 0")
+    suspend fun getLampuChangedSince(timestamp: Long): List<LampuEntity>
+
+    @Query("SELECT * FROM lampu WHERE isDeleted = 1")
+    suspend fun getLampuDeleted(): List<LampuEntity>
 }

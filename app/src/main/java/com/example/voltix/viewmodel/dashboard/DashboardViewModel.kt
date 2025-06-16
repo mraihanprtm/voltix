@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.voltix.data.remote.dto.UserData
+import com.example.voltix.data.remote.SyncManager
 import com.example.voltix.data.repository.DashboardData
 import com.example.voltix.data.repository.DashboardRepository
 import com.example.voltix.data.repository.SimulationRepository
@@ -24,7 +25,8 @@ enum class TimeRange {
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val dashboardRepository: DashboardRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val syncManager: SyncManager
 ) : ViewModel() {
     private val _dashboardData = MutableStateFlow<DashboardData?>(null)
     val dashboardData: StateFlow<DashboardData?> = _dashboardData.asStateFlow()
@@ -38,6 +40,7 @@ class DashboardViewModel @Inject constructor(
     init {
         Log.d("DashboardViewModel", "Initializing...")
         viewModelScope.launch {
+            syncManager.synchronize()
             currentUserProfile.collectLatest { userData ->
                 if (userData != null) {
                     Log.d("DashboardViewModel", "User data available in Dashboard: ${userData.name}. Loading dashboard data.")
@@ -68,6 +71,7 @@ class DashboardViewModel @Inject constructor(
 
     private fun loadDashboardDataBasedOnUser(user: UserData) {
         viewModelScope.launch {
+
             Log.d("DashboardViewModel", "Loading dashboard data for user ID (backend): ${user.id}, Name: ${user.name}")
             // Asumsi: DashboardRepository.getDashboardData() SEKARANG akan diubah
             // untuk menerima userId atau menggunakan konteks user dari API call jika data dashboard dari backend.

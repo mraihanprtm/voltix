@@ -12,6 +12,7 @@
         android:required="true" />
 
     <application
+        android:networkSecurityConfig="@xml/network_security_config"
         android:name=".VoltixApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -21,9 +22,9 @@
         android:roundIcon="@mipmap/icon_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.VoltixApp"
-        android:networkSecurityConfig="@xml/network_security_config"
         tools:targetApi="31"
-        tools:replace="android:fullBackupContent">
+        tools:replace="android:fullBackupContent"
+        android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -1,8 +1,8 @@
 {
   "formatVersion": 1,
   "database": {
-    "version": 2,
-    "identityHash": "f504eedad52adc5921d3786fd8db40ef",
+    "version": 3,
+    "identityHash": "34d116cdd682bd4f8de973a3615b0013",
     "entities": [
       {
         "tableName": "users",
@@ -68,7 +68,7 @@
       },
       {
         "tableName": "perangkat",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `nama` TEXT NOT NULL, `jumlah` INTEGER NOT NULL, `daya` INTEGER NOT NULL, `jenis` TEXT NOT NULL, `lastModified` INTEGER NOT NULL, `isDeleted` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `nama` TEXT NOT NULL, `jumlah` INTEGER NOT NULL, `daya` INTEGER NOT NULL, `jenis` TEXT NOT NULL, `lastModified` INTEGER NOT NULL, `isDeleted` INTEGER NOT NULL, `uuid` TEXT NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -111,6 +111,12 @@
             "columnName": "isDeleted",
             "affinity": "INTEGER",
             "notNull": true
+          },
+          {
+            "fieldPath": "uuid",
+            "columnName": "uuid",
+            "affinity": "TEXT",
+            "notNull": true
           }
         ],
         "primaryKey": {
@@ -119,12 +125,22 @@
             "id"
           ]
         },
-        "indices": [],
+        "indices": [
+          {
+            "name": "index_perangkat_uuid",
+            "unique": true,
+            "columnNames": [
+              "uuid"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_perangkat_uuid` ON `${TABLE_NAME}` (`uuid`)"
+          }
+        ],
         "foreignKeys": []
       },
       {
         "tableName": "ruangan",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `userFirebaseUid` TEXT NOT NULL, `namaRuangan` TEXT NOT NULL, `panjangRuangan` REAL NOT NULL, `lebarRuangan` REAL NOT NULL, `jenisRuangan` TEXT NOT NULL, `lastModified` INTEGER NOT NULL, `isDeleted` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `userFirebaseUid` TEXT NOT NULL, `namaRuangan` TEXT NOT NULL, `panjangRuangan` REAL NOT NULL, `lebarRuangan` REAL NOT NULL, `jenisRuangan` TEXT NOT NULL, `lastModified` INTEGER NOT NULL, `isDeleted` INTEGER NOT NULL, `uuid` TEXT NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -173,6 +189,12 @@
             "columnName": "isDeleted",
             "affinity": "INTEGER",
             "notNull": true
+          },
+          {
+            "fieldPath": "uuid",
+            "columnName": "uuid",
+            "affinity": "TEXT",
+            "notNull": true
           }
         ],
         "primaryKey": {
@@ -182,6 +204,15 @@
           ]
         },
         "indices": [
+          {
+            "name": "index_ruangan_uuid",
+            "unique": true,
+            "columnNames": [
+              "uuid"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_ruangan_uuid` ON `${TABLE_NAME}` (`uuid`)"
+          },
           {
             "name": "index_ruangan_userFirebaseUid",
             "unique": false,
@@ -196,7 +227,7 @@
       },
       {
         "tableName": "lampu",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `perangkatId` INTEGER NOT NULL, `jenis` TEXT NOT NULL, `lumen` INTEGER NOT NULL, `lastModified` INTEGER NOT NULL, `isDeleted` INTEGER NOT NULL, FOREIGN KEY(`perangkatId`) REFERENCES `perangkat`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `perangkatId` INTEGER NOT NULL, `jenis` TEXT NOT NULL, `lumen` INTEGER NOT NULL, `lastModified` INTEGER NOT NULL, `isDeleted` INTEGER NOT NULL, `uuid` TEXT NOT NULL, FOREIGN KEY(`perangkatId`) REFERENCES `perangkat`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -233,6 +264,12 @@
             "columnName": "isDeleted",
             "affinity": "INTEGER",
             "notNull": true
+          },
+          {
+            "fieldPath": "uuid",
+            "columnName": "uuid",
+            "affinity": "TEXT",
+            "notNull": true
           }
         ],
         "primaryKey": {
@@ -250,6 +287,15 @@
             ],
             "orders": [],
             "createSql": "CREATE INDEX IF NOT EXISTS `index_lampu_perangkatId` ON `${TABLE_NAME}` (`perangkatId`)"
+          },
+          {
+            "name": "index_lampu_uuid",
+            "unique": true,
+            "columnNames": [
+              "uuid"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_lampu_uuid` ON `${TABLE_NAME}` (`uuid`)"
           }
         ],
         "foreignKeys": [
@@ -755,7 +801,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '98b418a4d4f41fc3768c3dd71410ead4')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '34d116cdd682bd4f8de973a3615b0013')"
     ]
   }
 }

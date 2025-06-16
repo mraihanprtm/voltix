@@ -69,6 +69,8 @@ dependencies {
     implementation(libs.androidx.runtime.livedata)
     implementation ("androidx.lifecycle:lifecycle-viewmodel-savedstate:2.6.1")
     implementation(libs.androidx.room.common.jvm)
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.hilt.common)
     implementation ("androidx.security:security-crypto:1.1.0-alpha06") // Cek versi terbaru
     val credentialManagerVersion = "1.5.0-alpha05"
     implementation("androidx.credentials:credentials:$credentialManagerVersion")

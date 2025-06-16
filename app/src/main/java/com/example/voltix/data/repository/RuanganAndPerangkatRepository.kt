@@ -31,7 +31,13 @@ class RuanganAndPerangkatRepository @Inject constructor(
     }
 
     suspend fun deletePerangkat(perangkat: PerangkatEntity) {
-        perangkatDao.deletePerangkat(perangkat)
+        val perangkatYangDihapus = perangkat.copy(
+            isDeleted = true, // Tandai sebagai telah dihapus
+            lastModified = System.currentTimeMillis() // Perbarui waktu modifikasi
+        )
+
+        // 2. Gunakan fungsi 'update' dari DAO untuk menyimpan perubahan
+        updatePerangkat(perangkatYangDihapus)
     }
 
     suspend fun getPerangkatById(id: Int): PerangkatEntity? {
@@ -57,7 +63,18 @@ class RuanganAndPerangkatRepository @Inject constructor(
     }
 
     suspend fun deleteLampuByPerangkatId(perangkatId: Int) {
-        perangkatDao.deleteLampuByPerangkatId(perangkatId)
+//        perangkatDao.deleteLampuByPerangkatId(perangkatId)
+        // 1. Ambil semua lampu yang terkait dengan perangkatId
+        val lampsToDelete = perangkatDao.getLampuByPerangkatId(perangkatId)
+
+        if (lampsToDelete != null) {
+            // 2. Buat daftar baru dengan properti yang sudah diperbarui
+            val updatedLamps = lampsToDelete.copy(
+                    isDeleted = true, // Tandai sebagai telah dihapus
+                    lastModified = System.currentTimeMillis() // Perbarui waktu modifikasi
+                )
+            updateLampu(updatedLamps)
+        }
     }
 
     suspend fun getLampuByPerangkatId(perangkatId: Int): LampuEntity? {

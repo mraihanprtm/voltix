@@ -8,6 +8,7 @@ import com.example.voltix.data.remote.AuthManager
 import com.example.voltix.data.remote.dto.ProfileUpdateRequest
 import com.example.voltix.data.remote.dto.UserData
 import com.example.voltix.data.repository.ListrikRepository
+import com.example.voltix.data.remote.SyncManager
 import com.example.voltix.data.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,7 +33,8 @@ sealed class ProfileUpdateState {
 class UserViewModel @Inject constructor(
     private val authManager: AuthManager,
     private val userRepository: UserRepository,
-    private val listrikRepository: ListrikRepository // Untuk mapping jenisListrik ke ID lokal
+    private val listrikRepository: ListrikRepository, // Untuk mapping jenisListrik ke ID lokal,
+    private val syncManager: SyncManager
 ) : ViewModel() {
 
     fun logout() {
@@ -217,5 +219,13 @@ class UserViewModel @Inject constructor(
 
     suspend fun getUserTarif(userIdFromLocalDb: Int, usedKWH: Double): Int {
         return userRepository.getUserTarif(userIdFromLocalDb, usedKWH)
+    }
+
+    fun syncData() = viewModelScope.launch {
+        try {
+            syncManager.synchronize()
+        } catch (e: Exception) {
+            Log.e("UserViewModel", "Sync failed", e)
+        }
     }
 }

@@ -231,6 +231,14 @@ fun SettingScreen(
                                 )
                             }
 
+                            ModernSettingCard(
+                                icon = Icons.Filled.Build,
+                                title = "Sinkronisasi Data",
+                                description = "Sinkronisasi data lokal dan cloud",
+                                onClick = { userViewModel.syncData() },
+                                isLoading = profileUpdateState is ProfileUpdateState.Loading
+                            )
+
                             // Logout Card
                             ModernSettingCard(
                                 icon = Icons.Filled.ExitToApp,
