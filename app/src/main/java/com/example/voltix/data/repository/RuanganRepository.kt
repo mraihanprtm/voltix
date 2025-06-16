@@ -20,7 +20,13 @@ class RuanganRepository @Inject constructor(
     }
 
     suspend fun deleteRuangan(ruangan: RuanganEntity) {
-        ruanganDao.deleteRuangan(ruangan)
+        val ruanganYangDihapus = ruangan.copy(
+            isDeleted = true, // Tandai sebagai telah dihapus
+            lastModified = System.currentTimeMillis() // Perbarui waktu modifikasi
+        )
+
+        // 2. Gunakan fungsi 'update' dari DAO untuk menyimpan perubahan
+        ruanganDao.updateRuangan(ruanganYangDihapus)
     }
 
     suspend fun updateRuangan(ruangan: RuanganEntity) {

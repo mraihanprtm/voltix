@@ -33,7 +33,7 @@ sealed class ProfileUpdateState {
 class UserViewModel @Inject constructor(
     private val authManager: AuthManager,
     private val userRepository: UserRepository,
-    private val listrikRepository: ListrikRepository // Untuk mapping jenisListrik ke ID lokal,
+    private val listrikRepository: ListrikRepository, // Untuk mapping jenisListrik ke ID lokal,
     private val syncManager: SyncManager
 ) : ViewModel() {
 

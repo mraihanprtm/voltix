@@ -31,10 +31,10 @@ interface PerangkatDAO {
     @Query("SELECT * FROM perangkat WHERE id = :id")
     suspend fun getPerangkatById(id: Int): PerangkatEntity?
 
-    @Query("SELECT * FROM perangkat")
+    @Query("SELECT * FROM perangkat WHERE isDeleted = 0")
     suspend fun getAllPerangkat(): List<PerangkatEntity>
 
-    @Query("SELECT * FROM perangkat")
+    @Query("SELECT * FROM perangkat WHERE isDeleted = 0")
     fun getAllPerangkatLive(): LiveData<List<PerangkatEntity>>
 
     @Insert
@@ -50,7 +50,7 @@ interface PerangkatDAO {
     suspend fun getLampuByPerangkatId(perangkatId: Int): LampuEntity?
 
     @Transaction
-    @Query("SELECT * FROM ruangan")
+    @Query("SELECT * FROM ruangan WHERE isDeleted = 0 ORDER BY namaRuangan ASC")
     fun getAllRuanganWithPerangkat(): Flow<List<RuanganWithPerangkat>>
 
     @Query("SELECT * FROM ruangan_perangkat_cross_ref WHERE ruanganId = :ruanganId AND perangkatId = :perangkatId")

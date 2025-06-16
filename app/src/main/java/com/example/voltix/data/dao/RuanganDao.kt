@@ -22,7 +22,7 @@ interface RuanganDAO {
     @Update
     suspend fun updateRuangan(ruangan: RuanganEntity)
 
-    @Query("SELECT * FROM ruangan WHERE userFirebaseUid = :uid ORDER BY namaRuangan ASC")
+    @Query("SELECT * FROM ruangan WHERE userFirebaseUid = :uid AND isDeleted = 0 ORDER BY namaRuangan ASC")
     fun getAllRuanganByFirebaseUid(uid: String): Flow<List<RuanganEntity>>
 
     // Jika Anda butuh versi suspend function (ambil sekali)
@@ -37,11 +37,11 @@ interface RuanganDAO {
 
     // Metode ini mengambil semua ruangan, mungkin tidak lagi dibutuhkan untuk dashboard
     // atau perlu dipertimbangkan penggunaannya.
-    @Query("SELECT * FROM ruangan")
+    @Query("SELECT * FROM ruangan WHERE isDeleted = 0 ORDER BY namaRuangan ASC")
     fun getAllRuangan(): LiveData<List<RuanganEntity>>
 
     // Metode ini juga mengambil semua ruangan.
-    @Query("SELECT * FROM ruangan")
+    @Query("SELECT * FROM ruangan WHERE isDeleted = 0 ORDER BY namaRuangan ASC")
     suspend fun getAllRuanganList(): List<RuanganEntity>
 
     @Transaction
@@ -55,7 +55,7 @@ interface RuanganDAO {
      * @return Flow yang berisi list RuanganWithPerangkat.
      */
     @Transaction
-    @Query("SELECT * FROM ruangan WHERE userFirebaseUid = :userFirebaseUid ORDER BY namaRuangan ASC") // Tambahkan ORDER BY jika perlu
+    @Query("SELECT * FROM ruangan WHERE userFirebaseUid = :userFirebaseUid AND isDeleted = 0 ORDER BY namaRuangan ASC") // Tambahkan ORDER BY jika perlu
     fun getAllRuanganWithPerangkatForUser(userFirebaseUid: String): Flow<List<RuanganWithPerangkat>>
     // ---------------------------------
 

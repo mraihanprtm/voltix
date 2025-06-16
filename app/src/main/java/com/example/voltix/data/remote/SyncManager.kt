@@ -18,52 +18,74 @@ class SyncManager @Inject constructor(
 
     suspend fun synchronize() {
         try {
-            val lastSync = prefs.getLong("last_sync", 0)
-            val deviceId = getDeviceId()
-            Log.d("SyncManager", "Starting sync - LastSync: $lastSync, DeviceID: $deviceId")
+            val initialLastSync = prefs.getLong("last_sync", 0)
+            Log.d("SyncManager", "Starting sync cycle - InitialLastSync: $initialLastSync")
 
-            // Get changes from server
-            Log.d("SyncManager", "Fetching changes from server...")
-            val response = apiService.syncData(SyncRequest(lastSync, deviceId))
+            // ===================================
+            // PHASE 1: PULL CHANGES FROM SERVER
+            // ===================================
+            Log.d("SyncManager", "PHASE 1: Fetching changes from server...")
+            val pullResponse = apiService.syncData(SyncRequest(initialLastSync, getDeviceId()))
 
-            if (response.isSuccessful) {
-                Log.d("SyncManager", "Server response successful: ${response.body()}")
-                response.body()?.data?.let { syncResponse ->
-                    database.withTransaction {
-                        // Update local database with server changes
-                        Log.d("SyncManager", "Updating local database with server changes...")
-                        Log.d("SyncManager", "Server data - Perangkat: ${syncResponse.perangkat.size}, " +
-                                "Ruangan: ${syncResponse.ruangan.size}, " +
-                                "Lampu: ${syncResponse.lampu.size}, " +
-                                "RuanganPerangkat: ${syncResponse.ruanganPerangkat.size}")
-
-                        updateLocalDatabase(syncResponse)
-
-                        // Push local changes to server
-                        Log.d("SyncManager", "Getting local changes since $lastSync...")
-                        val localChanges = getLocalChanges(lastSync)
-                        Log.d("SyncManager", "Local changes - Perangkat: ${localChanges.perangkat.size}, " +
-                                "Ruangan: ${localChanges.ruangan.size}, " +
-                                "Lampu: ${localChanges.lampu.size}, " +
-                                "RuanganPerangkat: ${localChanges.ruanganPerangkat.size}, " +
-                                "DeletedIds: ${localChanges.deletedIds}")
-
-                        Log.d("SyncManager", "Pushing local changes to server...")
-                        val pushResponse = apiService.pushChanges(localChanges)
-                        Log.d("SyncManager", "Push response: ${pushResponse.body()}")
-
-                        // Update last sync timestamp
-                        val newTimestamp = System.currentTimeMillis()
-                        prefs.edit { putLong("last_sync", newTimestamp) }
-                        Log.d("SyncManager", "Updated last sync timestamp to $newTimestamp")
-                    }
-                } ?: Log.e("SyncManager", "Response body or data is null")
-            } else {
-                Log.e("SyncManager", "Server response unsuccessful: ${response.code()} - ${response.message()}")
+            if (!pullResponse.isSuccessful) {
+                Log.e("SyncManager", "Pull from server failed: ${pullResponse.code()} - ${pullResponse.message()}")
+                return // Exit if pull fails
             }
+
+            val syncResponse = pullResponse.body()?.data
+            if (syncResponse == null) {
+                Log.e("SyncManager", "Pull response body or data is null")
+                return // Exit if data is missing
+            }
+
+            // Save server changes to the local database
+            updateLocalDatabase(syncResponse)
+
+            // **CRITICAL STEP**: Update the sync timestamp to the value from the server BEFORE pushing.
+            val newLastSyncFromServer = syncResponse.lastSyncTimestamp
+            prefs.edit { putLong("last_sync", newLastSyncFromServer) }
+            Log.d("SyncManager", "PHASE 1: Pull complete. Updated last_sync to $newLastSyncFromServer")
+
+
+            // ==================================
+            // PHASE 2: PUSH LOCAL CHANGES
+            // ==================================
+//            Log.d("SyncManager", "PHASE 2: Getting local changes made since $initialLastSync...")
+//            // We still get changes since the *initial* timestamp of this cycle
+//            val localChanges = getLocalChanges(initialLastSync)
+//
+//            // A helper function to check if there are any changes to push
+//            if (localChanges.isEmpty()) {
+//                Log.d("SyncManager", "PHASE 2: No local changes to push. Sync cycle complete.")
+//                return
+//            }
+//
+//            Log.d("SyncManager", "PHASE 2: Pushing local changes to server...")
+//            val pushResponse = apiService.pushChanges(localChanges)
+//
+//            if (pushResponse.isSuccessful) {
+//                Log.d("SyncManager", "PHASE 2: Push successful. Sync cycle complete.")
+//            } else {
+//                // If push fails, we throw an exception. The timestamp from the PULL phase is already saved,
+//                // which is okay. The local changes that failed to push will be picked up on the next sync.
+//                Log.e("SyncManager", "PHASE 2: Push failed: ${pushResponse.code()} - ${pushResponse.message()}")
+//                throw java.io.IOException("Push to server failed with code ${pushResponse.code()}")
+//            }
+
         } catch (e: Exception) {
-            Log.e("SyncManager", "Sync failed with exception", e)
+            Log.e("SyncManager", "Sync cycle failed with exception", e)
         }
+    }
+
+    // You'll need to add this helper extension function inside your SyncManager class
+    private fun LocalChanges.isEmpty(): Boolean {
+        return perangkat.isEmpty() && ruangan.isEmpty() && lampu.isEmpty() &&
+                ruanganPerangkat.isEmpty() && deletedIds.isEmpty()
+    }
+
+    // And this one for the DeletedIds data class
+    private fun DeletedIds.isEmpty(): Boolean {
+        return perangkatIds.isEmpty() && ruanganIds.isEmpty() && lampuIds.isEmpty()
     }
 
     private suspend fun updateLocalDatabase(syncResponse: SyncResponse) {
@@ -81,7 +103,7 @@ class SyncManager @Inject constructor(
                 perangkat = perangkatDao().getChangedSince(since),
                 ruangan = ruanganDao().getChangedSince(since),
                 lampu = perangkatDao().getLampuChangedSince(since),
-                ruanganPerangkat = ruanganPerangkatCrossRefDao().getChangedSince(since),
+                ruanganPerangkat = ruanganPerangkatCrossRefDao().getChanges(since),
                 deletedIds = getDeletedIds()
             )
         }

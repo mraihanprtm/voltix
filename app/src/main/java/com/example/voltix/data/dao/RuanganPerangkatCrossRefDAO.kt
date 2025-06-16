@@ -67,4 +67,7 @@ interface RuanganPerangkatCrossRefDAO {
 
     @Query("SELECT * FROM ruangan_perangkat_cross_ref WHERE isDeleted = 1")
     suspend fun getDeleted(): List<RuanganPerangkatCrossRef>
+
+    @Query("SELECT * FROM ruangan_perangkat_cross_ref WHERE lastModified > :since")
+    suspend fun getChanges(since: Long): List<RuanganPerangkatCrossRef>
 }

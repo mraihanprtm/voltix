@@ -8,16 +8,25 @@ import com.example.voltix.data.entity.RuanganPerangkatCrossRef
 import com.example.voltix.data.remote.response.SyncResponse
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Headers
 
 // ApiService.kt
 interface ApiService {
-    @POST("sync")
+    @Headers(
+        "Accept: application/json",
+        "Content-Type: application/json"
+    )
+    @POST("api/sync")
     suspend fun syncData(
         @Body request: SyncRequest
     ): Response<ApiResponse<SyncResponse>>
-
-    @POST("push-changes")
+    @Headers(
+        "Accept: application/json",
+        "Content-Type: application/json"
+    )
+    @POST("api/push-changes")
     suspend fun pushChanges(
         @Body changes: LocalChanges
     ): Response<ApiResponse<Unit>>

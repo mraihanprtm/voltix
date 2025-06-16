@@ -38,11 +38,9 @@ class DashboardViewModel @Inject constructor(
     val currentUserProfile: StateFlow<UserData?> = userRepository.currentUserProfile
 
     init {
+        Log.d("DashboardViewModel", "Initializing...")
         viewModelScope.launch {
             syncManager.synchronize()
-        }
-            Log.d("DashboardViewModel", "Initializing...")
-        viewModelScope.launch {
             currentUserProfile.collectLatest { userData ->
                 if (userData != null) {
                     Log.d("DashboardViewModel", "User data available in Dashboard: ${userData.name}. Loading dashboard data.")
