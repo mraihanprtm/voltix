@@ -177,7 +177,7 @@ object AppModule {
     @Singleton
     fun provideRetrofit(gson: Gson, okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("http://10.10.130.70:8000/") // Replace with your actual base URL
+            .baseUrl("https://voltix.polban.studio/") // Replace with your actual base URL
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
     <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">192.168.101.8</domain>
+        <domain includeSubdomains="true">voltix.polban.studio</domain>
         <!-- Add other specific domains if needed -->
         <!-- For local development, you might use an IP address: -->
          <domain includeSubdomains="true">10.10.128.137</domain>

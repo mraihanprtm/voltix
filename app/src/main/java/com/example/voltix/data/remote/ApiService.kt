@@ -18,7 +18,7 @@ interface ApiService {
         "Accept: application/json",
         "Content-Type: application/json"
     )
-    @POST("api/sync")
+    @POST("api/v1/sync")
     suspend fun syncData(
         @Body request: SyncRequest
     ): Response<ApiResponse<SyncResponse>>
@@ -26,7 +26,7 @@ interface ApiService {
         "Accept: application/json",
         "Content-Type: application/json"
     )
-    @POST("api/push-changes")
+    @POST("api/v1/push-changes")
     suspend fun pushChanges(
         @Body changes: LocalChanges
     ): Response<ApiResponse<Unit>>
